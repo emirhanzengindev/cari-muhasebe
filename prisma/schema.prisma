@@ -1,0 +1,317 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// User/Tenant model
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  name          String?
+  password      String
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  tenantId      String     @unique
+  
+  // Relations
+  tenants       Tenant[]
+  accounts      Account[]
+  sessions      Session[]
+}
+
+// Tenant model for multi-tenancy
+model Tenant {
+  id            String     @id @default(cuid())
+  name          String
+  userId        String
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  // Relations
+  user          User       @relation(fields: [userId], references: [id])
+  currentAccounts CurrentAccount[]
+  products      Product[]
+  categories    Category[]
+  warehouses    Warehouse[]
+  stockMovements StockMovement[]
+  invoices      Invoice[]
+  transactions  Transaction[]
+  safes         Safe[]
+  banks         Bank[]
+  cheques       Cheque[]
+}
+
+// Current Account (Customers/Suppliers)
+model CurrentAccount {
+  id            String     @id @default(cuid())
+  name          String
+  email         String?
+  phone         String?
+  address       String?
+  taxOffice     String?
+  taxNumber     String?
+  isActive      Boolean    @default(true)
+  accountType   String // "CUSTOMER" or "SUPPLIER"
+  balance       Float      @default(0)
+  tenantId      String
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  // Relations
+  tenant        Tenant     @relation(fields: [tenantId], references: [id])
+  invoices      Invoice[]
+  transactions  Transaction[]
+  cheques       Cheque[]
+}
+
+
+// Product model
+model Product {
+  id              String     @id @default(cuid())
+  name            String
+  sku             String?    @unique
+  barcode         String?    @unique
+  buyPrice        Float
+  sellPrice       Float
+  vatRate         Int        @default(18) // KDV rate
+  stockQuantity   Float      @default(0)
+  criticalLevel   Float      @default(0)
+  tenantId        String
+  categoryId      String?
+  warehouseId     String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  
+  // Fabric-specific fields
+  color           String?    // Fabric color (e.g., "Blue", "Red")
+  unit            String?    // Measurement unit (e.g., "meter", "kilogram", "piece")
+  minStockLevel   Float?     // Minimum stock level alert
+  pattern         String?    // Fabric pattern/design
+  composition     String?    // Fabric composition (e.g., "100% Cotton", "Polyester Blend")
+  width           Float?     // Fabric width in centimeters
+  weight          Float?     // Fabric weight in grams per square meter (GSM)
+  
+  // Relations
+  tenant          Tenant     @relation(fields: [tenantId], references: [id])
+  category        Category?  @relation(fields: [categoryId], references: [id])
+  warehouse       Warehouse? @relation(fields: [warehouseId], references: [id])
+  invoiceItems    InvoiceItem[]
+  stockMovements  StockMovement[]
+  
+  // Variants
+  variants        ProductVariant[]
+}
+
+// Product Variant (Size, Color, etc.)
+model ProductVariant {
+  id          String     @id @default(cuid())
+  productId   String
+  name        String     // e.g., "Red", "Large"
+  value       String     // e.g., "Red", "Large"
+  priceAdjustment Float   @default(0) // Additional cost/value
+  stockQuantity Float    @default(0)
+  sku         String?    @unique
+  barcode     String?    @unique
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  // Relations
+  product     Product    @relation(fields: [productId], references: [id])
+  stockMovements StockMovement[]
+}
+
+// Category for products
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  tenantId    String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  // Relations
+  tenant      Tenant     @relation(fields: [tenantId], references: [id])
+  products    Product[]
+}
+
+// Warehouse/Storage location
+model Warehouse {
+  id          String     @id @default(cuid())
+  name        String
+  location    String?
+  tenantId    String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  // Relations
+  tenant      Tenant     @relation(fields: [tenantId], references: [id])
+  products    Product[]
+}
+
+// Stock movement history
+model StockMovement {
+  id              String     @id @default(cuid())
+  productId       String?
+  variantId       String?
+  movementType    String // "IN" or "OUT"
+  quantity        Float
+  price           Float       // Cost/price at movement time
+  description     String?
+  tenantId        String
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  
+  // Relations
+  tenant          Tenant     @relation(fields: [tenantId], references: [id])
+  product         Product?   @relation(fields: [productId], references: [id])
+  variant         ProductVariant? @relation(fields: [variantId], references: [id])
+}
+
+
+// Invoice model
+model Invoice {
+  id              String     @id @default(cuid())
+  invoiceNumber   String     @unique
+  invoiceType     String // "SALES" or "PURCHASE"
+  date            DateTime   @default(now())
+  accountId       String     // Customer or Supplier
+  subtotal        Float
+  discount        Float      @default(0)
+  vatAmount       Float
+  totalAmount     Float
+  description     String?
+  isDraft         Boolean    @default(true)
+  tenantId        String
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  
+  // Relations
+  tenant          Tenant     @relation(fields: [tenantId], references: [id])
+  account         CurrentAccount @relation(fields: [accountId], references: [id])
+  invoiceItems    InvoiceItem[]
+}
+
+
+// Invoice items (products in an invoice)
+model InvoiceItem {
+  id          String     @id @default(cuid())
+  invoiceId   String
+  productId   String
+  quantity    Float
+  unitPrice   Float
+  vatRate     Int
+  total       Float
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  // Relations
+  invoice     Invoice    @relation(fields: [invoiceId], references: [id])
+  product     Product    @relation(fields: [productId], references: [id])
+}
+
+// Financial transactions (Money In/Money Out)
+model Transaction {
+  id              String     @id @default(cuid())
+  transactionType String // "COLLECTION" or "PAYMENT"
+  amount          Float
+  accountId       String?    // Linked to Current Account
+  safeId          String?    // Cash safe
+  bankId          String?    // Bank account
+  description     String?
+  date            DateTime   @default(now())
+  tenantId        String
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  
+  // Relations
+  tenant          Tenant     @relation(fields: [tenantId], references: [id])
+  account         CurrentAccount? @relation(fields: [accountId], references: [id])
+  safe            Safe?      @relation(fields: [safeId], references: [id])
+  bank            Bank?      @relation(fields: [bankId], references: [id])
+}
+
+
+// Cash safes
+model Safe {
+  id          String     @id @default(cuid())
+  name        String
+  balance     Float      @default(0)
+  tenantId    String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  // Relations
+  tenant      Tenant     @relation(fields: [tenantId], references: [id])
+  transactions Transaction[]
+}
+
+// Bank accounts
+model Bank {
+  id          String     @id @default(cuid())
+  name        String
+  iban        String?
+  balance     Float      @default(0)
+  tenantId    String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  // Relations
+  tenant      Tenant     @relation(fields: [tenantId], references: [id])
+  transactions Transaction[]
+}
+
+// Cheques and Promissory Notes
+model Cheque {
+  id              String     @id @default(cuid())
+  chequeType      String // "CHEQUE" or "PROMISSORY_NOTE"
+  amount          Float
+  issueDate       DateTime
+  maturityDate    DateTime
+  issuerName      String
+  accountId       String?    // Linked to Current Account
+  status          String // "PENDING", "COLLECTED", "BOUNCED"
+  description     String?
+  tenantId        String
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  
+  // Relations
+  tenant          Tenant     @relation(fields: [tenantId], references: [id])
+  account         CurrentAccount? @relation(fields: [accountId], references: [id])
+}
+
+
+// Add the models required by NextAuth.js
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
