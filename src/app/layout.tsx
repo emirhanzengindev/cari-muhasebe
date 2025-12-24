@@ -13,6 +13,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Ön Muhasebe SaaS Platformu",
   description: "KOBİ'ler için kapsamlı ön muhasebe çözümü",
+  other: {
+    "google-site-verification": "PFqJVM9KwOTEeT1tsU4-8Yul2eh5aHK9h6tZd_oNMFU"
+  }
 };
 
 export default function RootLayout({
