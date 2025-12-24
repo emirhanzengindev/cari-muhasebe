@@ -121,86 +121,90 @@ export default function CurrentAccounts() {
         </div>
       </div>
 
-      {/* Accounts Table */}
+      {/* Accounts Table - Mobil uyumlu hale getirildi */}
       <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                İsim
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                İletişim
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tip
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Bakiye
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Durum
-              </th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                İşlemler
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredAccounts.map((account) => (
-              <tr key={account.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{account.name}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{account.email}</div>
-                  <div className="text-sm text-gray-500">{account.phone}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    account.accountType === "CUSTOMER" 
-                      ? "bg-green-100 text-green-800" 
-                      : "bg-purple-100 text-purple-800"
-                  }`}>
-                    {account.accountType === "CUSTOMER" ? "Müşteri" : "Tedarikçi"}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  <span className={account.balance >= 0 ? "text-green-600" : "text-red-600"}>
-                    {account.balance >= 0 ? "₺" : "-₺"}{Math.abs(account.balance).toFixed(2)}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    account.isActive 
-                      ? "bg-green-100 text-green-800" 
-                      : "bg-red-100 text-red-800"
-                  }`}>
-                    {account.isActive ? "Aktif" : "Pasif"}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <Link href={`/current-accounts/${account.id}`} className="text-blue-600 hover:text-blue-900 mr-3">
-                    Görüntüle
-                  </Link>
-                  <Link href={`/current-accounts/${account.id}/edit`} className="text-indigo-600 hover:text-indigo-900 mr-3">
-                    Düzenle
-                  </Link>
-                  <button
-                    onClick={() => {
-                      if (confirm("Bu hesabı silmek istediğinize emin misiniz?")) {
-                        deleteAccount(account.id);
-                      }
-                    }}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    Sil
-                  </button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  İsim
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  İletişim
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Tip
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Bakiye
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Durum
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  İşlemler
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredAccounts.map((account) => (
+                <tr key={account.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{account.name}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{account.email}</div>
+                    <div className="text-sm text-gray-500">{account.phone}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      account.accountType === "CUSTOMER" 
+                        ? "bg-green-100 text-green-800" 
+                        : "bg-purple-100 text-purple-800"
+                    }`}>
+                      {account.accountType === "CUSTOMER" ? "Müşteri" : "Tedarikçi"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <span className={account.balance >= 0 ? "text-green-600" : "text-red-600"}>
+                      {account.balance >= 0 ? "₺" : "-₺"}{Math.abs(account.balance).toFixed(2)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      account.isActive 
+                        ? "bg-green-100 text-green-800" 
+                        : "bg-red-100 text-red-800"
+                    }`}>
+                      {account.isActive ? "Aktif" : "Pasif"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex flex-col sm:flex-row sm:justify-end gap-2">
+                      <Link href={`/current-accounts/${account.id}`} className="text-blue-600 hover:text-blue-900 text-sm">
+                        Görüntüle
+                      </Link>
+                      <Link href={`/current-accounts/${account.id}/edit`} className="text-indigo-600 hover:text-indigo-900 text-sm">
+                        Düzenle
+                      </Link>
+                      <button
+                        onClick={() => {
+                          if (confirm("Bu hesabı silmek istediğinize emin misiniz?")) {
+                            deleteAccount(account.id);
+                          }
+                        }}
+                        className="text-red-600 hover:text-red-900 text-sm"
+                      >
+                        Sil
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         
         {accounts.length === 0 && (
           <div className="text-center py-12">
@@ -223,8 +227,8 @@ export default function CurrentAccounts() {
 
       {/* Pagination */}
       {accounts.length > 0 && (
-        <div className="mt-6 flex items-center justify-between">
-          <div className="text-sm text-gray-700">
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-sm text-gray-700 text-center sm:text-left">
             Gösterilen <span className="font-medium">1</span> - <span className="font-medium">{Math.min(10, accounts.length)}</span> / toplam{' '}
             <span className="font-medium">{accounts.length}</span> sonuç
           </div>
