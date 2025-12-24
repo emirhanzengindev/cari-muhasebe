@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next",
+      "config": {
+        "includeFiles": [
+          "prisma/**"
+        ]
+      }
+    }
+  ],
+  "buildCommand": "npx prisma generate --schema=prisma/schema.prisma && next build",
+  "installCommand": "npm install"
+}
