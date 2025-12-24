@@ -69,7 +69,7 @@ export default function MainLayout({
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'w-64' : 'w-0 md:w-20'} ${isMobile && !sidebarOpen ? 'hidden' : 'block'} bg-white shadow-md transition-all duration-300 ease-in-out overflow-hidden`}>
+      <div className={`${sidebarOpen ? 'w-64' : 'w-0 md:w-20'} ${isMobile && !sidebarOpen ? 'hidden' : 'block'} bg-white shadow-md transition-all duration-300 ease-in-out overflow-hidden fixed md:relative z-50 h-full`}>
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-between p-4 border-b">
@@ -87,7 +87,7 @@ export default function MainLayout({
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-2 py-4">
+          <nav className="flex-1 px-2 py-4 overflow-y-auto">
             <ul className="space-y-1">
               {navigation.map((item) => (
                 <li key={item.name}>
@@ -98,6 +98,7 @@ export default function MainLayout({
                         ? "bg-blue-100 text-blue-600"
                         : "text-gray-700 hover:bg-gray-100"
                     }`}
+                    onClick={() => isMobile && setSidebarOpen(false)} // Mobilde tıklanınca sidebar kapanır
                   >
                     <span className="text-xl">{item.icon}</span>
                     {sidebarOpen && (
@@ -153,15 +154,15 @@ export default function MainLayout({
       {/* Sidebar overlay - mobilde sidebar açıkken arka planı karart */}
       {sidebarOpen && isMobile && (
         <div 
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 md:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
           onClick={() => setSidebarOpen(false)}
         ></div>
       )}
 
       {/* Main Content */}
-      <div className={`${sidebarOpen ? 'md:ml-0' : 'ml-0'} flex-1 flex flex-col overflow-hidden`}>
+      <div className={`flex-1 flex flex-col overflow-hidden ${sidebarOpen && isMobile ? 'ml-0' : 'ml-0'} md:ml-0 transition-all duration-300`}>
         {/* Header */}
-        <header className="bg-white shadow-sm">
+        <header className="bg-white shadow-sm z-30">
           <div className="flex items-center justify-between p-4">
             <h2 className="text-lg font-semibold text-gray-800">
               {navigation.find(item => item.href === pathname)?.name || "Ana Sayfa"}
