@@ -1,73 +1,47 @@
-import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
+import { NextRequest } from "next/server";
+import { supabase } from "@/lib/supabase";
 
-// Mock user storage
-let mockUsers: any[] = [];
-let mockTenants: any[] = [];
-
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const { name, email, password, companyName } = await request.json();
+    const body = await req.json();
+    const { email, password, name } = body;
 
-    // Validasyon
-    if (!name || !email || !password || !companyName) {
-      return NextResponse.json(
-        { error: "Tüm alanlar zorunludur" },
+    if (!email || !password) {
+      return Response.json(
+        { error: "Email and password are required" },
         { status: 400 }
       );
     }
 
-    // E-posta kontrolü
-    const existingUser = mockUsers.find(user => user.email === email);
-
-    if (existingUser) {
-      return NextResponse.json(
-        { error: "Bu e-posta adresi zaten kullanılıyor" },
-        { status: 400 }
-      );
-    }
-
-    // Şifreyi hashle
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Unique tenant ID oluştur
-    const tenantId = `tenant-${Date.now()}`;
-
-    // Kullanıcı oluştur
-    const user = {
-      id: `user-${Date.now()}`,
-      name,
+    // Supabase'te yeni kullanıcı oluştur
+    const { data, error } = await supabase.auth.signUp({
       email,
-      password: hashedPassword,
-      tenantId,
-    };
-
-    mockUsers.push(user);
-
-    // Tenant oluştur
-    const tenant = {
-      id: tenantId,
-      name: companyName,
-      userId: user.id,
-    };
-
-    mockTenants.push(tenant);
-
-    return NextResponse.json(
-      { 
-        message: "Kayıt başarılı",
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
+      password,
+      options: {
+        data: {
+          name: name || email,
         }
+      }
+    });
+
+    if (error) {
+      return Response.json(
+        { error: error.message },
+        { status: 400 }
+      );
+    }
+
+    return Response.json(
+      { 
+        message: "User created successfully", 
+        user: data.user 
       },
-      { status: 201 }
+      { status: 200 }
     );
   } catch (error) {
-    console.error("Kayıt hatası:", error);
-    return NextResponse.json(
-      { error: "Kayıt sırasında bir hata oluştu" },
+    console.error("Signup error:", error);
+    return Response.json(
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

@@ -1,17 +1,6 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
-
-// Mock user data
-const mockUsers = [
-  {
-    id: "1",
-    name: "Admin User",
-    email: "admin@example.com",
-    password: bcrypt.hashSync("password123", 10), // Pre-hashed password
-    tenantId: "default-tenant"
-  }
-];
+import { supabase } from "./supabase";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -26,27 +15,21 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        // Find user in mock data
-        const user = mockUsers.find(u => u.email === credentials.email);
-        
-        if (!user) {
+        // Supabase'te kullanıcı girişi yap
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: credentials.email,
+          password: credentials.password,
+        });
+
+        if (error || !data.user) {
           return null;
         }
 
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-
-        if (!isPasswordValid) {
-          return null;
-        }
-
+        // Kullanıcı bilgilerini döndür
         return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          tenantId: user.tenantId
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.user_metadata?.name || data.user.email,
         };
       }
     })
@@ -55,13 +38,12 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }: { session: any; token: any }) {
       if (session.user) {
         session.user.id = token.sub;
-        session.user.tenantId = token.tenantId;
       }
       return session;
     },
     async jwt({ token, user }: { token: any; user: any }) {
       if (user) {
-        token.tenantId = (user as any).tenantId;
+        token.id = user.id;
       }
       return token;
     }
