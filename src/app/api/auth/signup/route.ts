@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import prisma from "@/lib/prisma";
+
+// Mock user storage
+let mockUsers: any[] = [];
+let mockTenants: any[] = [];
 
 export async function POST(request: Request) {
   try {
@@ -15,9 +18,7 @@ export async function POST(request: Request) {
     }
 
     // E-posta kontrolü
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+    const existingUser = mockUsers.find(user => user.email === email);
 
     if (existingUser) {
       return NextResponse.json(
@@ -33,23 +34,24 @@ export async function POST(request: Request) {
     const tenantId = `tenant-${Date.now()}`;
 
     // Kullanıcı oluştur
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        tenantId,
-      },
-    });
+    const user = {
+      id: `user-${Date.now()}`,
+      name,
+      email,
+      password: hashedPassword,
+      tenantId,
+    };
+
+    mockUsers.push(user);
 
     // Tenant oluştur
-    await prisma.tenant.create({
-      data: {
-        id: tenantId,
-        name: companyName,
-        userId: user.id,
-      },
-    });
+    const tenant = {
+      id: tenantId,
+      name: companyName,
+      userId: user.id,
+    };
+
+    mockTenants.push(tenant);
 
     return NextResponse.json(
       { 
