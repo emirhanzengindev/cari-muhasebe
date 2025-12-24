@@ -13,10 +13,10 @@
     "dotenv": "^17.2.3",
     "jspdf": "^3.0.4",
     "jspdf-autotable": "^5.0.2",
-    "next": "^16.1.0",  // Updated to patched version
+    "next": "^16.1.0",
     "next-auth": "^4.24.13",
-    "react": "^19.2.1",  // Updated to patched version
-    "react-dom": "^19.2.1",  // Updated to patched version
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
     "recharts": "^3.5.1",
     "zustand": "^5.0.9"
   },
@@ -27,12 +27,9 @@
     "@types/react-dom": "^19",
     "@types/bcryptjs": "^2.4.6",
     "eslint": "^9",
-    "eslint-config-next": "^16.1.0",  // Updated to match Next.js version
+    "eslint-config-next": "^16.1.0",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5",
-    "@prisma/client": "^5.22.0",
-    "prisma": "^5.22.0",
-    "@next-auth/prisma-adapter": "^1.0.7"
+    "typescript": "^5"
   }
 }
