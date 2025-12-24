@@ -139,82 +139,86 @@ export default function Invoices() {
         </div>
       </div>
 
-      {/* Invoices Table */}
+      {/* Invoices Table - Mobil uyumlu hale getirildi */}
       <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Invoice
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Customer/Supplier
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Type
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Amount
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredInvoices.map((invoice) => (
-              <tr key={invoice.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{invoice.invoiceNumber}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {invoice.date.toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {getAccountName(invoice.accountId)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    invoice.invoiceType === "SALES" 
-                      ? "bg-green-100 text-green-800" 
-                      : "bg-purple-100 text-purple-800"
-                  }`}>
-                    {invoice.invoiceType === "SALES" ? "Sales" : "Purchase"}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  ₺{invoice.totalAmount.toFixed(2)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    invoice.isDraft 
-                      ? "bg-yellow-100 text-yellow-800" 
-                      : "bg-green-100 text-green-800"
-                  }`}>
-                    {invoice.isDraft ? "Draft" : "Completed"}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <Link href={`/invoices/${invoice.id}`} className="text-blue-600 hover:text-blue-900 mr-3">
-                    View
-                  </Link>
-                  <button className="text-indigo-600 hover:text-indigo-900 mr-3">
-                    Edit
-                  </button>
-                  <button className="text-red-600 hover:text-red-900">
-                    Delete
-                  </button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Invoice
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Customer/Supplier
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Type
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredInvoices.map((invoice) => (
+                <tr key={invoice.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{invoice.invoiceNumber}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {invoice.date.toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {getAccountName(invoice.accountId)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      invoice.invoiceType === "SALES" 
+                        ? "bg-green-100 text-green-800" 
+                        : "bg-purple-100 text-purple-800"
+                    }`}>
+                      {invoice.invoiceType === "SALES" ? "Sales" : "Purchase"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    ₺{invoice.totalAmount.toFixed(2)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      invoice.isDraft 
+                        ? "bg-yellow-100 text-yellow-800" 
+                        : "bg-green-100 text-green-800"
+                    }`}>
+                      {invoice.isDraft ? "Draft" : "Completed"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex flex-col sm:flex-row sm:justify-end gap-2">
+                      <Link href={`/invoices/${invoice.id}`} className="text-blue-600 hover:text-blue-900 text-sm">
+                        View
+                      </Link>
+                      <button className="text-indigo-600 hover:text-indigo-900 text-sm">
+                        Edit
+                      </button>
+                      <button className="text-red-600 hover:text-red-900 text-sm">
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         
         {invoices.length === 0 && (
           <div className="text-center py-12">
@@ -237,8 +241,8 @@ export default function Invoices() {
 
       {/* Pagination */}
       {invoices.length > 0 && (
-        <div className="mt-6 flex items-center justify-between">
-          <div className="text-sm text-gray-700">
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-sm text-gray-700 text-center sm:text-left">
             Showing <span className="font-medium">1</span> to <span className="font-medium">{Math.min(10, invoices.length)}</span> of{' '}
             <span className="font-medium">{invoices.length}</span> invoices
           </div>
