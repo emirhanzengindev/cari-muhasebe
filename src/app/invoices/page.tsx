@@ -6,7 +6,7 @@ import { useInvoiceStore } from "@/stores/invoiceStore";
 import { useCurrentAccountsStore } from "@/stores/currentAccountsStore";
 
 export default function Invoices() {
-  const { invoices, loading, error, fetchInvoices } = useInvoiceStore();
+  const { invoices, loading, error, fetchInvoices, deleteInvoice, updateInvoice } = useInvoiceStore();
   const { accounts, fetchAccounts } = useCurrentAccountsStore();
   const [filter, setFilter] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
@@ -206,10 +206,17 @@ export default function Invoices() {
                       <Link href={`/invoices/${invoice.id}`} className="text-blue-600 hover:text-blue-900 text-sm">
                         View
                       </Link>
-                      <button className="text-indigo-600 hover:text-indigo-900 text-sm">
+                      <Link href={`/invoices/${invoice.id}/edit`} className="text-indigo-600 hover:text-indigo-900 text-sm">
                         Edit
-                      </button>
-                      <button className="text-red-600 hover:text-red-900 text-sm">
+                      </Link>
+                      <button 
+                        onClick={() => {
+                          if (confirm("Bu faturayı silmek istediğinize emin misiniz?")) {
+                            deleteInvoice(invoice.id);
+                          }
+                        }}
+                        className="text-red-600 hover:text-red-900 text-sm"
+                      >
                         Delete
                       </button>
                     </div>
