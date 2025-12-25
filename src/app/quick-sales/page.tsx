@@ -7,6 +7,7 @@ import { useCartStore } from "@/stores/cartStore";
 import { useCurrentAccountsStore } from "@/stores/currentAccountsStore";
 import { useInvoiceStore } from "@/stores/invoiceStore";
 import { useInvoiceItemStore } from "@/stores/invoiceItemStore";
+import { useTenantStore } from "@/lib/tenantStore";
 
 export default function QuickSales() {
   const router = useRouter();
@@ -99,7 +100,7 @@ export default function QuickSales() {
         currency, // Para birimi eklendi
         description: description || undefined, // Açıklama yalnızca girilmişse eklensin
         isDraft: false,
-        tenantId: 'tenant-1'
+        tenantId: useTenantStore.getState().tenantId || 'default-tenant'
       });
       
       // Update account balance
@@ -118,7 +119,8 @@ export default function QuickSales() {
           unitPrice: item.product.sellPrice,
           vatRate: 0, // KDV kaldırıldı
           total: item.totalPrice,
-          currency // Para birimi eklendi
+          currency, // Para birimi eklendi
+          tenantId: useTenantStore.getState().tenantId || 'default-tenant'
         });
         
         // Create stock movement record
@@ -133,7 +135,7 @@ export default function QuickSales() {
           quantity: item.quantity,
           price: item.product.sellPrice,
           description: stockMovementDescription,
-          tenantId: 'tenant-1'
+          tenantId: useTenantStore.getState().tenantId || 'default-tenant'
         });
       }
       

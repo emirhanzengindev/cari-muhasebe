@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Product, Category, Warehouse, StockMovement } from '@/types';
+import { useTenantStore } from '@/lib/tenantStore';
 
 // Load inventory data from localStorage on initial load
 const loadInventoryFromLocalStorage = () => {
@@ -94,6 +95,9 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
     fetchProducts: async () => {
       set({ loading: true, error: null });
       try {
+        // Get current tenantId from tenant store
+        const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
+        
         // Mock data - API route has issues with Next.js Turbopack
         const mockProducts: Product[] = [
           {
@@ -106,7 +110,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
             vatRate: 18,
             stockQuantity: 20,
             criticalLevel: 5,
-            tenantId: 'tenant-1',
+            tenantId: currentTenantId,
             categoryId: '1',
             warehouseId: undefined,
             createdAt: new Date(),
@@ -130,7 +134,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
             vatRate: 18,
             stockQuantity: 20,
             criticalLevel: 5,
-            tenantId: 'tenant-1',
+            tenantId: currentTenantId,
             categoryId: '1',
             warehouseId: undefined,
             createdAt: new Date(),
@@ -154,7 +158,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
             vatRate: 18,
             stockQuantity: 20,
             criticalLevel: 5,
-            tenantId: 'tenant-1',
+            tenantId: currentTenantId,
             categoryId: '1',
             warehouseId: undefined,
             createdAt: new Date(),
@@ -178,7 +182,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
             vatRate: 18,
             stockQuantity: 20,
             criticalLevel: 5,
-            tenantId: 'tenant-1',
+            tenantId: currentTenantId,
             categoryId: '1',
             warehouseId: undefined,
             createdAt: new Date(),
@@ -202,7 +206,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
             vatRate: 18,
             stockQuantity: 20,
             criticalLevel: 5,
-            tenantId: 'tenant-1',
+            tenantId: currentTenantId,
             categoryId: '1',
             warehouseId: undefined,
             createdAt: new Date(),
@@ -226,7 +230,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
             vatRate: 18,
             stockQuantity: 20,
             criticalLevel: 5,
-            tenantId: 'tenant-1',
+            tenantId: currentTenantId,
             categoryId: '1',
             warehouseId: undefined,
             createdAt: new Date(),
@@ -250,7 +254,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
             vatRate: 18,
             stockQuantity: 20,
             criticalLevel: 5,
-            tenantId: 'tenant-1',
+            tenantId: currentTenantId,
             categoryId: '1',
             warehouseId: undefined,
             createdAt: new Date(),
@@ -274,7 +278,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
             vatRate: 18,
             stockQuantity: 20,
             criticalLevel: 5,
-            tenantId: 'tenant-1',
+            tenantId: currentTenantId,
             categoryId: '1',
             warehouseId: undefined,
             createdAt: new Date(),
@@ -298,7 +302,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
             vatRate: 18,
             stockQuantity: 20,
             criticalLevel: 5,
-            tenantId: 'tenant-1',
+            tenantId: currentTenantId,
             categoryId: '1',
             warehouseId: undefined,
             createdAt: new Date(),
@@ -323,7 +327,10 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
           }
         });
         
-        set({ products: mergedProducts, loading: false });
+        // Filter products by tenantId (in real app, this would be dynamic)
+        const tenantProducts = mergedProducts.filter(product => product.tenantId === currentTenantId);
+        
+        set({ products: tenantProducts, loading: false });
         saveInventoryToLocalStorage({ products: mergedProducts });
       } catch (error) {
         set({ error: 'Failed to fetch products', loading: false });
@@ -340,11 +347,12 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
         // });
         // const newProduct = await response.json();
         
-        // Mock implementation
+        // Mock implementation - use dynamic tenantId
+        const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
         const newProduct: Product = {
           ...productData,
           id: Math.random().toString(36).substr(2, 9),
-          tenantId: 'tenant-1',
+          tenantId: currentTenantId,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
@@ -402,6 +410,9 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
     fetchCategories: async () => {
       set({ loading: true, error: null });
       try {
+        // Get current tenantId from tenant store
+        const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
+        
         // In a real app, this would be an API call
         // const response = await fetch('/api/categories');
         // const categories = await response.json();
@@ -411,14 +422,14 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
           {
             id: '1',
             name: 'Kumaş',
-            tenantId: 'tenant-1',
+            tenantId: currentTenantId,
             createdAt: new Date(),
             updatedAt: new Date(),
           },
           {
             id: '2',
             name: 'Hazır Giyim',
-            tenantId: 'tenant-1',
+            tenantId: currentTenantId,
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -433,7 +444,10 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
           }
         });
         
-        set({ categories: mergedCategories, loading: false });
+        // Filter categories by tenantId (in real app, this would be dynamic)
+        const tenantCategories = mergedCategories.filter(category => category.tenantId === currentTenantId);
+        
+        set({ categories: tenantCategories, loading: false });
         saveInventoryToLocalStorage({ categories: mergedCategories });
       } catch (error) {
         set({ error: 'Failed to fetch categories', loading: false });
@@ -450,11 +464,12 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
         // });
         // const newCategory = await response.json();
         
-        // Mock implementation
+        // Mock implementation - use dynamic tenantId
+        const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
         const newCategory: Category = {
           ...categoryData,
           id: Math.random().toString(36).substr(2, 9),
-          tenantId: 'tenant-1',
+          tenantId: currentTenantId,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
@@ -512,6 +527,9 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
     fetchWarehouses: async () => {
       set({ loading: true, error: null });
       try {
+        // Get current tenantId from tenant store
+        const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
+        
         // In a real app, this would be an API call
         // const response = await fetch('/api/warehouses');
         // const warehouses = await response.json();
@@ -522,7 +540,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
             id: '1',
             name: 'Ana Depo',
             location: 'İstanbul Merkez',
-            tenantId: 'tenant-1',
+            tenantId: currentTenantId,
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -530,7 +548,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
             id: '2',
             name: 'Fabrika Deposu',
             location: 'Bursa Fabrika',
-            tenantId: 'tenant-1',
+            tenantId: currentTenantId,
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -545,7 +563,10 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
           }
         });
         
-        set({ warehouses: mergedWarehouses, loading: false });
+        // Filter warehouses by tenantId (in real app, this would be dynamic)
+        const tenantWarehouses = mergedWarehouses.filter(warehouse => warehouse.tenantId === currentTenantId);
+        
+        set({ warehouses: tenantWarehouses, loading: false });
         saveInventoryToLocalStorage({ warehouses: mergedWarehouses });
       } catch (error) {
         set({ error: 'Failed to fetch warehouses', loading: false });
@@ -562,11 +583,12 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
         // });
         // const newWarehouse = await response.json();
         
-        // Mock implementation
+        // Mock implementation - use dynamic tenantId
+        const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
         const newWarehouse: Warehouse = {
           ...warehouseData,
           id: Math.random().toString(36).substr(2, 9),
-          tenantId: 'tenant-1',
+          tenantId: currentTenantId,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
@@ -624,6 +646,9 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
     fetchStockMovements: async () => {
       set({ loading: true, error: null });
       try {
+        // Get current tenantId from tenant store
+        const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
+        
         // In a real app, this would be an API call
         // const response = await fetch('/api/stock-movements');
         // const stockMovements = await response.json();
@@ -637,7 +662,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
             quantity: 50,
             price: 180.0,
             description: 'Initial stock',
-            tenantId: 'tenant-1',
+            tenantId: currentTenantId,
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -648,7 +673,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
             quantity: 40,
             price: 190.0,
             description: 'Initial stock',
-            tenantId: 'tenant-1',
+            tenantId: currentTenantId,
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -663,7 +688,10 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
           }
         });
         
-        set({ stockMovements: mergedStockMovements, loading: false });
+        // Filter stock movements by tenantId (in real app, this would be dynamic)
+        const tenantStockMovements = mergedStockMovements.filter(movement => movement.tenantId === currentTenantId);
+        
+        set({ stockMovements: tenantStockMovements, loading: false });
         saveInventoryToLocalStorage({ stockMovements: mergedStockMovements });
       } catch (error) {
         set({ error: 'Failed to fetch stock movements', loading: false });
@@ -680,11 +708,12 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
         // });
         // const newMovement = await response.json();
         
-        // Mock implementation
+        // Mock implementation - use dynamic tenantId
+        const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
         const newMovement: StockMovement = {
           ...movementData,
           id: Math.random().toString(36).substr(2, 9),
-          tenantId: 'tenant-1',
+          tenantId: currentTenantId,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
@@ -720,7 +749,11 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
     },
 
     getStockMovementsByProductId: (productId) => {
-      return get().stockMovements.filter(movement => movement.productId === productId);
+      // Filter stock movements by tenantId as well
+      const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
+      return get().stockMovements.filter(movement => 
+        movement.productId === productId && movement.tenantId === currentTenantId
+      );
     },
   };
 });

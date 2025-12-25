@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
       options: {
         data: {
           name: name || email,
+          tenantId: `tenant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         }
       }
     });

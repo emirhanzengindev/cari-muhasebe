@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Invoice } from '@/types';
+import { useTenantStore } from '@/lib/tenantStore';
 
 // Load invoices from localStorage on initial load
 const loadInvoicesFromLocalStorage = (): Invoice[] => {
@@ -53,6 +54,7 @@ interface InvoiceState {
 }
 
 export const useInvoiceStore = create<InvoiceState>((set, get) => ({
+
   invoices: loadInvoicesFromLocalStorage(),
   loading: false,
   error: null,
@@ -61,10 +63,13 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
   fetchInvoices: async () => {
     set({ loading: true, error: null });
     try {
+      // Get current tenantId from tenant store
+      const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
+            
       // In a real app, this would be an API call
       // const response = await fetch('/api/invoices');
       // const invoices = await response.json();
-      
+            
       // Mock data for now - but preserve any existing invoices
       const existingInvoices = get().invoices;
       const mockInvoices: Invoice[] = [
@@ -81,7 +86,7 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
           currency: 'USD', // Varsayılan olarak USD
           description: 'Laptop purchase',
           isDraft: false,
-          tenantId: 'tenant-1',
+          tenantId: currentTenantId,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -129,7 +134,10 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
         }
       });
       
-      set({ invoices: mergedInvoices, loading: false });
+      // Filter invoices by tenantId (in real app, this would be dynamic)
+      const tenantInvoices = mergedInvoices.filter(invoice => invoice.tenantId === currentTenantId);
+      
+      set({ invoices: tenantInvoices, loading: false });
       saveInvoicesToLocalStorage(mergedInvoices);
     } catch (error) {
       set({ error: 'Failed to fetch invoices', loading: false });
@@ -146,10 +154,12 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
       // });
       // const newInvoice = await response.json();
       
-      // Mock implementation
+      // Mock implementation - use dynamic tenantId
+      const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
       const newInvoice: Invoice = {
         ...invoiceData,
         id: Math.random().toString(36).substr(2, 9),
+        tenantId: currentTenantId,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -207,7 +217,11 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
   },
 
   getInvoiceById: (id) => {
-    return get().invoices.find(invoice => invoice.id === id);
+    // Filter by tenantId as well
+    const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
+    const invoices = get().invoices;
+    const invoice = invoices.find(invoice => invoice.id === id);
+    return invoice && invoice.tenantId === currentTenantId ? invoice : undefined;
   },
 
   clearAllInvoices: async () => {

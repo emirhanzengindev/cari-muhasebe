@@ -6,6 +6,7 @@ import { useInvoiceStore } from "@/stores/invoiceStore";
 import { useInvoiceItemStore } from "@/stores/invoiceItemStore";
 import { useCurrentAccountsStore } from "@/stores/currentAccountsStore";
 import { useInventoryStore } from "@/stores/inventoryStore";
+import { useTenantStore } from "@/lib/tenantStore";
 
 export default function NewInvoice() {
   const router = useRouter();
@@ -103,7 +104,7 @@ export default function NewInvoice() {
         currency,
         description: description || undefined, // Açıklama yalnızca girilmişse eklensin
         isDraft: false,
-        tenantId: "tenant-1"
+        tenantId: useTenantStore.getState().tenantId || 'default-tenant'
       });
       
       // Create invoice items
@@ -117,7 +118,8 @@ export default function NewInvoice() {
             unitPrice: item.unitPrice,
             vatRate: 0, // KDV kaldırıldı
             total: item.quantity * item.unitPrice,
-            currency
+            currency,
+            tenantId: useTenantStore.getState().tenantId || 'default-tenant'
           });
           
           // Add stock movement for sales invoices (reduce stock)
@@ -133,7 +135,7 @@ export default function NewInvoice() {
               quantity: item.quantity,
               price: item.unitPrice,
               description: stockMovementDescription,
-              tenantId: "tenant-1"
+              tenantId: useTenantStore.getState().tenantId || 'default-tenant'
             });
           }
           // For purchase invoices, we would add stock (movementType: "IN")
@@ -149,7 +151,7 @@ export default function NewInvoice() {
               quantity: item.quantity,
               price: item.unitPrice,
               description: stockMovementDescription,
-              tenantId: "tenant-1"
+              tenantId: useTenantStore.getState().tenantId || 'default-tenant'
             });
           }
         }

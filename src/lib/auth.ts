@@ -30,6 +30,7 @@ export const authOptions: NextAuthOptions = {
           id: data.user.id,
           email: data.user.email,
           name: data.user.user_metadata?.name || data.user.email,
+          tenantId: data.user.user_metadata?.tenantId || `tenant-${data.user.id}`,
         };
       }
     })
@@ -38,12 +39,14 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }: { session: any; token: any }) {
       if (session.user) {
         session.user.id = token.sub;
+        session.user.tenantId = token.tenantId;
       }
       return session;
     },
     async jwt({ token, user }: { token: any; user: any }) {
       if (user) {
         token.id = user.id;
+        token.tenantId = user.tenantId;
       }
       return token;
     }
