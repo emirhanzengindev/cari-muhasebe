@@ -63,7 +63,7 @@ export default function Finance() {
               </svg>
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Error</h3>
+              <h3 className="text-sm font-medium text-red-800">Hata</h3>
               <div className="mt-2 text-sm text-red-700">
                 <p>{error}</p>
               </div>
@@ -77,8 +77,8 @@ export default function Finance() {
   return (
     <div className="py-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Finance</h1>
-        <p className="mt-1 text-sm text-gray-500">Manage your cash, bank accounts, and transactions</p>
+        <h1 className="text-2xl font-bold text-gray-900">Finans</h1>
+        <p className="mt-1 text-sm text-gray-500">Nakit, banka hesaplarınızı ve işlemleri yönetin</p>
       </div>
 
       {/* Tabs */}
@@ -93,7 +93,7 @@ export default function Finance() {
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
-              Overview
+              Genel Bakış
             </button>
             <button
               onClick={() => setActiveTab("safes")}
@@ -103,7 +103,7 @@ export default function Finance() {
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
-              Cash Safes
+              Kasa Hesapları
             </button>
             <button
               onClick={() => setActiveTab("banks")}
@@ -113,7 +113,7 @@ export default function Finance() {
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
-              Bank Accounts
+              Banka Hesapları
             </button>
             <button
               onClick={() => setActiveTab("transactions")}
@@ -123,7 +123,7 @@ export default function Finance() {
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
-              Transactions
+              İşlemler
             </button>
             <button
               onClick={() => setActiveTab("cheques")}
@@ -133,7 +133,7 @@ export default function Finance() {
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
-              Cheques & Promissory Notes
+              Çekler ve Senetler
             </button>
           </nav>
         </div>
@@ -153,7 +153,7 @@ export default function Finance() {
                   </svg>
                 </div>
                 <div className="ml-4">
-                  <h3 className="text-sm font-medium text-gray-500">Total Cash</h3>
+                  <h3 className="text-sm font-medium text-gray-500">Toplam Nakit</h3>
                   <p className="text-2xl font-semibold text-gray-900">
                     {formatCurrency(safes.reduce((sum, safe) => sum + safe.balance, 0))}
                   </p>
@@ -170,7 +170,7 @@ export default function Finance() {
                   </svg>
                 </div>
                 <div className="ml-4">
-                  <h3 className="text-sm font-medium text-gray-500">Total Bank Balance</h3>
+                  <h3 className="text-sm font-medium text-gray-500">Toplam Banka Bakiyesi</h3>
                   <p className="text-2xl font-semibold text-gray-900">
                     {formatCurrency(banks.reduce((sum, bank) => sum + bank.balance, 0))}
                   </p>
@@ -187,7 +187,7 @@ export default function Finance() {
                   </svg>
                 </div>
                 <div className="ml-4">
-                  <h3 className="text-sm font-medium text-gray-500">Total Receivables</h3>
+                  <h3 className="text-sm font-medium text-gray-500">Toplam Alacaklar</h3>
                   <p className="text-2xl font-semibold text-gray-900">
                     {formatCurrency(accounts.filter(a => a.accountType === 'CUSTOMER')
                       .reduce((sum, account) => sum + (account.balance > 0 ? account.balance : 0), 0))}
@@ -205,7 +205,7 @@ export default function Finance() {
                   </svg>
                 </div>
                 <div className="ml-4">
-                  <h3 className="text-sm font-medium text-gray-500">Total Payables</h3>
+                  <h3 className="text-sm font-medium text-gray-500">Toplam Borçlar</h3>
                   <p className="text-2xl font-semibold text-gray-900">
                     {formatCurrency(Math.abs(accounts.filter(a => a.accountType === 'SUPPLIER')
                       .reduce((sum, account) => sum + (account.balance < 0 ? account.balance : 0), 0)))}
@@ -218,26 +218,26 @@ export default function Finance() {
           {/* Recent Transactions */}
           <div className="bg-white shadow rounded-lg overflow-hidden">
             <div className="px-6 py-5 border-b border-gray-200">
-              <h2 className="text-lg font-medium text-gray-900">Recent Transactions</h2>
+              <h2 className="text-lg font-medium text-gray-900">Son İşlemler</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
+                      Tarih
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Description
+                      Açıklama
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Account
+                      Hesap
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
+                      Tür
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Amount
+                      Tutar
                     </th>
                   </tr>
                 </thead>
@@ -259,7 +259,7 @@ export default function Finance() {
                             ? "bg-green-100 text-green-800" 
                             : "bg-red-100 text-red-800"
                         }`}>
-                          {transaction.transactionType === "COLLECTION" ? "Collection" : "Payment"}
+                          {transaction.transactionType === "COLLECTION" ? "Tahsilat" : "Ödeme"}
                         </span>
                       </td>
                       <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
@@ -283,9 +283,9 @@ export default function Finance() {
       {activeTab === "safes" && (
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-lg font-medium text-gray-900">Cash Safes</h2>
+            <h2 className="text-lg font-medium text-gray-900">Kasa Hesapları</h2>
             <button className="mt-3 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-              Add Safe
+              Kasa Ekle
             </button>
           </div>
           <div className="overflow-x-auto">
@@ -293,13 +293,13 @@ export default function Finance() {
               <thead className="bg-gray-50">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
+                    Ad
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Balance
+                    Bakiye
                   </th>
                   <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    İşlemler
                   </th>
                 </tr>
               </thead>
@@ -316,10 +316,10 @@ export default function Finance() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button className="text-indigo-600 hover:text-indigo-900 mr-3">
-                        Edit
+                        Düzenle
                       </button>
                       <button className="text-red-600 hover:text-red-900">
-                        Delete
+                        Sil
                       </button>
                     </td>
                   </tr>
@@ -334,9 +334,9 @@ export default function Finance() {
       {activeTab === "banks" && (
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-lg font-medium text-gray-900">Bank Accounts</h2>
+            <h2 className="text-lg font-medium text-gray-900">Banka Hesapları</h2>
             <button className="mt-3 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-              Add Bank Account
+              Banka Hesabı Ekle
             </button>
           </div>
           <div className="overflow-x-auto">
@@ -344,16 +344,16 @@ export default function Finance() {
               <thead className="bg-gray-50">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
+                    Ad
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     IBAN
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Balance
+                    Bakiye
                   </th>
                   <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    İşlemler
                   </th>
                 </tr>
               </thead>
@@ -373,10 +373,10 @@ export default function Finance() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button className="text-indigo-600 hover:text-indigo-900 mr-3">
-                        Edit
+                        Düzenle
                       </button>
                       <button className="text-red-600 hover:text-red-900">
-                        Delete
+                        Sil
                       </button>
                     </td>
                   </tr>
@@ -391,9 +391,9 @@ export default function Finance() {
       {activeTab === "transactions" && (
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-lg font-medium text-gray-900">Transactions</h2>
+            <h2 className="text-lg font-medium text-gray-900">İşlemler</h2>
             <button className="mt-3 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-              Add Transaction
+              İşlem Ekle
             </button>
           </div>
           <div className="overflow-x-auto">
@@ -401,22 +401,22 @@ export default function Finance() {
               <thead className="bg-gray-50">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
+                    Tarih
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
+                    Açıklama
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Account
+                    Hesap
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
+                    Tür
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
+                    Tutar
                   </th>
                   <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    İşlemler
                   </th>
                 </tr>
               </thead>
@@ -438,7 +438,7 @@ export default function Finance() {
                           ? "bg-green-100 text-green-800" 
                           : "bg-red-100 text-red-800"
                       }`}>
-                        {transaction.transactionType === "COLLECTION" ? "Collection" : "Payment"}
+                        {transaction.transactionType === "COLLECTION" ? "Tahsilat" : "Ödeme"}
                       </span>
                     </td>
                     <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
@@ -451,10 +451,10 @@ export default function Finance() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button className="text-indigo-600 hover:text-indigo-900 mr-3">
-                        Edit
+                        Düzenle
                       </button>
                       <button className="text-red-600 hover:text-red-900">
-                        Delete
+                        Sil
                       </button>
                     </td>
                   </tr>
@@ -469,9 +469,9 @@ export default function Finance() {
       {activeTab === "cheques" && (
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-lg font-medium text-gray-900">Cheques & Promissory Notes</h2>
+            <h2 className="text-lg font-medium text-gray-900">Çekler ve Senetler</h2>
             <button className="mt-3 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-              Add Cheque/Promissory Note
+              Çek/Senet Ekle
             </button>
           </div>
           <div className="overflow-x-auto">
@@ -479,25 +479,25 @@ export default function Finance() {
               <thead className="bg-gray-50">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Issue Date
+                    Veriliş Tarihi
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Maturity Date
+                    Vade Tarihi
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Issuer
+                    Düzenleyen
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
+                    Tür
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
+                    Tutar
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    Durum
                   </th>
                   <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    İşlemler
                   </th>
                 </tr>
               </thead>
@@ -524,7 +524,7 @@ export default function Finance() {
                           ? "bg-blue-100 text-blue-800" 
                           : "bg-purple-100 text-purple-800"
                       }`}>
-                        {cheque.chequeType === "CHEQUE" ? "Cheque" : "Promissory Note"}
+                        {cheque.chequeType === "CHEQUE" ? "Çek" : "Senet"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -538,15 +538,15 @@ export default function Finance() {
                             ? "bg-green-100 text-green-800" 
                             : "bg-red-100 text-red-800"
                       }`}>
-                        {cheque.status.charAt(0) + cheque.status.slice(1).toLowerCase()}
+                        {cheque.status === "PENDING" ? "Beklemede" : cheque.status === "COLLECTED" ? "Tahsil Edildi" : "Reddedildi"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button className="text-indigo-600 hover:text-indigo-900 mr-3">
-                        Edit
+                        Düzenle
                       </button>
                       <button className="text-red-600 hover:text-red-900">
-                        Delete
+                        Sil
                       </button>
                     </td>
                   </tr>

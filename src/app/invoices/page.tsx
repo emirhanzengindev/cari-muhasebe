@@ -52,7 +52,7 @@ export default function Invoices() {
               </svg>
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Error</h3>
+              <h3 className="text-sm font-medium text-red-800">Hata</h3>
               <div className="mt-2 text-sm text-red-700">
                 <p>{error}</p>
               </div>
@@ -67,8 +67,8 @@ export default function Invoices() {
     <div className="py-6">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Invoices</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage your sales and purchase invoices</p>
+          <h1 className="text-2xl font-bold text-gray-900">Faturalar</h1>
+          <p className="mt-1 text-sm text-gray-500">Satış ve alış faturalarınızı yönetin</p>
         </div>
         <div className="mt-4 sm:mt-0">
           <Link href="/invoices/new" className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
@@ -89,7 +89,7 @@ export default function Invoices() {
                   : "bg-gray-100 text-gray-800 hover:bg-gray-200"
               }`}
             >
-              All Invoices
+              Tüm Faturalar
             </button>
             <button
               onClick={() => setFilter("SALES")}
@@ -99,7 +99,7 @@ export default function Invoices() {
                   : "bg-gray-100 text-gray-800 hover:bg-gray-200"
               }`}
             >
-              Sales
+              Satış
             </button>
             <button
               onClick={() => setFilter("PURCHASE")}
@@ -109,7 +109,7 @@ export default function Invoices() {
                   : "bg-gray-100 text-gray-800 hover:bg-gray-200"
               }`}
             >
-              Purchase
+              Alış
             </button>
             <button
               onClick={() => setFilter("DRAFT")}
@@ -119,13 +119,13 @@ export default function Invoices() {
                   : "bg-gray-100 text-gray-800 hover:bg-gray-200"
               }`}
             >
-              Drafts
+              Taslaklar
             </button>
           </div>
           <div className="relative">
             <input
               type="text"
-              placeholder="Search invoices..."
+              placeholder="Faturaları ara..."
               className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -146,25 +146,25 @@ export default function Invoices() {
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Invoice
+                  Fatura
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
+                  Tarih
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Customer/Supplier
+                  Müşteri/Tedarikçi
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
+                  Tür
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
+                  Tutar
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                  Durum
                 </th>
                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
+                  İşlemler
                 </th>
               </tr>
             </thead>
@@ -186,7 +186,7 @@ export default function Invoices() {
                         ? "bg-green-100 text-green-800" 
                         : "bg-purple-100 text-purple-800"
                     }`}>
-                      {invoice.invoiceType === "SALES" ? "Sales" : "Purchase"}
+                      {invoice.invoiceType === "SALES" ? "Satış" : "Alış"}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -198,16 +198,16 @@ export default function Invoices() {
                         ? "bg-yellow-100 text-yellow-800" 
                         : "bg-green-100 text-green-800"
                     }`}>
-                      {invoice.isDraft ? "Draft" : "Completed"}
+                      {invoice.isDraft ? "Taslak" : "Tamamlandı"}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex flex-col sm:flex-row sm:justify-end gap-2">
                       <Link href={`/invoices/${invoice.id}`} className="text-blue-600 hover:text-blue-900 text-sm">
-                        View
+                        Görüntüle
                       </Link>
                       <Link href={`/invoices/${invoice.id}/edit`} className="text-indigo-600 hover:text-indigo-900 text-sm">
-                        Edit
+                        Düzenle
                       </Link>
                       <button 
                         onClick={() => {
@@ -217,7 +217,7 @@ export default function Invoices() {
                         }}
                         className="text-red-600 hover:text-red-900 text-sm"
                       >
-                        Delete
+                        Sil
                       </button>
                     </div>
                   </td>
@@ -232,8 +232,8 @@ export default function Invoices() {
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No invoices</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating a new invoice.</p>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">Fatura yok</h3>
+            <p className="mt-1 text-sm text-gray-500">Yeni bir fatura oluşturarak başlayın.</p>
             <div className="mt-6">
               <Link href="/invoices/new" className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                 <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -250,15 +250,15 @@ export default function Invoices() {
       {invoices.length > 0 && (
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-sm text-gray-700 text-center sm:text-left">
-            Showing <span className="font-medium">1</span> to <span className="font-medium">{Math.min(10, invoices.length)}</span> of{' '}
-            <span className="font-medium">{invoices.length}</span> invoices
+            <span className="font-medium">1</span> - <span className="font-medium">{Math.min(10, invoices.length)}</span> arası gösteriliyor, Toplam: {' '}
+            <span className="font-medium">{invoices.length}</span> fatura
           </div>
           <div className="flex space-x-2">
             <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-              Previous
+              Önceki
             </button>
             <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-              Next
+              Sonraki
             </button>
           </div>
         </div>

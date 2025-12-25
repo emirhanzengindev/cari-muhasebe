@@ -97,7 +97,7 @@ export default function Inventory() {
               </svg>
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Error</h3>
+              <h3 className="text-sm font-medium text-red-800">Hata</h3>
               <div className="mt-2 text-sm text-red-700">
                 <p>{error}</p>
               </div>
@@ -112,27 +112,27 @@ export default function Inventory() {
     <div className="py-6">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage your products, categories, and warehouses</p>
+          <h1 className="text-2xl font-bold text-gray-900">Stok Yönetimi</h1>
+          <p className="mt-1 text-sm text-gray-500">Ürünlerinizi, kategorilerinizi ve depolarınızı yönetin</p>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-3">
           <button 
             onClick={() => setShowManageCategoriesModal(true)}
             className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            Manage Categories
+            Kategorileri Yönet
           </button>
           <button 
             onClick={() => setShowManageWarehousesModal(true)}
             className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            Manage Warehouses
+            Depoları Yönet
           </button>
           <button 
             onClick={() => setShowAddProductModal(true)}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            Add Product
+            Ürün Ekle
           </button>
         </div>
       </div>
@@ -149,7 +149,7 @@ export default function Inventory() {
                   : "bg-gray-100 text-gray-800 hover:bg-gray-200"
               }`}
             >
-              All Products
+              Tüm Ürünler
             </button>
             <button
               onClick={() => setFilter("LOW_STOCK")}
@@ -159,13 +159,13 @@ export default function Inventory() {
                   : "bg-gray-100 text-gray-800 hover:bg-gray-200"
               }`}
             >
-              Low Stock
+              Düşük Stok
             </button>
           </div>
           <div className="relative">
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder="Ürünleri ara..."
               className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -185,28 +185,28 @@ export default function Inventory() {
           <thead className="bg-gray-50">
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Product
+                Ürün
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                SKU/Barcode
+                SKU/Barkod
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Category
+                Kategori
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Warehouse
+                Depo
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Prices
+                Fiyatlar
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Stock
+                Stok
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Fabric Details
+                Kumaş Detayları
               </th>
               <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+                İşlemler
               </th>
             </tr>
           </thead>
@@ -252,13 +252,13 @@ export default function Inventory() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <Link href={`/inventory/${product.id}`} className="text-blue-600 hover:text-blue-900 mr-3">
-                    View
+                    Görüntüle
                   </Link>
                   <button className="text-indigo-600 hover:text-indigo-900 mr-3">
-                    Edit
+                    Düzenle
                   </button>
                   <button className="text-red-600 hover:text-red-900">
-                    Delete
+                    Sil
                   </button>
                 </td>
               </tr>
@@ -271,8 +271,8 @@ export default function Inventory() {
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No products</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating a new product.</p>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">Ürün yok</h3>
+            <p className="mt-1 text-sm text-gray-500">Yeni bir ürün oluşturarak başlayın.</p>
             <div className="mt-6">
               <button 
                 onClick={() => setShowAddProductModal(true)}
@@ -281,7 +281,7 @@ export default function Inventory() {
                 <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                 </svg>
-                Add New Product
+                Yeni Ürün Ekle
               </button>
             </div>
           </div>
@@ -292,15 +292,15 @@ export default function Inventory() {
       {products.length > 0 && (
         <div className="mt-6 flex items-center justify-between">
           <div className="text-sm text-gray-700">
-            Showing <span className="font-medium">1</span> to <span className="font-medium">{Math.min(10, products.length)}</span> of{' '}
-            <span className="font-medium">{products.length}</span> products
+            <span className="font-medium">1</span> - <span className="font-medium">{Math.min(10, products.length)}</span> arası gösteriliyor, Toplam: {' '}
+            <span className="font-medium">{products.length}</span> ürün
           </div>
           <div className="flex space-x-2">
             <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-              Previous
+              Önceki
             </button>
             <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-              Next
+              Sonraki
             </button>
           </div>
         </div>
@@ -312,7 +312,7 @@ export default function Inventory() {
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-900">Add New Product</h3>
+                <h3 className="text-lg font-medium text-gray-900">Yeni Ürün Ekle</h3>
                 <button 
                   onClick={() => setShowAddProductModal(false)}
                   className="text-gray-400 hover:text-gray-500"
@@ -330,7 +330,7 @@ export default function Inventory() {
                     onClick={() => setShowAddProductModal(false)}
                     className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    Close
+                    Kapat
                   </button>
                 </div>
               </div>
@@ -345,7 +345,7 @@ export default function Inventory() {
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-900">Manage Categories</h3>
+                <h3 className="text-lg font-medium text-gray-900">Kategorileri Yönet</h3>
                 <button 
                   onClick={() => setShowManageCategoriesModal(false)}
                   className="text-gray-400 hover:text-gray-500"
@@ -357,30 +357,30 @@ export default function Inventory() {
               </div>
               <div className="mt-4">
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700">Add New Category</label>
+                  <label className="block text-sm font-medium text-gray-700">Yeni Kategori Ekle</label>
                   <div className="mt-1 flex">
                     <input
                       type="text"
                       value={newCategoryName}
                       onChange={(e) => setNewCategoryName(e.target.value)}
                       className="block w-full border border-gray-300 rounded-l-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                      placeholder="Category name"
+                      placeholder="Kategori adı"
                     />
                     <button
                       onClick={handleAddCategory}
                       className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-r-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
-                      Add
+                      Ekle
                     </button>
                   </div>
                 </div>
                 <div className="mt-4">
-                  <h4 className="text-md font-medium text-gray-900">Existing Categories</h4>
+                  <h4 className="text-md font-medium text-gray-900">Mevcut Kategoriler</h4>
                   <ul className="mt-2 divide-y divide-gray-200">
                     {categories.map((category) => (
                       <li key={category.id} className="py-2 flex justify-between">
                         <span className="text-sm text-gray-900">{category.name}</span>
-                        <button className="text-sm text-red-600 hover:text-red-900">Delete</button>
+                        <button className="text-sm text-red-600 hover:text-red-900">Sil</button>
                       </li>
                     ))}
                   </ul>
@@ -391,7 +391,7 @@ export default function Inventory() {
                     onClick={() => setShowManageCategoriesModal(false)}
                     className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    Close
+                    Kapat
                   </button>
                 </div>
               </div>
@@ -406,7 +406,7 @@ export default function Inventory() {
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-900">Manage Warehouses</h3>
+                <h3 className="text-lg font-medium text-gray-900">Depoları Yönet</h3>
                 <button 
                   onClick={() => setShowManageWarehousesModal(false)}
                   className="text-gray-400 hover:text-gray-500"
@@ -418,32 +418,32 @@ export default function Inventory() {
               </div>
               <div className="mt-4">
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700">Add New Warehouse</label>
+                  <label className="block text-sm font-medium text-gray-700">Yeni Depo Ekle</label>
                   <div className="mt-1">
                     <input
                       type="text"
                       value={newWarehouseName}
                       onChange={(e) => setNewWarehouseName(e.target.value)}
                       className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm mb-2"
-                      placeholder="Warehouse name"
+                      placeholder="Depo adı"
                     />
                     <input
                       type="text"
                       value={newWarehouseLocation}
                       onChange={(e) => setNewWarehouseLocation(e.target.value)}
                       className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                      placeholder="Location (optional)"
+                      placeholder="Konum (isteğe bağlı)"
                     />
                   </div>
                   <button
                     onClick={handleAddWarehouse}
                     className="mt-2 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    Add Warehouse
+                    Depo Ekle
                   </button>
                 </div>
                 <div className="mt-4">
-                  <h4 className="text-md font-medium text-gray-900">Existing Warehouses</h4>
+                  <h4 className="text-md font-medium text-gray-900">Mevcut Depolar</h4>
                   <ul className="mt-2 divide-y divide-gray-200">
                     {warehouses.map((warehouse) => (
                       <li key={warehouse.id} className="py-2 flex justify-between">
@@ -453,7 +453,7 @@ export default function Inventory() {
                             <span className="block text-xs text-gray-500">{warehouse.location}</span>
                           )}
                         </div>
-                        <button className="text-sm text-red-600 hover:text-red-900">Delete</button>
+                        <button className="text-sm text-red-600 hover:text-red-900">Sil</button>
                       </li>
                     ))}
                   </ul>
@@ -464,7 +464,7 @@ export default function Inventory() {
                     onClick={() => setShowManageWarehousesModal(false)}
                     className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    Close
+                    Kapat
                   </button>
                 </div>
               </div>
