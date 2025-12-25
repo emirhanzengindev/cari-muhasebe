@@ -64,18 +64,18 @@ export default function QuickSales() {
       addItem(product);
       setBarcodeInput("");
     } else {
-      alert("Product not found!");
+      alert("Ürün bulunamadı!");
     }
   };
 
   const handleCompleteSale = async () => {
     if (cartItems.length === 0) {
-      alert("Cart is empty!");
+      alert("Sepet boş!");
       return;
     }
     
     if (!selectedCustomer) {
-      alert("Please select a customer!");
+      alert("Lütfen bir müşteri seçin!");
       return;
     }
     
@@ -126,8 +126,8 @@ export default function QuickSales() {
         // Create stock movement record
         // Açıklama girilmişse stok hareketine ekle, değilse varsayılan açıklamayı kullan
         const stockMovementDescription = description 
-          ? `${description} - Quick sale invoice #${invoiceNumber}`
-          : `Quick sale invoice #${invoiceNumber}`;
+          ? `${description} - Hızlı satış faturası #${invoiceNumber}`
+          : `Hızlı satış faturası #${invoiceNumber}`;
           
         await addStockMovement({
           productId: item.product.id,
@@ -139,7 +139,7 @@ export default function QuickSales() {
         });
       }
       
-      alert(`Sale completed for ${customerAccounts.find(c => c.id === selectedCustomer)?.name || 'Unknown Customer'}! Total: ${getCurrencySymbol()}${totalAmount.toFixed(2)}. Invoice ${invoiceNumber} has been created.`);
+      alert(`${customerAccounts.find(c => c.id === selectedCustomer)?.name || 'Bilinmeyen Müşteri'} için satış tamamlandı! Toplam: ${getCurrencySymbol()}${totalAmount.toFixed(2)}. Fatura ${invoiceNumber} oluşturuldu.`);
       
       // Clear cart and reset selection
       clearCart();
@@ -149,7 +149,7 @@ export default function QuickSales() {
       // Redirect to invoice details page
       router.push(`/invoices/${newInvoice.id}`);
     } catch (error) {
-      alert("Failed to complete sale and create invoice. Please try again.");
+      alert("Satış tamamlanamadı ve fatura oluşturulamadı. Lütfen tekrar deneyin.");
       console.error("Error creating invoice:", error);
     }
   };
@@ -162,8 +162,8 @@ export default function QuickSales() {
   return (
     <div className="py-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Quick Sales</h1>
-        <p className="mt-1 text-sm text-gray-500">Fast POS interface for retail sales</p>
+        <h1 className="text-2xl font-bold text-gray-900">Hızlı Satış</h1>
+        <p className="mt-1 text-sm text-gray-500">Perakende satışlar için hızlı POS arayüzü</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -171,7 +171,7 @@ export default function QuickSales() {
         <div className="lg:col-span-2">
           {/* Currency Selection */}
           <div className="bg-white shadow rounded-lg p-6 mb-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Currency</h2>
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Para Birimi</h2>
             <div className="flex space-x-4">
               <button
                 onClick={() => setCurrency("TRY")}
@@ -181,7 +181,7 @@ export default function QuickSales() {
                     : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 }`}
               >
-                Turkish Lira (₺)
+                Türk Lirası (₺)
               </button>
               <button
                 onClick={() => setCurrency("USD")}
@@ -191,41 +191,41 @@ export default function QuickSales() {
                     : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 }`}
               >
-                US Dollar ($)
+                ABD Doları ($)
               </button>
             </div>
           </div>
 
           {/* Barcode Input */}
           <div className="bg-white shadow rounded-lg p-6 mb-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Add by Barcode</h2>
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Barkodla Ekle</h2>
             <form onSubmit={handleAddByBarcode} className="flex">
               <input
                 ref={barcodeInputRef}
                 type="text"
                 value={barcodeInput}
                 onChange={(e) => setBarcodeInput(e.target.value)}
-                placeholder="Scan barcode or enter manually"
+                placeholder="Barkodu tarayın veya elle girin"
                 className="flex-1 min-w-0 block w-full px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white text-black"
               />
               <button
                 type="submit"
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-r-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                Add
+                Ekle
               </button>
             </form>
           </div>
 
           {/* Customer Selection */}
           <div className="bg-white shadow rounded-lg p-6 mb-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Customer</h2>
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Müşteri</h2>
             <select
               value={selectedCustomer}
               onChange={(e) => setSelectedCustomer(e.target.value)}
               className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white text-black"
             >
-              <option value="" className="text-gray-500">Select Customer</option>
+              <option value="" className="text-gray-500">Müşteri Seçin</option>
               {customerAccounts.map((account) => (
                 <option key={account.id} value={account.id} className="text-black">
                   {account.name}
@@ -236,7 +236,7 @@ export default function QuickSales() {
             {/* Description Field */}
             <div className="mt-4">
               <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Description (Optional)
+                Açıklama (İsteğe Bağlı)
               </label>
               <textarea
                 id="description"
@@ -244,18 +244,18 @@ export default function QuickSales() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white text-black"
-                placeholder="Enter description here..."
+                placeholder="Açıklamayı buraya girin..."
               />
             </div>
           </div>
 
           {/* Product Search */}
           <div className="bg-white shadow rounded-lg p-6 mb-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Product Search</h2>
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Ürün Arama</h2>
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search products..."
+                placeholder="Ürünleri arayın..."
                 className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-black"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -270,9 +270,9 @@ export default function QuickSales() {
 
           {/* Product Grid */}
           <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Products</h2>
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Ürünler</h2>
             {filteredProducts.length === 0 ? (
-              <p className="text-gray-500">No products found.</p>
+              <p className="text-gray-500">Ürün bulunamadı.</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {filteredProducts.map((product) => (
@@ -296,10 +296,10 @@ export default function QuickSales() {
         {/* Cart */}
         <div className="lg:col-span-1">
           <div className="bg-white shadow rounded-lg p-6 sticky top-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Shopping Cart</h2>
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Alışveriş Sepeti</h2>
             
             {cartItems.length === 0 ? (
-              <p className="text-gray-500">Your cart is empty.</p>
+              <p className="text-gray-500">Sepetiniz boş.</p>
             ) : (
               <>
                 <div className="flow-root">
@@ -359,11 +359,11 @@ export default function QuickSales() {
                 <div className="border-t border-gray-200 pt-4 mt-6">
                   <dl className="space-y-2">
                     <div className="flex justify-between">
-                      <dt className="text-sm text-gray-600">Subtotal</dt>
+                      <dt className="text-sm text-gray-600">Ara Toplam</dt>
                       <dd className="text-sm font-medium text-gray-900">{getCurrencySymbol()}{subtotal.toFixed(2)}</dd>
                     </div>
                     <div className="flex justify-between border-t border-gray-200 pt-2">
-                      <dt className="text-base font-medium text-gray-900">Total</dt>
+                      <dt className="text-base font-medium text-gray-900">Toplam</dt>
                       <dd className="text-base font-medium text-gray-900">{getCurrencySymbol()}{totalAmount.toFixed(2)}</dd>
                     </div>
                   </dl>
@@ -373,13 +373,13 @@ export default function QuickSales() {
                       onClick={handleCompleteSale}
                       className="w-full flex justify-center items-center px-4 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
-                      Complete Sale
+                      Satışı Tamamla
                     </button>
                     <button
                       onClick={clearCart}
                       className="w-full mt-3 flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
-                      Clear Cart
+                      Sepeti Temizle
                     </button>
                   </div>
                 </div>
