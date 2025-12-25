@@ -2,50 +2,29 @@ import { create } from 'zustand';
 import { Product, Category, Warehouse, StockMovement } from '@/types';
 import { useTenantStore } from '@/lib/tenantStore';
 
-// Load inventory data from localStorage on initial load
-const loadInventoryFromLocalStorage = () => {
-  if (typeof window !== 'undefined') {
-    const savedProducts = localStorage.getItem('inventoryProducts');
-    const savedCategories = localStorage.getItem('inventoryCategories');
-    const savedWarehouses = localStorage.getItem('inventoryWarehouses');
-    const savedStockMovements = localStorage.getItem('inventoryStockMovements');
-    
-    return {
-      products: savedProducts ? JSON.parse(savedProducts) : [],
-      categories: savedCategories ? JSON.parse(savedCategories) : [],
-      warehouses: savedWarehouses ? JSON.parse(savedWarehouses) : [],
-      stockMovements: savedStockMovements ? JSON.parse(savedStockMovements) : []
-    };
-  }
-  return {
-    products: [],
-    categories: [],
-    warehouses: [],
-    stockMovements: []
-  };
+// Helper function to get tenant ID
+const getTenantId = () => {
+  return useTenantStore.getState().tenantId || 'default-tenant';
 };
 
-// Save inventory data to localStorage
-const saveInventoryToLocalStorage = (data: {
-  products?: Product[],
-  categories?: Category[],
-  warehouses?: Warehouse[],
-  stockMovements?: StockMovement[]
-}) => {
-  if (typeof window !== 'undefined') {
-    if (data.products) {
-      localStorage.setItem('inventoryProducts', JSON.stringify(data.products));
-    }
-    if (data.categories) {
-      localStorage.setItem('inventoryCategories', JSON.stringify(data.categories));
-    }
-    if (data.warehouses) {
-      localStorage.setItem('inventoryWarehouses', JSON.stringify(data.warehouses));
-    }
-    if (data.stockMovements) {
-      localStorage.setItem('inventoryStockMovements', JSON.stringify(data.stockMovements));
-    }
+// Helper function to make API requests
+const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
+  const tenantId = getTenantId();
+  
+  const response = await fetch(`/api${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'x-tenant-id': tenantId,
+      ...options.headers,
+    },
+  });
+  
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
   }
+  
+  return response.json();
 };
 
 interface InventoryState {
@@ -81,13 +60,11 @@ interface InventoryState {
 }
 
 export const useInventoryStore = create<InventoryState>((set, get) => {
-  const initialData = loadInventoryFromLocalStorage();
-  
   return {
-    products: initialData.products,
-    categories: initialData.categories,
-    warehouses: initialData.warehouses,
-    stockMovements: initialData.stockMovements,
+    products: [],
+    categories: [],
+    warehouses: [],
+    stockMovements: [],
     loading: false,
     error: null,
 
@@ -95,16 +72,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
     fetchProducts: async () => {
       set({ loading: true, error: null });
       try {
-        // Get current tenantId from tenant store
-        const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
-        
-        // Load existing products from localStorage
-        const existingProducts = get().products;
-        
-        // Filter products by tenantId (in real app, this would be dynamic)
-        const tenantProducts = existingProducts.filter(product => product.tenantId === currentTenantId);
-        
-        set({ products: tenantProducts, loading: false });
+        const products = await makeApiRequest('/products');
+        set({ products, loading: false });
       } catch (error) {
         set({ error: 'Failed to fetch products', loading: false });
       }
@@ -112,29 +81,14 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
 
     addProduct: async (productData) => {
       try {
-        // In a real app, this would be an API call
-        // const response = await fetch('/api/products', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(productData),
-        // });
-        // const newProduct = await response.json();
-        
-        // Mock implementation - use dynamic tenantId
-        const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
-        const newProduct: Product = {
-          ...productData,
-          id: Math.random().toString(36).substr(2, 9),
-          tenantId: currentTenantId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        
-        set((state) => {
-          const updatedProducts = [...state.products, newProduct];
-          saveInventoryToLocalStorage({ products: updatedProducts });
-          return { products: updatedProducts };
+        const newProduct = await makeApiRequest('/products', {
+          method: 'POST',
+          body: JSON.stringify(productData),
         });
+        
+        set((state) => ({
+          products: [...state.products, newProduct]
+        }));
       } catch (error) {
         set({ error: 'Failed to add product' });
       }
@@ -142,22 +96,16 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
 
     updateProduct: async (id, productData) => {
       try {
-        // In a real app, this would be an API call
-        // const response = await fetch(`/api/products/${id}`, {
-        //   method: 'PUT',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(productData),
-        // });
-        // const updatedProduct = await response.json();
-        
-        // Mock implementation
-        set((state) => {
-          const updatedProducts = state.products.map((product) =>
-            product.id === id ? { ...product, ...productData, updatedAt: new Date() } : product
-          );
-          saveInventoryToLocalStorage({ products: updatedProducts });
-          return { products: updatedProducts };
+        const updatedProduct = await makeApiRequest(`/products/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(productData),
         });
+        
+        set((state) => ({
+          products: state.products.map((product) =>
+            product.id === id ? updatedProduct : product
+          ),
+        }));
       } catch (error) {
         set({ error: 'Failed to update product' });
       }
@@ -165,15 +113,13 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
 
     deleteProduct: async (id) => {
       try {
-        // In a real app, this would be an API call
-        // await fetch(`/api/products/${id}`, { method: 'DELETE' });
-        
-        // Mock implementation
-        set((state) => {
-          const updatedProducts = state.products.filter((product) => product.id !== id);
-          saveInventoryToLocalStorage({ products: updatedProducts });
-          return { products: updatedProducts };
+        await makeApiRequest(`/products/${id}`, {
+          method: 'DELETE',
         });
+        
+        set((state) => ({
+          products: state.products.filter((product) => product.id !== id),
+        }));
       } catch (error) {
         set({ error: 'Failed to delete product' });
       }
@@ -183,16 +129,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
     fetchCategories: async () => {
       set({ loading: true, error: null });
       try {
-        // Get current tenantId from tenant store
-        const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
-        
-        // Load existing categories from localStorage
-        const existingCategories = get().categories;
-        
-        // Filter categories by tenantId (in real app, this would be dynamic)
-        const tenantCategories = existingCategories.filter(category => category.tenantId === currentTenantId);
-        
-        set({ categories: tenantCategories, loading: false });
+        const categories = await makeApiRequest('/categories');
+        set({ categories, loading: false });
       } catch (error) {
         set({ error: 'Failed to fetch categories', loading: false });
       }
@@ -200,29 +138,14 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
 
     addCategory: async (categoryData) => {
       try {
-        // In a real app, this would be an API call
-        // const response = await fetch('/api/categories', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(categoryData),
-        // });
-        // const newCategory = await response.json();
-        
-        // Mock implementation - use dynamic tenantId
-        const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
-        const newCategory: Category = {
-          ...categoryData,
-          id: Math.random().toString(36).substr(2, 9),
-          tenantId: currentTenantId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        
-        set((state) => {
-          const updatedCategories = [...state.categories, newCategory];
-          saveInventoryToLocalStorage({ categories: updatedCategories });
-          return { categories: updatedCategories };
+        const newCategory = await makeApiRequest('/categories', {
+          method: 'POST',
+          body: JSON.stringify(categoryData),
         });
+        
+        set((state) => ({
+          categories: [...state.categories, newCategory]
+        }));
       } catch (error) {
         set({ error: 'Failed to add category' });
       }
@@ -230,22 +153,16 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
 
     updateCategory: async (id, categoryData) => {
       try {
-        // In a real app, this would be an API call
-        // const response = await fetch(`/api/categories/${id}`, {
-        //   method: 'PUT',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(categoryData),
-        // });
-        // const updatedCategory = await response.json();
-        
-        // Mock implementation
-        set((state) => {
-          const updatedCategories = state.categories.map((category) =>
-            category.id === id ? { ...category, ...categoryData, updatedAt: new Date() } : category
-          );
-          saveInventoryToLocalStorage({ categories: updatedCategories });
-          return { categories: updatedCategories };
+        const updatedCategory = await makeApiRequest(`/categories/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(categoryData),
         });
+        
+        set((state) => ({
+          categories: state.categories.map((category) =>
+            category.id === id ? updatedCategory : category
+          ),
+        }));
       } catch (error) {
         set({ error: 'Failed to update category' });
       }
@@ -253,15 +170,13 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
 
     deleteCategory: async (id) => {
       try {
-        // In a real app, this would be an API call
-        // await fetch(`/api/categories/${id}`, { method: 'DELETE' });
-        
-        // Mock implementation
-        set((state) => {
-          const updatedCategories = state.categories.filter((category) => category.id !== id);
-          saveInventoryToLocalStorage({ categories: updatedCategories });
-          return { categories: updatedCategories };
+        await makeApiRequest(`/categories/${id}`, {
+          method: 'DELETE',
         });
+        
+        set((state) => ({
+          categories: state.categories.filter((category) => category.id !== id),
+        }));
       } catch (error) {
         set({ error: 'Failed to delete category' });
       }
@@ -271,16 +186,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
     fetchWarehouses: async () => {
       set({ loading: true, error: null });
       try {
-        // Get current tenantId from tenant store
-        const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
-        
-        // Load existing warehouses from localStorage
-        const existingWarehouses = get().warehouses;
-        
-        // Filter warehouses by tenantId (in real app, this would be dynamic)
-        const tenantWarehouses = existingWarehouses.filter(warehouse => warehouse.tenantId === currentTenantId);
-        
-        set({ warehouses: tenantWarehouses, loading: false });
+        const warehouses = await makeApiRequest('/warehouses');
+        set({ warehouses, loading: false });
       } catch (error) {
         set({ error: 'Failed to fetch warehouses', loading: false });
       }
@@ -288,29 +195,14 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
 
     addWarehouse: async (warehouseData) => {
       try {
-        // In a real app, this would be an API call
-        // const response = await fetch('/api/warehouses', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(warehouseData),
-        // });
-        // const newWarehouse = await response.json();
-        
-        // Mock implementation - use dynamic tenantId
-        const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
-        const newWarehouse: Warehouse = {
-          ...warehouseData,
-          id: Math.random().toString(36).substr(2, 9),
-          tenantId: currentTenantId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        
-        set((state) => {
-          const updatedWarehouses = [...state.warehouses, newWarehouse];
-          saveInventoryToLocalStorage({ warehouses: updatedWarehouses });
-          return { warehouses: updatedWarehouses };
+        const newWarehouse = await makeApiRequest('/warehouses', {
+          method: 'POST',
+          body: JSON.stringify(warehouseData),
         });
+        
+        set((state) => ({
+          warehouses: [...state.warehouses, newWarehouse]
+        }));
       } catch (error) {
         set({ error: 'Failed to add warehouse' });
       }
@@ -318,22 +210,16 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
 
     updateWarehouse: async (id, warehouseData) => {
       try {
-        // In a real app, this would be an API call
-        // const response = await fetch(`/api/warehouses/${id}`, {
-        //   method: 'PUT',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(warehouseData),
-        // });
-        // const updatedWarehouse = await response.json();
-        
-        // Mock implementation
-        set((state) => {
-          const updatedWarehouses = state.warehouses.map((warehouse) =>
-            warehouse.id === id ? { ...warehouse, ...warehouseData, updatedAt: new Date() } : warehouse
-          );
-          saveInventoryToLocalStorage({ warehouses: updatedWarehouses });
-          return { warehouses: updatedWarehouses };
+        const updatedWarehouse = await makeApiRequest(`/warehouses/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(warehouseData),
         });
+        
+        set((state) => ({
+          warehouses: state.warehouses.map((warehouse) =>
+            warehouse.id === id ? updatedWarehouse : warehouse
+          ),
+        }));
       } catch (error) {
         set({ error: 'Failed to update warehouse' });
       }
@@ -341,15 +227,13 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
 
     deleteWarehouse: async (id) => {
       try {
-        // In a real app, this would be an API call
-        // await fetch(`/api/warehouses/${id}`, { method: 'DELETE' });
-        
-        // Mock implementation
-        set((state) => {
-          const updatedWarehouses = state.warehouses.filter((warehouse) => warehouse.id !== id);
-          saveInventoryToLocalStorage({ warehouses: updatedWarehouses });
-          return { warehouses: updatedWarehouses };
+        await makeApiRequest(`/warehouses/${id}`, {
+          method: 'DELETE',
         });
+        
+        set((state) => ({
+          warehouses: state.warehouses.filter((warehouse) => warehouse.id !== id),
+        }));
       } catch (error) {
         set({ error: 'Failed to delete warehouse' });
       }
@@ -359,16 +243,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
     fetchStockMovements: async () => {
       set({ loading: true, error: null });
       try {
-        // Get current tenantId from tenant store
-        const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
-        
-        // Load existing stock movements from localStorage
-        const existingStockMovements = get().stockMovements;
-        
-        // Filter stock movements by tenantId (in real app, this would be dynamic)
-        const tenantStockMovements = existingStockMovements.filter(movement => movement.tenantId === currentTenantId);
-        
-        set({ stockMovements: tenantStockMovements, loading: false });
+        const stockMovements = await makeApiRequest('/stock-movements');
+        set({ stockMovements, loading: false });
       } catch (error) {
         set({ error: 'Failed to fetch stock movements', loading: false });
       }
@@ -376,48 +252,25 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
 
     addStockMovement: async (movementData) => {
       try {
-        // In a real app, this would be an API call
-        // const response = await fetch('/api/stock-movements', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(movementData),
-        // });
-        // const newMovement = await response.json();
-        
-        // Mock implementation - use dynamic tenantId
-        const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
-        const newMovement: StockMovement = {
-          ...movementData,
-          id: Math.random().toString(36).substr(2, 9),
-          tenantId: currentTenantId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        
-        set((state) => {
-          const updatedStockMovements = [...state.stockMovements, newMovement];
-          saveInventoryToLocalStorage({ stockMovements: updatedStockMovements });
-          return { stockMovements: updatedStockMovements };
+        const newMovement = await makeApiRequest('/stock-movements', {
+          method: 'POST',
+          body: JSON.stringify(movementData),
         });
         
-        // Update product stock quantity
+        set((state) => ({
+          stockMovements: [...state.stockMovements, newMovement]
+        }));
+        
+        // Update product stock quantity in the local state as well
         if (movementData.productId) {
-          const product = get().products.find(p => p.id === movementData.productId);
-          if (product) {
-            const newQuantity = movementData.movementType === 'IN' 
-              ? product.stockQuantity + movementData.quantity 
-              : product.stockQuantity - movementData.quantity;
-            
-            set((state) => {
-              const updatedProducts = state.products.map(p => 
-                p.id === movementData.productId 
-                  ? { ...p, stockQuantity: newQuantity, updatedAt: new Date() } 
-                  : p
-              );
-              saveInventoryToLocalStorage({ products: updatedProducts });
-              return { products: updatedProducts };
-            });
-          }
+          set((state) => {
+            const updatedProducts = state.products.map(p => 
+              p.id === movementData.productId 
+                ? { ...p, stockQuantity: newMovement.new_stock_quantity || p.stockQuantity } 
+                : p
+            );
+            return { products: updatedProducts };
+          });
         }
       } catch (error) {
         set({ error: 'Failed to add stock movement' });
@@ -425,10 +278,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
     },
 
     getStockMovementsByProductId: (productId) => {
-      // Filter stock movements by tenantId as well
-      const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
       return get().stockMovements.filter(movement => 
-        movement.productId === productId && movement.tenantId === currentTenantId
+        movement.productId === productId
       );
     },
   };
