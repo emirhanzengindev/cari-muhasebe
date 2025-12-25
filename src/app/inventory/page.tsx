@@ -81,11 +81,11 @@ export default function Inventory() {
         throw new Error("Ürün adı gerekli");
       }
       
-      if (!productBuyPrice || isNaN(parseFloat(productBuyPrice)) || parseFloat(productBuyPrice) < 0) {
+      if (productBuyPrice && isNaN(parseFloat(productBuyPrice)) || parseFloat(productBuyPrice) < 0) {
         throw new Error("Geçerli bir alış fiyatı girin");
       }
       
-      if (!productSellPrice || isNaN(parseFloat(productSellPrice)) || parseFloat(productSellPrice) < 0) {
+      if (productSellPrice && isNaN(parseFloat(productSellPrice)) || parseFloat(productSellPrice) < 0) {
         throw new Error("Geçerli bir satış fiyatı girin");
       }
       
@@ -100,8 +100,8 @@ export default function Inventory() {
         barcode: productBarcode.trim() || undefined,
         categoryId: productCategoryId || undefined,
         warehouseId: productWarehouseId || undefined,
-        buyPrice: parseFloat(productBuyPrice),
-        sellPrice: parseFloat(productSellPrice),
+        buyPrice: productBuyPrice ? parseFloat(productBuyPrice) : 0,
+        sellPrice: productSellPrice ? parseFloat(productSellPrice) : 0,
         vatRate: parseFloat(productVatRate),
         stockQuantity: parseFloat(productStockQuantity),
         criticalLevel: parseFloat(productCriticalLevel),
@@ -575,7 +575,6 @@ export default function Inventory() {
                         step="0.01"
                         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
                         placeholder="0.00"
-                        required
                       />
                     </div>
                     
@@ -593,7 +592,6 @@ export default function Inventory() {
                         step="0.01"
                         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
                         placeholder="0.00"
-                        required
                       />
                     </div>
                     
