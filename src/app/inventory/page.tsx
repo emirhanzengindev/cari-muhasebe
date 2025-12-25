@@ -485,7 +485,7 @@ export default function Inventory() {
                         id="productName"
                         value={productName}
                         onChange={(e) => setProductName(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
                         placeholder="Ürün adı"
                         required
                       />
@@ -501,7 +501,7 @@ export default function Inventory() {
                         id="productSku"
                         value={productSku}
                         onChange={(e) => setProductSku(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
                         placeholder="Ürün SKU'su"
                       />
                     </div>
@@ -516,7 +516,7 @@ export default function Inventory() {
                         id="productBarcode"
                         value={productBarcode}
                         onChange={(e) => setProductBarcode(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
                         placeholder="Barkod"
                       />
                     </div>
@@ -530,7 +530,7 @@ export default function Inventory() {
                         id="productCategory"
                         value={productCategoryId}
                         onChange={(e) => setProductCategoryId(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
                       >
                         <option value="">Kategori Seçin</option>
                         {categories.map((category) => (
@@ -550,7 +550,7 @@ export default function Inventory() {
                         id="productWarehouse"
                         value={productWarehouseId}
                         onChange={(e) => setProductWarehouseId(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
                       >
                         <option value="">Depo Seçin</option>
                         {warehouses.map((warehouse) => (
@@ -573,7 +573,7 @@ export default function Inventory() {
                         onChange={(e) => setProductBuyPrice(e.target.value)}
                         min="0"
                         step="0.01"
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
                         placeholder="0.00"
                         required
                       />
@@ -591,7 +591,7 @@ export default function Inventory() {
                         onChange={(e) => setProductSellPrice(e.target.value)}
                         min="0"
                         step="0.01"
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
                         placeholder="0.00"
                         required
                       />
@@ -610,7 +610,7 @@ export default function Inventory() {
                         min="0"
                         max="100"
                         step="0.1"
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
                         placeholder="18"
                       />
                     </div>
@@ -627,7 +627,7 @@ export default function Inventory() {
                         onChange={(e) => setProductStockQuantity(e.target.value)}
                         min="0"
                         step="1"
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
                         placeholder="0"
                         required
                       />
@@ -645,7 +645,7 @@ export default function Inventory() {
                         onChange={(e) => setProductCriticalLevel(e.target.value)}
                         min="0"
                         step="1"
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
                         placeholder="5"
                       />
                     </div>
@@ -660,7 +660,7 @@ export default function Inventory() {
                         id="productColor"
                         value={productColor}
                         onChange={(e) => setProductColor(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
                         placeholder="Kumaş rengi"
                       />
                     </div>
@@ -675,7 +675,7 @@ export default function Inventory() {
                         id="productUnit"
                         value={productUnit}
                         onChange={(e) => setProductUnit(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
                         placeholder="Ölçü birimi (örn: metre, kg)"
                       />
                     </div>
@@ -690,7 +690,7 @@ export default function Inventory() {
                         id="productPattern"
                         value={productPattern}
                         onChange={(e) => setProductPattern(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
                         placeholder="Kumaş deseni"
                       />
                     </div>
@@ -705,7 +705,7 @@ export default function Inventory() {
                         id="productComposition"
                         value={productComposition}
                         onChange={(e) => setProductComposition(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
                         placeholder="Kumaş kompozisyonu (örn: %100 Pamuk)"
                       />
                     </div>
@@ -722,7 +722,7 @@ export default function Inventory() {
                         onChange={(e) => setProductWidth(e.target.value)}
                         min="0"
                         step="0.1"
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
                         placeholder="Genişlik (cm)"
                       />
                     </div>
@@ -739,7 +739,7 @@ export default function Inventory() {
                         onChange={(e) => setProductWeight(e.target.value)}
                         min="0"
                         step="0.1"
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
                         placeholder="Gramaj (GSM)"
                       />
                     </div>
