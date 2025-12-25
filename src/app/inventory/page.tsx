@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useInventoryStore } from "@/stores/inventoryStore";
+import { useTenantStore } from "@/lib/tenantStore";
 import { useRouter } from "next/navigation";
 
 export default function Inventory() {
@@ -16,6 +17,28 @@ export default function Inventory() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newWarehouseName, setNewWarehouseName] = useState("");
   const [newWarehouseLocation, setNewWarehouseLocation] = useState("");
+  
+  // Product form state
+  const [productName, setProductName] = useState("");
+  const [productSku, setProductSku] = useState("");
+  const [productBarcode, setProductBarcode] = useState("");
+  const [productCategoryId, setProductCategoryId] = useState("");
+  const [productWarehouseId, setProductWarehouseId] = useState("");
+  const [productBuyPrice, setProductBuyPrice] = useState("");
+  const [productSellPrice, setProductSellPrice] = useState("");
+  const [productVatRate, setProductVatRate] = useState("18"); // Default VAT rate
+  const [productStockQuantity, setProductStockQuantity] = useState("0");
+  const [productCriticalLevel, setProductCriticalLevel] = useState("5");
+  const [productColor, setProductColor] = useState("");
+  const [productUnit, setProductUnit] = useState("");
+  const [productPattern, setProductPattern] = useState("");
+  const [productComposition, setProductComposition] = useState("");
+  const [productWidth, setProductWidth] = useState("0");
+  const [productWeight, setProductWeight] = useState("0");
+  const [productMinStockLevel, setProductMinStockLevel] = useState("0");
+  const [productFormError, setProductFormError] = useState("");
+  const [productFormSuccess, setProductFormSuccess] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -47,9 +70,100 @@ export default function Inventory() {
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real implementation, you would collect form data and call addProduct
-    // For now, we'll just close the modal
+    
+    setIsSubmitting(true);
+    setProductFormError("");
+    setProductFormSuccess("");
+    
+    try {
+      // Validate required fields
+      if (!productName.trim()) {
+        throw new Error("Ürün adı gerekli");
+      }
+      
+      if (!productBuyPrice || isNaN(parseFloat(productBuyPrice)) || parseFloat(productBuyPrice) < 0) {
+        throw new Error("Geçerli bir alış fiyatı girin");
+      }
+      
+      if (!productSellPrice || isNaN(parseFloat(productSellPrice)) || parseFloat(productSellPrice) < 0) {
+        throw new Error("Geçerli bir satış fiyatı girin");
+      }
+      
+      if (!productStockQuantity || isNaN(parseFloat(productStockQuantity)) || parseFloat(productStockQuantity) < 0) {
+        throw new Error("Geçerli bir stok miktarı girin");
+      }
+      
+      // Prepare product data
+      const productData = {
+        name: productName.trim(),
+        sku: productSku.trim() || undefined,
+        barcode: productBarcode.trim() || undefined,
+        categoryId: productCategoryId || undefined,
+        warehouseId: productWarehouseId || undefined,
+        buyPrice: parseFloat(productBuyPrice),
+        sellPrice: parseFloat(productSellPrice),
+        vatRate: parseFloat(productVatRate),
+        stockQuantity: parseFloat(productStockQuantity),
+        criticalLevel: parseFloat(productCriticalLevel),
+        color: productColor.trim() || undefined,
+        unit: productUnit.trim() || undefined,
+        pattern: productPattern.trim() || undefined,
+        composition: productComposition.trim() || undefined,
+        width: productWidth ? parseFloat(productWidth) : undefined,
+        weight: productWeight ? parseFloat(productWeight) : undefined,
+        minStockLevel: productMinStockLevel ? parseFloat(productMinStockLevel) : undefined,
+        tenantId: useTenantStore.getState().tenantId || 'default-tenant'
+      };
+      
+      // Add product using the store
+      await addProduct(productData);
+      
+      // Show success message
+      setProductFormSuccess("Ürün başarıyla eklendi!");
+      
+      // Reset form after a short delay
+      setTimeout(() => {
+        resetProductForm();
+        setShowAddProductModal(false);
+        setProductFormSuccess("");
+        // Refresh products list
+        fetchProducts();
+      }, 1500);
+      
+    } catch (error: any) {
+      console.error("Error adding product:", error);
+      setProductFormError(error.message || "Ürün eklenirken bir hata oluştu");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const resetProductForm = () => {
+    setProductName("");
+    setProductSku("");
+    setProductBarcode("");
+    setProductCategoryId("");
+    setProductWarehouseId("");
+    setProductBuyPrice("");
+    setProductSellPrice("");
+    setProductVatRate("18");
+    setProductStockQuantity("0");
+    setProductCriticalLevel("5");
+    setProductColor("");
+    setProductUnit("");
+    setProductPattern("");
+    setProductComposition("");
+    setProductWidth("0");
+    setProductWeight("0");
+    setProductMinStockLevel("0");
+    setProductFormError("");
+  };
+  
+  const handleCancelAddProduct = () => {
+    resetProductForm();
     setShowAddProductModal(false);
+    setProductFormError("");
+    setProductFormSuccess("");
   };
 
   const handleAddCategory = async (e: React.FormEvent) => {
@@ -314,7 +428,7 @@ export default function Inventory() {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-gray-900">Yeni Ürün Ekle</h3>
                 <button 
-                  onClick={() => setShowAddProductModal(false)}
+                  onClick={handleCancelAddProduct}
                   className="text-gray-400 hover:text-gray-500"
                 >
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -323,16 +437,342 @@ export default function Inventory() {
                 </button>
               </div>
               <div className="mt-4">
-                <p className="text-gray-500">Product creation form would go here.</p>
-                <div className="mt-4 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddProductModal(false)}
-                    className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    Kapat
-                  </button>
-                </div>
+                <form onSubmit={handleAddProduct}>
+                  {productFormError && (
+                    <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="ml-3">
+                          <h3 className="text-sm font-medium text-red-800">Hata</h3>
+                          <div className="mt-2 text-sm text-red-700">
+                            <p>{productFormError}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {productFormSuccess && (
+                    <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L7 13.586 15.293 5.293a1 1 0 111.414 1.414l-9 9a1 1 0 010 1.414z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="ml-3">
+                          <h3 className="text-sm font-medium text-green-800">Başarılı</h3>
+                          <div className="mt-2 text-sm text-green-700">
+                            <p>{productFormSuccess}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Product Name */}
+                    <div className="col-span-2">
+                      <label htmlFor="productName" className="block text-sm font-medium text-gray-700">
+                        Ürün Adı *
+                      </label>
+                      <input
+                        type="text"
+                        id="productName"
+                        value={productName}
+                        onChange={(e) => setProductName(e.target.value)}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="Ürün adı"
+                        required
+                      />
+                    </div>
+                    
+                    {/* SKU */}
+                    <div>
+                      <label htmlFor="productSku" className="block text-sm font-medium text-gray-700">
+                        SKU
+                      </label>
+                      <input
+                        type="text"
+                        id="productSku"
+                        value={productSku}
+                        onChange={(e) => setProductSku(e.target.value)}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="Ürün SKU'su"
+                      />
+                    </div>
+                    
+                    {/* Barcode */}
+                    <div>
+                      <label htmlFor="productBarcode" className="block text-sm font-medium text-gray-700">
+                        Barkod
+                      </label>
+                      <input
+                        type="text"
+                        id="productBarcode"
+                        value={productBarcode}
+                        onChange={(e) => setProductBarcode(e.target.value)}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="Barkod"
+                      />
+                    </div>
+                    
+                    {/* Category */}
+                    <div>
+                      <label htmlFor="productCategory" className="block text-sm font-medium text-gray-700">
+                        Kategori
+                      </label>
+                      <select
+                        id="productCategory"
+                        value={productCategoryId}
+                        onChange={(e) => setProductCategoryId(e.target.value)}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      >
+                        <option value="">Kategori Seçin</option>
+                        {categories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    {/* Warehouse */}
+                    <div>
+                      <label htmlFor="productWarehouse" className="block text-sm font-medium text-gray-700">
+                        Depo
+                      </label>
+                      <select
+                        id="productWarehouse"
+                        value={productWarehouseId}
+                        onChange={(e) => setProductWarehouseId(e.target.value)}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      >
+                        <option value="">Depo Seçin</option>
+                        {warehouses.map((warehouse) => (
+                          <option key={warehouse.id} value={warehouse.id}>
+                            {warehouse.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    {/* Buy Price */}
+                    <div>
+                      <label htmlFor="productBuyPrice" className="block text-sm font-medium text-gray-700">
+                        Alış Fiyatı (₺)
+                      </label>
+                      <input
+                        type="number"
+                        id="productBuyPrice"
+                        value={productBuyPrice}
+                        onChange={(e) => setProductBuyPrice(e.target.value)}
+                        min="0"
+                        step="0.01"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="0.00"
+                        required
+                      />
+                    </div>
+                    
+                    {/* Sell Price */}
+                    <div>
+                      <label htmlFor="productSellPrice" className="block text-sm font-medium text-gray-700">
+                        Satış Fiyatı (₺)
+                      </label>
+                      <input
+                        type="number"
+                        id="productSellPrice"
+                        value={productSellPrice}
+                        onChange={(e) => setProductSellPrice(e.target.value)}
+                        min="0"
+                        step="0.01"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="0.00"
+                        required
+                      />
+                    </div>
+                    
+                    {/* VAT Rate */}
+                    <div>
+                      <label htmlFor="productVatRate" className="block text-sm font-medium text-gray-700">
+                        KDV Oranı (%)
+                      </label>
+                      <input
+                        type="number"
+                        id="productVatRate"
+                        value={productVatRate}
+                        onChange={(e) => setProductVatRate(e.target.value)}
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="18"
+                      />
+                    </div>
+                    
+                    {/* Stock Quantity */}
+                    <div>
+                      <label htmlFor="productStockQuantity" className="block text-sm font-medium text-gray-700">
+                        Stok Miktarı
+                      </label>
+                      <input
+                        type="number"
+                        id="productStockQuantity"
+                        value={productStockQuantity}
+                        onChange={(e) => setProductStockQuantity(e.target.value)}
+                        min="0"
+                        step="1"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="0"
+                        required
+                      />
+                    </div>
+                    
+                    {/* Critical Level */}
+                    <div>
+                      <label htmlFor="productCriticalLevel" className="block text-sm font-medium text-gray-700">
+                        Kritik Seviye
+                      </label>
+                      <input
+                        type="number"
+                        id="productCriticalLevel"
+                        value={productCriticalLevel}
+                        onChange={(e) => setProductCriticalLevel(e.target.value)}
+                        min="0"
+                        step="1"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="5"
+                      />
+                    </div>
+                    
+                    {/* Color */}
+                    <div>
+                      <label htmlFor="productColor" className="block text-sm font-medium text-gray-700">
+                        Renk
+                      </label>
+                      <input
+                        type="text"
+                        id="productColor"
+                        value={productColor}
+                        onChange={(e) => setProductColor(e.target.value)}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="Kumaş rengi"
+                      />
+                    </div>
+                    
+                    {/* Unit */}
+                    <div>
+                      <label htmlFor="productUnit" className="block text-sm font-medium text-gray-700">
+                        Birim
+                      </label>
+                      <input
+                        type="text"
+                        id="productUnit"
+                        value={productUnit}
+                        onChange={(e) => setProductUnit(e.target.value)}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="Ölçü birimi (örn: metre, kg)"
+                      />
+                    </div>
+                    
+                    {/* Pattern */}
+                    <div>
+                      <label htmlFor="productPattern" className="block text-sm font-medium text-gray-700">
+                        Desen
+                      </label>
+                      <input
+                        type="text"
+                        id="productPattern"
+                        value={productPattern}
+                        onChange={(e) => setProductPattern(e.target.value)}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="Kumaş deseni"
+                      />
+                    </div>
+                    
+                    {/* Composition */}
+                    <div>
+                      <label htmlFor="productComposition" className="block text-sm font-medium text-gray-700">
+                        Kompozisyon
+                      </label>
+                      <input
+                        type="text"
+                        id="productComposition"
+                        value={productComposition}
+                        onChange={(e) => setProductComposition(e.target.value)}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="Kumaş kompozisyonu (örn: %100 Pamuk)"
+                      />
+                    </div>
+                    
+                    {/* Width */}
+                    <div>
+                      <label htmlFor="productWidth" className="block text-sm font-medium text-gray-700">
+                        Genişlik (cm)
+                      </label>
+                      <input
+                        type="number"
+                        id="productWidth"
+                        value={productWidth}
+                        onChange={(e) => setProductWidth(e.target.value)}
+                        min="0"
+                        step="0.1"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="Genişlik (cm)"
+                      />
+                    </div>
+                    
+                    {/* Weight (GSM) */}
+                    <div>
+                      <label htmlFor="productWeight" className="block text-sm font-medium text-gray-700">
+                        Ağırlık (GSM)
+                      </label>
+                      <input
+                        type="number"
+                        id="productWeight"
+                        value={productWeight}
+                        onChange={(e) => setProductWeight(e.target.value)}
+                        min="0"
+                        step="0.1"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="Gramaj (GSM)"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 flex justify-end space-x-3">
+                    <button
+                      type="button"
+                      onClick={handleCancelAddProduct}
+                      disabled={isSubmitting}
+                      className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      İptal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="inline-flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Ekleniyor...
+                        </>
+                      ) : (
+                        "Ürün Ekle"
+                      )}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>
