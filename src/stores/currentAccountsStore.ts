@@ -52,115 +52,14 @@ export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) =>
     try {
       // Get current tenantId from tenant store
       const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
-            
-      // Mock data for now
-      const mockAccounts: CurrentAccount[] = [
-        {
-          id: '1',
-          name: 'Apple Inc.',
-          email: 'contact@apple.com',
-          phone: '+1-800-123-4567',
-          address: '1 Infinite Loop, Cupertino, CA',
-          taxOffice: 'California Tax Office',
-          taxNumber: '123456789',
-          accountType: 'CUSTOMER',
-          balance: 15000.0,
-          isActive: true,
-          tenantId: currentTenantId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '2',
-          name: 'Google LLC',
-          email: 'contact@google.com',
-          phone: '+1-800-789-0123',
-          address: '1600 Amphitheatre Parkway, Mountain View, CA',
-          taxOffice: 'California Tax Office',
-          taxNumber: '987654321',
-          accountType: 'CUSTOMER',
-          balance: 25000.0,
-          isActive: true,
-          tenantId: currentTenantId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '3',
-          name: 'Microsoft Corporation',
-          email: 'contact@microsoft.com',
-          phone: '+1-800-456-7890',
-          address: 'One Microsoft Way, Redmond, WA',
-          taxOffice: 'Washington Tax Office',
-          taxNumber: '456789123',
-          accountType: 'CUSTOMER',
-          balance: 30000.0,
-          isActive: true,
-          tenantId: currentTenantId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '12',
-          name: 'Samsung Electronics',
-          email: 'contact@samsung.com',
-          phone: '+82-2-123-4567',
-          address: '129, Samsung-ro, Yeongtong-gu, Suwon-si',
-          taxOffice: 'Korean Tax Office',
-          taxNumber: '789123456',
-          accountType: 'SUPPLIER',
-          balance: 40000.0,
-          isActive: true,
-          tenantId: currentTenantId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '13',
-          name: 'LG Electronics',
-          email: 'contact@lge.com',
-          phone: '+82-2-987-6543',
-          address: '10, LG Science Park, LG-ro, Magok-dong, Gangseo-gu',
-          taxOffice: 'Korean Tax Office',
-          taxNumber: '321654987',
-          accountType: 'SUPPLIER',
-          balance: 20000.0,
-          isActive: true,
-          tenantId: currentTenantId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '14',
-          name: 'Sony Corporation',
-          email: 'contact@sony.com',
-          phone: '+81-3-1234-5678',
-          address: '1-7-1 Konan, Minato-ku, Tokyo',
-          taxOffice: 'Japanese Tax Office',
-          taxNumber: '654987321',
-          accountType: 'SUPPLIER',
-          balance: 18000.0,
-          isActive: true,
-          tenantId: currentTenantId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ];
-
-      // Merge existing accounts with mock data to avoid duplicates
+                
+      // Load existing accounts from localStorage
       const existingAccounts = get().accounts;
-      const mergedAccounts = [...existingAccounts];
-      mockAccounts.forEach(mockAccount => {
-        if (!mergedAccounts.some(acc => acc.id === mockAccount.id)) {
-          mergedAccounts.push(mockAccount);
-        }
-      });
-
+          
       // Filter accounts by tenantId (in real app, this would be dynamic)
-      const tenantAccounts = mergedAccounts.filter(account => account.tenantId === currentTenantId);
-
+      const tenantAccounts = existingAccounts.filter(account => account.tenantId === currentTenantId);
+          
       set({ accounts: tenantAccounts, loading: false });
-      saveAccountsToLocalStorage(mergedAccounts);
     } catch (error) {
       set({ error: 'Failed to fetch accounts', loading: false });
     }

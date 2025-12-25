@@ -51,27 +51,10 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
       // const response = await fetch('/api/safes');
       // const safes = await response.json();
       
-      // Mock data for now - sıfırlandı
-      const mockSafes: Safe[] = [
-        {
-          id: '1',
-          name: 'Main Safe',
-          balance: 0.0,
-          tenantId: useTenantStore.getState().tenantId || 'default-tenant',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '2',
-          name: 'Branch Safe',
-          balance: 0.0,
-          tenantId: useTenantStore.getState().tenantId || 'default-tenant',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ];
+      // Empty array for safes
+      const safes: Safe[] = [];
       
-      set({ safes: mockSafes, loading: false });
+      set({ safes, loading: false });
     } catch (error) {
       set({ error: 'Failed to fetch safes', loading: false });
     }
@@ -148,29 +131,10 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
       // const response = await fetch('/api/banks');
       // const banks = await response.json();
       
-      // Mock data for now - sıfırlandı
-      const mockBanks: Bank[] = [
-        {
-          id: '1',
-          name: 'Main Bank Account',
-          iban: 'TR12 3456 7890 1234 5678 9012 34',
-          balance: 0.0,
-          tenantId: useTenantStore.getState().tenantId || 'default-tenant',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '2',
-          name: 'Credit Line',
-          iban: 'TR98 7654 3210 9876 5432 1098 76',
-          balance: 0.0,
-          tenantId: useTenantStore.getState().tenantId || 'default-tenant',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ];
+      // Empty array for banks
+      const banks: Bank[] = [];
       
-      set({ banks: mockBanks, loading: false });
+      set({ banks, loading: false });
     } catch (error) {
       set({ error: 'Failed to fetch banks', loading: false });
     }
@@ -247,10 +211,10 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
       // const response = await fetch('/api/transactions');
       // const transactions = await response.json();
       
-      // Mock data for now - boş bırakıldı
-      const mockTransactions: Transaction[] = [];
+      // Empty array for transactions
+      const transactions: Transaction[] = [];
       
-      set({ transactions: mockTransactions, loading: false });
+      set({ transactions, loading: false });
     } catch (error) {
       set({ error: 'Failed to fetch transactions', loading: false });
     }
@@ -361,10 +325,10 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
       // const response = await fetch('/api/cheques');
       // const cheques = await response.json();
       
-      // Mock data for now - boş bırakıldı
-      const mockCheques: Cheque[] = [];
+      // Empty array for cheques
+      const cheques: Cheque[] = [];
       
-      set({ cheques: mockCheques, loading: false });
+      set({ cheques, loading: false });
     } catch (error) {
       set({ error: 'Failed to fetch cheques', loading: false });
     }

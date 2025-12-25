@@ -66,79 +66,13 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
       // Get current tenantId from tenant store
       const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
             
-      // In a real app, this would be an API call
-      // const response = await fetch('/api/invoices');
-      // const invoices = await response.json();
-            
-      // Mock data for now - but preserve any existing invoices
+      // Load existing invoices from localStorage
       const existingInvoices = get().invoices;
-      const mockInvoices: Invoice[] = [
-        {
-          id: '1',
-          invoiceNumber: 'INV-2023-001',
-          invoiceType: 'SALES',
-          date: new Date('2023-10-15'),
-          accountId: '1',
-          subtotal: 7500.0,
-          discount: 0,
-          vatAmount: 0, // KDV kaldırıldı
-          totalAmount: 7500.0, // KDV'siz toplam
-          currency: 'USD', // Varsayılan olarak USD
-          description: 'Laptop purchase',
-          isDraft: false,
-          tenantId: currentTenantId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '2',
-          invoiceNumber: 'INV-2023-002',
-          invoiceType: 'PURCHASE',
-          date: new Date('2023-10-10'),
-          accountId: '12',
-          subtotal: 15000.0,
-          discount: 0,
-          vatAmount: 0, // KDV kaldırıldı
-          totalAmount: 15000.0, // KDV'siz toplam
-          currency: 'USD', // Varsayılan olarak USD
-          description: 'Fabric materials',
-          isDraft: false,
-          tenantId: 'tenant-1',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '3',
-          invoiceNumber: 'INV-2023-003',
-          invoiceType: 'SALES',
-          date: new Date('2023-10-05'),
-          accountId: '3',
-          subtotal: 3200.0,
-          discount: 0,
-          vatAmount: 0, // KDV kaldırıldı
-          totalAmount: 3200.0, // KDV'siz toplam
-          currency: 'USD', // Varsayılan olarak USD
-          description: 'Textile products',
-          isDraft: false,
-          tenantId: 'tenant-1',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ];
-      
-      // Merge existing invoices with mock data to avoid duplicates
-      const mergedInvoices = [...existingInvoices];
-      mockInvoices.forEach(mockInvoice => {
-        if (!mergedInvoices.some(inv => inv.id === mockInvoice.id)) {
-          mergedInvoices.push(mockInvoice);
-        }
-      });
       
       // Filter invoices by tenantId (in real app, this would be dynamic)
-      const tenantInvoices = mergedInvoices.filter(invoice => invoice.tenantId === currentTenantId);
+      const tenantInvoices = existingInvoices.filter(invoice => invoice.tenantId === currentTenantId);
       
       set({ invoices: tenantInvoices, loading: false });
-      saveInvoicesToLocalStorage(mergedInvoices);
     } catch (error) {
       set({ error: 'Failed to fetch invoices', loading: false });
     }

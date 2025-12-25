@@ -98,240 +98,13 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
         // Get current tenantId from tenant store
         const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
         
-        // Mock data - API route has issues with Next.js Turbopack
-        const mockProducts: Product[] = [
-          {
-            id: 'fabric-1',
-            name: 'Babyface',
-            sku: 'FAB-BABY-001',
-            barcode: 'FAB001BABY',
-            buyPrice: 180.0,
-            sellPrice: 300.0,
-            vatRate: 18,
-            stockQuantity: 20,
-            criticalLevel: 5,
-            tenantId: currentTenantId,
-            categoryId: '1',
-            warehouseId: undefined,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            // Fabric-specific fields
-            color: 'White',
-            unit: 'meter',
-            minStockLevel: 20,
-            pattern: 'Textured',
-            composition: 'Cotton/Polyester Blend',
-            width: 150,
-            weight: 170
-          },
-          {
-            id: 'fabric-2',
-            name: 'Soho',
-            sku: 'FAB-SOHO-001',
-            barcode: 'FAB002SOHO',
-            buyPrice: 190.0,
-            sellPrice: 320.0,
-            vatRate: 18,
-            stockQuantity: 20,
-            criticalLevel: 5,
-            tenantId: currentTenantId,
-            categoryId: '1',
-            warehouseId: undefined,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            // Fabric-specific fields
-            color: 'Black',
-            unit: 'meter',
-            minStockLevel: 20,
-            pattern: 'Plain',
-            composition: 'Polyester',
-            width: 145,
-            weight: 160
-          },
-          {
-            id: 'fabric-3',
-            name: 'Alaska',
-            sku: 'FAB-ALSK-001',
-            barcode: 'FAB004ALSK',
-            buyPrice: 250.0,
-            sellPrice: 380.0,
-            vatRate: 18,
-            stockQuantity: 20,
-            criticalLevel: 5,
-            tenantId: currentTenantId,
-            categoryId: '1',
-            warehouseId: undefined,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            // Fabric-specific fields
-            color: 'Gold/White',
-            unit: 'meter',
-            minStockLevel: 20,
-            pattern: 'Printed',
-            composition: 'Viscose Blend',
-            width: 150,
-            weight: 180
-          },
-          {
-            id: 'fabric-4',
-            name: 'Coco',
-            sku: 'FAB-COCO-001',
-            barcode: 'FAB008COCO',
-            buyPrice: 200.0,
-            sellPrice: 350.0,
-            vatRate: 18,
-            stockQuantity: 20,
-            criticalLevel: 5,
-            tenantId: currentTenantId,
-            categoryId: '1',
-            warehouseId: undefined,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            // Fabric-specific fields
-            color: 'Brown',
-            unit: 'meter',
-            minStockLevel: 20,
-            pattern: 'Woven',
-            composition: '100% Linen',
-            width: 140,
-            weight: 200
-          },
-          {
-            id: 'fabric-5',
-            name: 'Luna',
-            sku: 'FAB-LUNA-001',
-            barcode: 'FAB009LUNA',
-            buyPrice: 150.0,
-            sellPrice: 250.0,
-            vatRate: 18,
-            stockQuantity: 20,
-            criticalLevel: 5,
-            tenantId: currentTenantId,
-            categoryId: '1',
-            warehouseId: undefined,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            // Fabric-specific fields
-            color: 'Silver',
-            unit: 'meter',
-            minStockLevel: 20,
-            pattern: 'Jacquard',
-            composition: 'Cotton/Polyester Blend',
-            width: 155,
-            weight: 175
-          },
-          {
-            id: 'fabric-6',
-            name: 'Paris',
-            sku: 'FAB-PARS-001',
-            barcode: 'FAB010PARS',
-            buyPrice: 220.0,
-            sellPrice: 360.0,
-            vatRate: 18,
-            stockQuantity: 20,
-            criticalLevel: 5,
-            tenantId: currentTenantId,
-            categoryId: '1',
-            warehouseId: undefined,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            // Fabric-specific fields
-            color: 'Cream',
-            unit: 'meter',
-            minStockLevel: 20,
-            pattern: 'Embroidered',
-            composition: 'Silk Blend',
-            width: 145,
-            weight: 165
-          },
-          {
-            id: 'fabric-7',
-            name: 'Venice',
-            sku: 'FAB-VENC-001',
-            barcode: 'FAB011VENC',
-            buyPrice: 180.0,
-            sellPrice: 310.0,
-            vatRate: 18,
-            stockQuantity: 20,
-            criticalLevel: 5,
-            tenantId: currentTenantId,
-            categoryId: '1',
-            warehouseId: undefined,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            // Fabric-specific fields
-            color: 'Blue',
-            unit: 'meter',
-            minStockLevel: 20,
-            pattern: 'Striped',
-            composition: 'Cotton',
-            width: 150,
-            weight: 170
-          },
-          {
-            id: 'fabric-8',
-            name: 'Milano',
-            sku: 'FAB-MILN-001',
-            barcode: 'FAB012MILN',
-            buyPrice: 240.0,
-            sellPrice: 390.0,
-            vatRate: 18,
-            stockQuantity: 20,
-            criticalLevel: 5,
-            tenantId: currentTenantId,
-            categoryId: '1',
-            warehouseId: undefined,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            // Fabric-specific fields
-            color: 'Red',
-            unit: 'meter',
-            minStockLevel: 20,
-            pattern: 'Floral',
-            composition: 'Viscose',
-            width: 140,
-            weight: 180
-          },
-          {
-            id: 'fabric-9',
-            name: 'Berlin',
-            sku: 'FAB-BRLN-001',
-            barcode: 'FAB013BRLN',
-            buyPrice: 170.0,
-            sellPrice: 290.0,
-            vatRate: 18,
-            stockQuantity: 20,
-            criticalLevel: 5,
-            tenantId: currentTenantId,
-            categoryId: '1',
-            warehouseId: undefined,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            // Fabric-specific fields
-            color: 'Green',
-            unit: 'meter',
-            minStockLevel: 20,
-            pattern: 'Checked',
-            composition: 'Polyester/Cotton Blend',
-            width: 155,
-            weight: 165
-          }
-        ];
-        
-        // Merge existing products with mock data to avoid duplicates
+        // Load existing products from localStorage
         const existingProducts = get().products;
-        const mergedProducts = [...existingProducts];
-        mockProducts.forEach(mockProduct => {
-          if (!mergedProducts.some(prod => prod.id === mockProduct.id)) {
-            mergedProducts.push(mockProduct);
-          }
-        });
         
         // Filter products by tenantId (in real app, this would be dynamic)
-        const tenantProducts = mergedProducts.filter(product => product.tenantId === currentTenantId);
+        const tenantProducts = existingProducts.filter(product => product.tenantId === currentTenantId);
         
         set({ products: tenantProducts, loading: false });
-        saveInventoryToLocalStorage({ products: mergedProducts });
       } catch (error) {
         set({ error: 'Failed to fetch products', loading: false });
       }
@@ -413,42 +186,13 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
         // Get current tenantId from tenant store
         const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
         
-        // In a real app, this would be an API call
-        // const response = await fetch('/api/categories');
-        // const categories = await response.json();
-        
-        // Mock data for now
-        const mockCategories: Category[] = [
-          {
-            id: '1',
-            name: 'Kumaş',
-            tenantId: currentTenantId,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
-          {
-            id: '2',
-            name: 'Hazır Giyim',
-            tenantId: currentTenantId,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
-        ];
-        
-        // Merge existing categories with mock data to avoid duplicates
+        // Load existing categories from localStorage
         const existingCategories = get().categories;
-        const mergedCategories = [...existingCategories];
-        mockCategories.forEach(mockCategory => {
-          if (!mergedCategories.some(cat => cat.id === mockCategory.id)) {
-            mergedCategories.push(mockCategory);
-          }
-        });
         
         // Filter categories by tenantId (in real app, this would be dynamic)
-        const tenantCategories = mergedCategories.filter(category => category.tenantId === currentTenantId);
+        const tenantCategories = existingCategories.filter(category => category.tenantId === currentTenantId);
         
         set({ categories: tenantCategories, loading: false });
-        saveInventoryToLocalStorage({ categories: mergedCategories });
       } catch (error) {
         set({ error: 'Failed to fetch categories', loading: false });
       }
@@ -530,44 +274,13 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
         // Get current tenantId from tenant store
         const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
         
-        // In a real app, this would be an API call
-        // const response = await fetch('/api/warehouses');
-        // const warehouses = await response.json();
-        
-        // Mock data for now
-        const mockWarehouses: Warehouse[] = [
-          {
-            id: '1',
-            name: 'Ana Depo',
-            location: 'İstanbul Merkez',
-            tenantId: currentTenantId,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
-          {
-            id: '2',
-            name: 'Fabrika Deposu',
-            location: 'Bursa Fabrika',
-            tenantId: currentTenantId,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
-        ];
-        
-        // Merge existing warehouses with mock data to avoid duplicates
+        // Load existing warehouses from localStorage
         const existingWarehouses = get().warehouses;
-        const mergedWarehouses = [...existingWarehouses];
-        mockWarehouses.forEach(mockWarehouse => {
-          if (!mergedWarehouses.some(wh => wh.id === mockWarehouse.id)) {
-            mergedWarehouses.push(mockWarehouse);
-          }
-        });
         
         // Filter warehouses by tenantId (in real app, this would be dynamic)
-        const tenantWarehouses = mergedWarehouses.filter(warehouse => warehouse.tenantId === currentTenantId);
+        const tenantWarehouses = existingWarehouses.filter(warehouse => warehouse.tenantId === currentTenantId);
         
         set({ warehouses: tenantWarehouses, loading: false });
-        saveInventoryToLocalStorage({ warehouses: mergedWarehouses });
       } catch (error) {
         set({ error: 'Failed to fetch warehouses', loading: false });
       }
@@ -649,50 +362,13 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
         // Get current tenantId from tenant store
         const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
         
-        // In a real app, this would be an API call
-        // const response = await fetch('/api/stock-movements');
-        // const stockMovements = await response.json();
-        
-        // Mock data for now
-        const mockStockMovements: StockMovement[] = [
-          {
-            id: '1',
-            productId: 'fabric-1',
-            movementType: 'IN',
-            quantity: 50,
-            price: 180.0,
-            description: 'Initial stock',
-            tenantId: currentTenantId,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
-          {
-            id: '2',
-            productId: 'fabric-2',
-            movementType: 'IN',
-            quantity: 40,
-            price: 190.0,
-            description: 'Initial stock',
-            tenantId: currentTenantId,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
-        ];
-        
-        // Merge existing stock movements with mock data to avoid duplicates
+        // Load existing stock movements from localStorage
         const existingStockMovements = get().stockMovements;
-        const mergedStockMovements = [...existingStockMovements];
-        mockStockMovements.forEach(mockMovement => {
-          if (!mergedStockMovements.some(mov => mov.id === mockMovement.id)) {
-            mergedStockMovements.push(mockMovement);
-          }
-        });
         
         // Filter stock movements by tenantId (in real app, this would be dynamic)
-        const tenantStockMovements = mergedStockMovements.filter(movement => movement.tenantId === currentTenantId);
+        const tenantStockMovements = existingStockMovements.filter(movement => movement.tenantId === currentTenantId);
         
         set({ stockMovements: tenantStockMovements, loading: false });
-        saveInventoryToLocalStorage({ stockMovements: mergedStockMovements });
       } catch (error) {
         set({ error: 'Failed to fetch stock movements', loading: false });
       }
