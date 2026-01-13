@@ -4,15 +4,5 @@
       "src": "package.json",
       "use": "@vercel/next"
     }
-  ],
-  "functions": {
-    "src/pages/**/*": {
-      "memory": 1024,
-      "maxDuration": 30
-    },
-    "src/app/**/*": {
-      "memory": 1024,
-      "maxDuration": 30
-    }
-  }
+  ]
 }
