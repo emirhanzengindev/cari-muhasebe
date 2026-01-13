@@ -19,7 +19,13 @@ export async function GET(request: NextRequest) {
       .eq('tenant_id', tenantId);
 
     if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
+      console.error('SUPABASE ERROR DETAILS (GET):', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
+      return Response.json({ error: error.message, details: error }, { status: 500 });
     }
 
     return Response.json(data);
@@ -46,6 +52,12 @@ export async function POST(request: NextRequest) {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
+    
+    // Validate required fields
+    if (!warehouseWithTenant.name) {
+      console.error('MISSING REQUIRED FIELD: name');
+      return Response.json({ error: 'Warehouse name is required' }, { status: 400 });
+    }
 
     const supabase = createServerSupabaseClient(tenantId);
     
@@ -56,7 +68,13 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
+      console.error('SUPABASE ERROR DETAILS:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
+      return Response.json({ error: error.message, details: error }, { status: 500 });
     }
 
     return Response.json(data[0]);

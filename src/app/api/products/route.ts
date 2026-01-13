@@ -56,6 +56,12 @@ export async function POST(request: NextRequest) {
     
     console.log('PRODUCT WITH TENANT:', productWithTenant);
     
+    // Validate required fields
+    if (!productWithTenant.name) {
+      console.error('MISSING REQUIRED FIELD: name');
+      return Response.json({ error: 'Product name is required' }, { status: 400 });
+    }
+    
     const supabase = createServerSupabaseClient(tenantId);
     
     const { data, error } = await supabase
@@ -65,8 +71,13 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('SUPABASE ERROR:', error);
-      return Response.json({ error: error.message }, { status: 500 });
+      console.error('SUPABASE ERROR DETAILS:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
+      return Response.json({ error: error.message, details: error }, { status: 500 });
     }
 
     console.log('SUCCESS DATA:', data);
