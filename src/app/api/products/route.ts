@@ -31,7 +31,13 @@ export async function POST(request: NextRequest) {
     const productData = await request.json();
     console.log('BODY:', productData);
     
-    const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
+    const tenantId = request.headers.get('x-tenant-id');
+    if (!tenantId) {
+      return Response.json(
+        { error: 'Tenant ID missing' },
+        { status: 401 }
+      );
+    }
     console.log('TENANT ID:', tenantId);
     
     // Add tenant ID to the product data

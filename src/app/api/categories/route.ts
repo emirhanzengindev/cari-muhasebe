@@ -30,7 +30,13 @@ export async function POST(request: NextRequest) {
     const categoryData = await request.json();
     console.log('BODY:', categoryData);
     
-    const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
+    const tenantId = request.headers.get('x-tenant-id');
+    if (!tenantId) {
+      return Response.json(
+        { error: 'Tenant ID missing' },
+        { status: 401 }
+      );
+    }
     console.log('TENANT ID:', tenantId);
     
     const categoryWithTenant = {
