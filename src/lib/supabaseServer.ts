@@ -11,4 +11,17 @@ if (!supabaseServiceRoleKey) {
   throw new Error('SUPABASE_SERVICE_ROLE_KEY is not defined');
 }
 
-export const supabaseServer = createClient(supabaseUrl, supabaseServiceRoleKey);
+// Function to create a Supabase client with tenant ID in headers
+export function createServerSupabaseClient(tenantId: string) {
+  return createClient(
+    supabaseUrl,
+    supabaseServiceRoleKey,
+    {
+      global: {
+        headers: {
+          'x-tenant-id': tenantId
+        }
+      }
+    }
+  );
+}

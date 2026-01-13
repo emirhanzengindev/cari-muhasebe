@@ -1,12 +1,14 @@
 import { NextRequest } from 'next/server';
-import { supabaseServer } from '@/lib/supabaseServer';
+import { createServerSupabaseClient } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
     // Get tenant ID from headers or session
     const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
     
-    const { data, error } = await supabaseServer
+    const supabase = createServerSupabaseClient(tenantId);
+    
+    const { data, error } = await supabase
       .from('products')
       .select('*')
       .eq('tenant_id', tenantId);
@@ -35,7 +37,9 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString()
     };
 
-    const { data, error } = await supabaseServer
+    const supabase = createServerSupabaseClient(tenantId);
+    
+    const { data, error } = await supabase
       .from('products')
       .insert([productWithTenant])
       .select();

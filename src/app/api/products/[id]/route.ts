@@ -1,12 +1,14 @@
 import { NextRequest } from 'next/server';
-import { supabaseServer } from '@/lib/supabaseServer';
+import { createServerSupabaseClient } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
     const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
     
-    const { data, error } = await supabaseServer
+    const supabase = createServerSupabaseClient(tenantId);
+    
+    const { data, error } = await supabase
       .from('products')
       .select('*')
       .eq('id', id)
@@ -30,7 +32,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const productData = await request.json();
     const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
     
-    const { data, error } = await supabaseServer
+    const supabase = createServerSupabaseClient(tenantId);
+    
+    const { data, error } = await supabase
       .from('products')
       .update({
         ...productData,
@@ -57,7 +61,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const { id } = params;
     const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
     
-    const { error } = await supabaseServer
+    const supabase = createServerSupabaseClient(tenantId);
+    
+    const { error } = await supabase
       .from('products')
       .delete()
       .eq('id', id)
