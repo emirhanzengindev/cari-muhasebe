@@ -1,6 +1,8 @@
 module.exports = {
   serverExternalPackages: ['bcryptjs'],
-  // Hydration hatasını azaltmak için
   reactStrictMode: true,
   swcMinify: true,
+  experimental: {
+    serverComponentsExternalPackages: ['@supabase/supabase-js'],
+  },
 };
