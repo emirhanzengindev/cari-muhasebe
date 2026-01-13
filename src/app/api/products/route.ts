@@ -12,6 +12,16 @@ export async function GET(request: NextRequest) {
       );
     }
     
+    // Validate that tenantId is a proper UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(tenantId)) {
+      console.error('INVALID TENANT ID FORMAT:', tenantId);
+      return Response.json(
+        { error: 'Invalid tenant ID format' },
+        { status: 400 }
+      );
+    }
+    
     const supabase = createServerSupabaseClient(tenantId);
     
     const { data, error } = await supabase
@@ -44,6 +54,17 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+    
+    // Validate that tenantId is a proper UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(tenantId)) {
+      console.error('INVALID TENANT ID FORMAT:', tenantId);
+      return Response.json(
+        { error: 'Invalid tenant ID format' },
+        { status: 400 }
+      );
+    }
+    
     console.log('TENANT ID:', tenantId);
     
     // Add tenant ID to the product data

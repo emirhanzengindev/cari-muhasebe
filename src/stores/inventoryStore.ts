@@ -4,12 +4,16 @@ import { useTenantStore } from '@/lib/tenantStore';
 
 // Helper function to get tenant ID
 const getTenantId = () => {
-  return useTenantStore.getState().tenantId || 'default-tenant';
+  return useTenantStore.getState().tenantId;
 };
 
 // Helper function to make API requests
 const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const tenantId = getTenantId();
+  
+  if (!tenantId) {
+    throw new Error('Tenant ID not available');
+  }
   
   const response = await fetch(`/api${endpoint}`, {
     ...options,
