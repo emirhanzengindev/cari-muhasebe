@@ -15,13 +15,21 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
     throw new Error('Tenant ID not available');
   }
   
+  // Conditionally add Content-Type header only for requests that have a body
+  const headers: any = {
+    'x-tenant-id': tenantId,
+    ...options.headers,
+  };
+  
+  // Add Content-Type for methods that typically have a body
+  const method = options.method?.toUpperCase();
+  if (method === 'POST' || method === 'PUT' || method === 'PATCH' || (method === undefined && options.body !== undefined)) {
+    headers['Content-Type'] = 'application/json';
+  }
+  
   const response = await fetch(`/api${endpoint}`, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'x-tenant-id': tenantId,
-      ...options.headers,
-    },
+    headers,
   });
   
   if (!response.ok) {
