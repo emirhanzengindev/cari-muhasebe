@@ -1,12 +1,12 @@
 import { NextRequest } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseServer } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
     const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServer
       .from('categories')
       .select('*')
       .eq('id', id)
@@ -30,7 +30,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const categoryData = await request.json();
     const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServer
       .from('categories')
       .update({
         ...categoryData,
@@ -57,7 +57,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const { id } = params;
     const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
     
-    const { error } = await supabase
+    const { error } = await supabaseServer
       .from('categories')
       .delete()
       .eq('id', id)

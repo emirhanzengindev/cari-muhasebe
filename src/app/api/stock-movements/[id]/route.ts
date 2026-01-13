@@ -1,12 +1,12 @@
 import { NextRequest } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseServer } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
     const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServer
       .from('stock_movements')
       .select('*')
       .eq('id', id)
@@ -30,7 +30,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const movementData = await request.json();
     const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServer
       .from('stock_movements')
       .update({
         ...movementData,
@@ -48,7 +48,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     // Update product stock quantity
     if (movementData.product_id) {
       // First get all stock movements for this product to recalculate the stock
-      const { data: allMovements, error: movementsError } = await supabase
+      const { data: allMovements, error: movementsError } = await supabaseServer
         .from('stock_movements')
         .select('*')
         .eq('product_id', movementData.product_id)
@@ -61,7 +61,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
             : sum - (movement.quantity || 0);
         }, 0);
 
-        await supabase
+        await supabaseServer
           .from('products')
           .update({ 
             stock_quantity: totalStock,
@@ -85,7 +85,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
     
     // Get the stock movement before deleting to access product_id
-    const { data: movement, error: fetchError } = await supabase
+    const { data: movement, error: fetchError } = await supabaseServer
       .from('stock_movements')
       .select('*')
       .eq('id', id)
@@ -96,7 +96,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return Response.json({ error: fetchError.message }, { status: 500 });
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseServer
       .from('stock_movements')
       .delete()
       .eq('id', id)
@@ -108,7 +108,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     // Recalculate product stock quantity
     if (movement && movement.product_id) {
-      const { data: allMovements, error: movementsError } = await supabase
+      const { data: allMovements, error: movementsError } = await supabaseServer
         .from('stock_movements')
         .select('*')
         .eq('product_id', movement.product_id)
@@ -121,7 +121,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
             : sum - (mov.quantity || 0);
         }, 0);
 
-        await supabase
+        await supabaseServer
           .from('products')
           .update({ 
             stock_quantity: totalStock,

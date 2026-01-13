@@ -1,11 +1,11 @@
 import { NextRequest } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseServer } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
     const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServer
       .from('categories')
       .select('*')
       .eq('tenant_id', tenantId);
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString()
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseServer
       .from('categories')
       .insert([categoryWithTenant])
       .select();
