@@ -1,22 +1,21 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google"; // Geist yerine Inter fontunu kullan
 import "./globals.css";
 import MainLayout from "@/components/MainLayout";
 import Providers from "@/components/Providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
   title: "Ön Muhasebe SaaS Platformu",
   description: "KOBİ'ler için kapsamlı ön muhasebe çözümü",
+  other: {
+    "google-site-verification": "PFqJVM9KwOTEeT1tsU4-8Yul2eh5aHK9h6tZd_oNMFU"
+  }
 };
 
 export default function RootLayout({
@@ -27,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} antialiased`}
       >
         <Providers>
           <MainLayout>{children}</MainLayout>

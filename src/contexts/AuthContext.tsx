@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useTenantStore } from "@/lib/tenantStore";
 
 interface User {
   id: string;
@@ -30,7 +31,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (status === "unauthenticated") {
       router.push("/auth/signin");
     } else if (session?.user) {
-      setTenantId((session.user as User).tenantId || null);
+      const userTenantId = (session.user as User).tenantId || null;
+      setTenantId(userTenantId);
+      useTenantStore.getState().setTenantId(userTenantId);
     }
   }, [session, status, router]);
 

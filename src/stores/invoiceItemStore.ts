@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { InvoiceItem } from '@/types';
+import { useTenantStore } from '@/lib/tenantStore';
 
 // Load invoice items from localStorage on initial load
 const loadInvoiceItemsFromLocalStorage = (): InvoiceItem[] => {
@@ -60,73 +61,16 @@ export const useInvoiceItemStore = create<InvoiceItemState>((set, get) => ({
   fetchInvoiceItems: async () => {
     set({ loading: true, error: null });
     try {
-      // In a real app, this would be an API call
-      // const response = await fetch('/api/invoice-items');
-      // const invoiceItems = await response.json();
+      // Get current tenantId from tenant store
+      const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
       
-      // Mock data for now - but preserve any existing invoice items
+      // Load existing invoice items from localStorage
       const existingInvoiceItems = get().invoiceItems;
-      const mockInvoiceItems: InvoiceItem[] = [
-        {
-          id: '1',
-          invoiceId: '1',
-          productId: 'fabric-1',
-          quantity: 1,
-          unitPrice: 7500.0,
-          vatRate: 0, // KDV kaldırıldı
-          total: 7500.0, // KDV'siz toplam
-          currency: 'USD', // Varsayılan olarak USD
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '2',
-          invoiceId: '1',
-          productId: 'fabric-2',
-          quantity: 2,
-          unitPrice: 150.0,
-          vatRate: 0, // KDV kaldırıldı
-          total: 300.0, // KDV'siz toplam
-          currency: 'USD', // Varsayılan olarak USD
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '3',
-          invoiceId: '2',
-          productId: 'fabric-3',
-          quantity: 100,
-          unitPrice: 150.0,
-          vatRate: 0, // KDV kaldırıldı
-          total: 15000.0, // KDV'siz toplam
-          currency: 'USD', // Varsayılan olarak USD
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        {
-          id: '4',
-          invoiceId: '3',
-          productId: 'fabric-4',
-          quantity: 5,
-          unitPrice: 640.0,
-          vatRate: 0, // KDV kaldırıldı
-          total: 3200.0, // KDV'siz toplam
-          currency: 'USD', // Varsayılan olarak USD
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ];
       
-      // Merge existing invoice items with mock data to avoid duplicates
-      const mergedInvoiceItems = [...existingInvoiceItems];
-      mockInvoiceItems.forEach(mockItem => {
-        if (!mergedInvoiceItems.some(item => item.id === mockItem.id)) {
-          mergedInvoiceItems.push(mockItem);
-        }
-      });
+      // Filter invoice items by tenantId
+      const tenantInvoiceItems = existingInvoiceItems.filter(item => item.tenantId === currentTenantId);
       
-      set({ invoiceItems: mergedInvoiceItems, loading: false });
-      saveInvoiceItemsToLocalStorage(mergedInvoiceItems);
+      set({ invoiceItems: tenantInvoiceItems, loading: false });
     } catch (error) {
       set({ error: 'Failed to fetch invoice items', loading: false });
     }
@@ -143,9 +87,11 @@ export const useInvoiceItemStore = create<InvoiceItemState>((set, get) => ({
       // const newInvoiceItem = await response.json();
       
       // Mock implementation
+      const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
       const newInvoiceItem: InvoiceItem = {
         ...invoiceItemData,
         id: Math.random().toString(36).substr(2, 9),
+        tenantId: currentTenantId,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -203,7 +149,8 @@ export const useInvoiceItemStore = create<InvoiceItemState>((set, get) => ({
   },
 
   getInvoiceItemsByInvoiceId: (invoiceId) => {
-    return get().invoiceItems.filter(item => item.invoiceId === invoiceId);
+    const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
+    return get().invoiceItems.filter(item => item.invoiceId === invoiceId && item.tenantId === currentTenantId);
   },
 
   clearAllInvoiceItems: async () => {

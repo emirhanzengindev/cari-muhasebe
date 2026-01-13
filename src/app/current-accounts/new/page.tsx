@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCurrentAccountsStore } from "@/stores/currentAccountsStore";
+import { useTenantStore } from "@/lib/tenantStore";
 import Link from "next/link";
 
 export default function NewAccount() {
@@ -49,7 +50,7 @@ export default function NewAccount() {
       await addAccount({
         ...formData,
         balance: 0, // Yeni hesapların bakiyesi 0 olur
-        tenantId: "tenant-1"
+        tenantId: useTenantStore.getState().tenantId || 'default-tenant'
       });
       
       router.push("/current-accounts");

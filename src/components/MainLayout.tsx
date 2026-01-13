@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import TenantSwitcher from "@/components/TenantSwitcher";
 
@@ -12,8 +12,26 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Mobilde kapalı başlasın
+  const [isMobile, setIsMobile] = useState(false);
   const { user, logout, isLoading } = useAuth();
+
+  // Mobil cihaz kontrolü
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setSidebarOpen(true); // Masaüstünde sidebar açık olur
+      } else {
+        setSidebarOpen(false); // Mobilde sidebar kapalı olur
+      }
+    };
+
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
 
   // Oturum açmamışsa giriş sayfasına yönlendir
   if (!user && !isLoading && !pathname.startsWith("/auth")) {
@@ -51,7 +69,7 @@ export default function MainLayout({
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-      <div className={`bg-white shadow-md ${sidebarOpen ? 'w-64' : 'w-20'} transition-all duration-300 ease-in-out`}>
+      <div className={`${sidebarOpen ? 'w-64' : 'w-0 md:w-20'} ${isMobile && !sidebarOpen ? 'hidden' : 'block'} bg-white shadow-md transition-all duration-300 ease-in-out overflow-hidden fixed md:relative z-50 h-full`}>
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-between p-4 border-b">
@@ -62,14 +80,14 @@ export default function MainLayout({
             )}
             <button 
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 hover:text-gray-700 md:hidden"
             >
               {sidebarOpen ? '«' : '»'}
             </button>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-2 py-4">
+          <nav className="flex-1 px-2 py-4 overflow-y-auto">
             <ul className="space-y-1">
               {navigation.map((item) => (
                 <li key={item.name}>
@@ -80,6 +98,7 @@ export default function MainLayout({
                         ? "bg-blue-100 text-blue-600"
                         : "text-gray-700 hover:bg-gray-100"
                     }`}
+                    onClick={() => isMobile && setSidebarOpen(false)} // Mobilde tıklanınca sidebar kapanır
                   >
                     <span className="text-xl">{item.icon}</span>
                     {sidebarOpen && (
@@ -120,10 +139,30 @@ export default function MainLayout({
         </div>
       </div>
 
+      {/* Mobil menü butonu */}
+      {!sidebarOpen && (
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="fixed top-4 left-4 z-50 p-2 bg-blue-600 text-white rounded-md shadow-lg md:hidden"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      )}
+
+      {/* Sidebar overlay - mobilde sidebar açıkken arka planı karart */}
+      {sidebarOpen && isMobile && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+      )}
+
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className={`flex-1 flex flex-col overflow-hidden ${sidebarOpen && isMobile ? 'ml-0' : 'ml-0'} md:ml-0 transition-all duration-300`}>
         {/* Header */}
-        <header className="bg-white shadow-sm">
+        <header className="bg-white shadow-sm z-30">
           <div className="flex items-center justify-between p-4">
             <h2 className="text-lg font-semibold text-gray-800">
               {navigation.find(item => item.href === pathname)?.name || "Ana Sayfa"}

@@ -110,6 +110,7 @@ export interface InvoiceItem {
   vatRate: number;
   total: number;
   currency: 'TRY' | 'USD'; // Para birimi desteği eklendi
+  tenantId: string;
   createdAt: Date;
   updatedAt: Date;
 }

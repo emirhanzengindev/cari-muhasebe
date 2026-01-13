@@ -1,12 +1,12 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { useTenantStore } from "@/lib/tenantStore";
 
 // Utility function to filter data by tenant ID
 export function filterByTenant<T extends { tenantId: string }>(data: T[]): T[] {
-  // In a real implementation, we would get the tenantId from the auth context
-  // For now, we'll use a mock tenant ID
-  const mockTenantId = "tenant-1";
+  // Get tenantId from tenant store
+  const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
   
-  return data.filter(item => item.tenantId === mockTenantId);
+  return data.filter(item => item.tenantId === currentTenantId);
 }
 
 // Utility function to add tenant ID to new items
