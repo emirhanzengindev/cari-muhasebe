@@ -25,8 +25,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('API HIT: categories');
+    
     const categoryData = await request.json();
+    console.log('BODY:', categoryData);
+    
     const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
+    console.log('TENANT ID:', tenantId);
     
     const categoryWithTenant = {
       ...categoryData,
@@ -34,7 +39,9 @@ export async function POST(request: NextRequest) {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-
+    
+    console.log('CATEGORY WITH TENANT:', categoryWithTenant);
+    
     const supabase = createServerSupabaseClient(tenantId);
     
     const { data, error } = await supabase
@@ -43,12 +50,14 @@ export async function POST(request: NextRequest) {
       .select();
 
     if (error) {
+      console.error('SUPABASE ERROR:', error);
       return Response.json({ error: error.message }, { status: 500 });
     }
 
+    console.log('SUCCESS DATA:', data);
     return Response.json(data[0]);
   } catch (error) {
     console.error('Error creating category:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return Response.json({ error: String(error) }, { status: 500 });
   }
 }
