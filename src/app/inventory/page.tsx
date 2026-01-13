@@ -40,11 +40,15 @@ export default function Inventory() {
   const [productFormSuccess, setProductFormSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const tenantId = useTenantStore(state => state.tenantId);
+  
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
-    fetchWarehouses();
-  }, [fetchProducts, fetchCategories, fetchWarehouses]);
+    if (tenantId) {
+      fetchProducts();
+      fetchCategories();
+      fetchWarehouses();
+    }
+  }, [tenantId, fetchProducts, fetchCategories, fetchWarehouses]);
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
