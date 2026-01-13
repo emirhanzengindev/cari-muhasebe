@@ -52,7 +52,8 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from('warehouses')
       .insert([warehouseWithTenant])
-      .select();
+      .select()
+      .single();
 
     if (error) {
       return Response.json({ error: error.message }, { status: 500 });

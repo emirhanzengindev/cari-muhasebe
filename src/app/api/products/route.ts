@@ -4,7 +4,13 @@ import { createServerSupabaseClient } from '@/lib/supabaseServer';
 export async function GET(request: NextRequest) {
   try {
     // Get tenant ID from headers or session
-    const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
+    const tenantId = request.headers.get('x-tenant-id');
+    if (!tenantId) {
+      return Response.json(
+        { error: 'Tenant ID missing' },
+        { status: 401 }
+      );
+    }
     
     const supabase = createServerSupabaseClient(tenantId);
     
@@ -55,7 +61,8 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from('products')
       .insert([productWithTenant])
-      .select();
+      .select()
+      .single();
 
     if (error) {
       console.error('SUPABASE ERROR:', error);

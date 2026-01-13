@@ -3,7 +3,13 @@ import { createServerSupabaseClient } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
-    const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
+    const tenantId = request.headers.get('x-tenant-id');
+    if (!tenantId) {
+      return Response.json(
+        { error: 'Tenant ID missing' },
+        { status: 401 }
+      );
+    }
     
     const supabase = createServerSupabaseClient(tenantId);
     
@@ -26,7 +32,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const movementData = await request.json();
-    const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
+    const tenantId = request.headers.get('x-tenant-id');
+    if (!tenantId) {
+      return Response.json(
+        { error: 'Tenant ID missing' },
+        { status: 401 }
+      );
+    }
     
     const movementWithTenant = {
       ...movementData,
@@ -40,7 +52,8 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from('stock_movements')
       .insert([movementWithTenant])
-      .select();
+      .select()
+      .single();
 
     if (error) {
       return Response.json({ error: error.message }, { status: 500 });

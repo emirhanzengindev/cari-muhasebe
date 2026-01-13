@@ -53,7 +53,8 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from('categories')
       .insert([categoryWithTenant])
-      .select();
+      .select()
+      .single();
 
     if (error) {
       console.error('SUPABASE ERROR:', error);
