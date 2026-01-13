@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,7 +20,7 @@ export async function POST(req: NextRequest) {
       options: {
         data: {
           name: name || email,
-          tenantId: uuidv4(),
+          tenantId: crypto.randomUUID(),
         }
       }
     });
