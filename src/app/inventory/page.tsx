@@ -94,6 +94,12 @@ export default function Inventory() {
       }
       
       // Prepare product data
+      const tenantId = useTenantStore.getState().tenantId;
+      
+      if (!tenantId) {
+        throw new Error('Tenant ID not available');
+      }
+      
       const productData = {
         name: productName.trim(),
         sku: productSku.trim() || undefined,
@@ -112,7 +118,7 @@ export default function Inventory() {
         width: productWidth ? parseFloat(productWidth) : undefined,
         weight: productWeight ? parseFloat(productWeight) : undefined,
         minStockLevel: productMinStockLevel ? parseFloat(productMinStockLevel) : undefined,
-        tenantId: useTenantStore.getState().tenantId || 'default-tenant'
+        tenantId: tenantId,
       };
       
       // Add product using the store
@@ -168,10 +174,17 @@ export default function Inventory() {
 
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
+    const tenantId = useTenantStore.getState().tenantId;
+    
+    if (!tenantId) {
+      alert('Tenant ID not available');
+      return;
+    }
+    
     if (newCategoryName.trim()) {
       await addCategory({
         name: newCategoryName,
-        tenantId: "tenant-1"
+        tenantId: tenantId
       });
       setNewCategoryName("");
       await fetchCategories(); // Refresh categories
@@ -180,11 +193,18 @@ export default function Inventory() {
 
   const handleAddWarehouse = async (e: React.FormEvent) => {
     e.preventDefault();
+    const tenantId = useTenantStore.getState().tenantId;
+    
+    if (!tenantId) {
+      alert('Tenant ID not available');
+      return;
+    }
+    
     if (newWarehouseName.trim()) {
       await addWarehouse({
         name: newWarehouseName,
         location: newWarehouseLocation,
-        tenantId: "tenant-1"
+        tenantId: tenantId
       });
       setNewWarehouseName("");
       setNewWarehouseLocation("");
