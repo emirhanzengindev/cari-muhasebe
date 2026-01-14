@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
     
     const productData = await request.json();
     console.log('BODY:', productData);
+    console.log('RAW BODY 👉', productData);
     
     const tenantId = request.headers.get('x-tenant-id');
     if (!tenantId) {
