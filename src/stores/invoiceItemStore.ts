@@ -2,40 +2,36 @@ import { create } from 'zustand';
 import { InvoiceItem } from '@/types';
 import { useTenantStore } from '@/lib/tenantStore';
 
-// Load invoice items from localStorage on initial load
-const loadInvoiceItemsFromLocalStorage = (): InvoiceItem[] => {
-  if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('invoiceItems');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Convert date strings back to Date objects
-        return parsed.map((item: any) => ({
-          ...item,
-          createdAt: new Date(item.createdAt),
-          updatedAt: new Date(item.updatedAt)
-        }));
-      } catch (e) {
-        console.error('Failed to parse invoice items from localStorage', e);
-        return [];
-      }
-    }
+// Helper function to make API requests
+const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
+  const tenantId = useTenantStore.getState().tenantId;
+  
+  if (!tenantId) {
+    throw new Error('Tenant ID not available');
   }
-  return [];
-};
-
-// Save invoice items to localStorage
-const saveInvoiceItemsToLocalStorage = (invoiceItems: InvoiceItem[]) => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('invoiceItems', JSON.stringify(invoiceItems));
+  
+  // Conditionally add Content-Type header only for requests that have a body
+  const headers: any = {
+    'x-tenant-id': tenantId,
+    ...options.headers,
+  };
+  
+  // Add Content-Type for methods that typically have a body
+  const method = options.method?.toUpperCase();
+  if (method === 'POST' || method === 'PUT' || method === 'PATCH' || (method === undefined && options.body !== undefined)) {
+    headers['Content-Type'] = 'application/json';
   }
-};
-
-// Clear all invoice items from localStorage
-const clearInvoiceItemsFromLocalStorage = () => {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('invoiceItems');
+  
+  const response = await fetch(`/api${endpoint}`, {
+    ...options,
+    headers,
+  });
+  
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
   }
+  
+  return response.json();
 };
 
 interface InvoiceItemState {
@@ -53,7 +49,7 @@ interface InvoiceItemState {
 }
 
 export const useInvoiceItemStore = create<InvoiceItemState>((set, get) => ({
-  invoiceItems: loadInvoiceItemsFromLocalStorage(),
+  invoiceItems: [],
   loading: false,
   error: null,
   
@@ -61,16 +57,8 @@ export const useInvoiceItemStore = create<InvoiceItemState>((set, get) => ({
   fetchInvoiceItems: async () => {
     set({ loading: true, error: null });
     try {
-      // Get current tenantId from tenant store
-      const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
-      
-      // Load existing invoice items from localStorage
-      const existingInvoiceItems = get().invoiceItems;
-      
-      // Filter invoice items by tenantId
-      const tenantInvoiceItems = existingInvoiceItems.filter(item => item.tenantId === currentTenantId);
-      
-      set({ invoiceItems: tenantInvoiceItems, loading: false });
+      const invoiceItems = await makeApiRequest('/invoice-items');
+      set({ invoiceItems, loading: false });
     } catch (error) {
       set({ error: 'Failed to fetch invoice items', loading: false });
     }
@@ -78,27 +66,13 @@ export const useInvoiceItemStore = create<InvoiceItemState>((set, get) => ({
 
   addInvoiceItem: async (invoiceItemData) => {
     try {
-      // In a real app, this would be an API call
-      // const response = await fetch('/api/invoice-items', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(invoiceItemData),
-      // });
-      // const newInvoiceItem = await response.json();
-      
-      // Mock implementation
-      const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
-      const newInvoiceItem: InvoiceItem = {
-        ...invoiceItemData,
-        id: Math.random().toString(36).substr(2, 9),
-        tenantId: currentTenantId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      const newInvoiceItem = await makeApiRequest('/invoice-items', {
+        method: 'POST',
+        body: JSON.stringify(invoiceItemData),
+      });
       
       set((state) => {
         const updatedInvoiceItems = [...state.invoiceItems, newInvoiceItem];
-        saveInvoiceItemsToLocalStorage(updatedInvoiceItems);
         return { invoiceItems: updatedInvoiceItems };
       });
       
@@ -111,20 +85,15 @@ export const useInvoiceItemStore = create<InvoiceItemState>((set, get) => ({
 
   updateInvoiceItem: async (id, invoiceItemData) => {
     try {
-      // In a real app, this would be an API call
-      // const response = await fetch(`/api/invoice-items/${id}`, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(invoiceItemData),
-      // });
-      // const updatedInvoiceItem = await response.json();
+      const updatedInvoiceItem = await makeApiRequest(`/invoice-items/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(invoiceItemData),
+      });
       
-      // Mock implementation
       set((state) => {
         const updatedInvoiceItems = state.invoiceItems.map((invoiceItem) =>
-          invoiceItem.id === id ? { ...invoiceItem, ...invoiceItemData, updatedAt: new Date() } : invoiceItem
+          invoiceItem.id === id ? updatedInvoiceItem : invoiceItem
         );
-        saveInvoiceItemsToLocalStorage(updatedInvoiceItems);
         return { invoiceItems: updatedInvoiceItems };
       });
     } catch (error) {
@@ -134,13 +103,12 @@ export const useInvoiceItemStore = create<InvoiceItemState>((set, get) => ({
 
   deleteInvoiceItem: async (id) => {
     try {
-      // In a real app, this would be an API call
-      // await fetch(`/api/invoice-items/${id}`, { method: 'DELETE' });
+      await makeApiRequest(`/invoice-items/${id}`, {
+        method: 'DELETE',
+      });
       
-      // Mock implementation
       set((state) => {
         const updatedInvoiceItems = state.invoiceItems.filter((invoiceItem) => invoiceItem.id !== id);
-        saveInvoiceItemsToLocalStorage(updatedInvoiceItems);
         return { invoiceItems: updatedInvoiceItems };
       });
     } catch (error) {
@@ -149,14 +117,12 @@ export const useInvoiceItemStore = create<InvoiceItemState>((set, get) => ({
   },
 
   getInvoiceItemsByInvoiceId: (invoiceId) => {
-    const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
-    return get().invoiceItems.filter(item => item.invoiceId === invoiceId && item.tenantId === currentTenantId);
+    return get().invoiceItems.filter(item => item.invoiceId === invoiceId);
   },
 
   clearAllInvoiceItems: async () => {
     try {
       set({ invoiceItems: [] });
-      clearInvoiceItemsFromLocalStorage();
     } catch (error) {
       set({ error: 'Failed to clear all invoice items' });
     }

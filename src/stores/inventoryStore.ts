@@ -275,14 +275,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
         
         // Update product stock quantity in the local state as well
         if (movementData.productId) {
-          set((state) => {
-            const updatedProducts = state.products.map(p => 
-              p.id === movementData.productId 
-                ? { ...p, stockQuantity: newMovement.new_stock_quantity || p.stockQuantity } 
-                : p
-            );
-            return { products: updatedProducts };
-          });
+          // Fetch updated products to ensure state is current
+          get().fetchProducts();
         }
       } catch (error) {
         set({ error: 'Failed to add stock movement' });

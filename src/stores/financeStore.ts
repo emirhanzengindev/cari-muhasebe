@@ -2,6 +2,38 @@ import { create } from 'zustand';
 import { Safe, Bank, Transaction, Cheque } from '@/types';
 import { useTenantStore } from '@/lib/tenantStore';
 
+// Helper function to make API requests
+const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
+  const tenantId = useTenantStore.getState().tenantId;
+  
+  if (!tenantId) {
+    throw new Error('Tenant ID not available');
+  }
+  
+  // Conditionally add Content-Type header only for requests that have a body
+  const headers: any = {
+    'x-tenant-id': tenantId,
+    ...options.headers,
+  };
+  
+  // Add Content-Type for methods that typically have a body
+  const method = options.method?.toUpperCase();
+  if (method === 'POST' || method === 'PUT' || method === 'PATCH' || (method === undefined && options.body !== undefined)) {
+    headers['Content-Type'] = 'application/json';
+  }
+  
+  const response = await fetch(`/api${endpoint}`, {
+    ...options,
+    headers,
+  });
+  
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+  }
+  
+  return response.json();
+};
+
 interface FinanceState {
   safes: Safe[];
   banks: Bank[];
@@ -47,12 +79,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   fetchSafes: async () => {
     set({ loading: true, error: null });
     try {
-      // In a real app, this would be an API call
-      // const response = await fetch('/api/safes');
-      // const safes = await response.json();
-      
-      // Empty array for safes
-      const safes: Safe[] = [];
+      const safes = await makeApiRequest('/safes');
       
       set({ safes, loading: false });
     } catch (error) {
@@ -62,23 +89,10 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   addSafe: async (safeData) => {
     try {
-      // In a real app, this would be an API call
-      // const response = await fetch('/api/safes', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(safeData),
-      // });
-      // const newSafe = await response.json();
-      
-      // Mock implementation
-      const newSafe: Safe = {
-        ...safeData,
-        id: Math.random().toString(36).substr(2, 9),
-        balance: 0,
-        tenantId: useTenantStore.getState().tenantId || 'default-tenant',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      const newSafe = await makeApiRequest('/safes', {
+        method: 'POST',
+        body: JSON.stringify(safeData),
+      });
       
       set((state) => ({
         safes: [...state.safes, newSafe],
@@ -90,18 +104,14 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   updateSafe: async (id, safeData) => {
     try {
-      // In a real app, this would be an API call
-      // const response = await fetch(`/api/safes/${id}`, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(safeData),
-      // });
-      // const updatedSafe = await response.json();
+      const updatedSafe = await makeApiRequest(`/safes/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(safeData),
+      });
       
-      // Mock implementation
       set((state) => ({
         safes: state.safes.map((safe) =>
-          safe.id === id ? { ...safe, ...safeData, updatedAt: new Date() } : safe
+          safe.id === id ? updatedSafe : safe
         ),
       }));
     } catch (error) {
@@ -111,10 +121,10 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   deleteSafe: async (id) => {
     try {
-      // In a real app, this would be an API call
-      // await fetch(`/api/safes/${id}`, { method: 'DELETE' });
+      await makeApiRequest(`/safes/${id}`, {
+        method: 'DELETE',
+      });
       
-      // Mock implementation
       set((state) => ({
         safes: state.safes.filter((safe) => safe.id !== id),
       }));
@@ -127,12 +137,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   fetchBanks: async () => {
     set({ loading: true, error: null });
     try {
-      // In a real app, this would be an API call
-      // const response = await fetch('/api/banks');
-      // const banks = await response.json();
-      
-      // Empty array for banks
-      const banks: Bank[] = [];
+      const banks = await makeApiRequest('/banks');
       
       set({ banks, loading: false });
     } catch (error) {
@@ -142,23 +147,10 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   addBank: async (bankData) => {
     try {
-      // In a real app, this would be an API call
-      // const response = await fetch('/api/banks', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(bankData),
-      // });
-      // const newBank = await response.json();
-      
-      // Mock implementation
-      const newBank: Bank = {
-        ...bankData,
-        id: Math.random().toString(36).substr(2, 9),
-        balance: 0,
-        tenantId: useTenantStore.getState().tenantId || 'default-tenant',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      const newBank = await makeApiRequest('/banks', {
+        method: 'POST',
+        body: JSON.stringify(bankData),
+      });
       
       set((state) => ({
         banks: [...state.banks, newBank],
@@ -170,18 +162,14 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   updateBank: async (id, bankData) => {
     try {
-      // In a real app, this would be an API call
-      // const response = await fetch(`/api/banks/${id}`, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(bankData),
-      // });
-      // const updatedBank = await response.json();
+      const updatedBank = await makeApiRequest(`/banks/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(bankData),
+      });
       
-      // Mock implementation
       set((state) => ({
         banks: state.banks.map((bank) =>
-          bank.id === id ? { ...bank, ...bankData, updatedAt: new Date() } : bank
+          bank.id === id ? updatedBank : bank
         ),
       }));
     } catch (error) {
@@ -191,10 +179,10 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   deleteBank: async (id) => {
     try {
-      // In a real app, this would be an API call
-      // await fetch(`/api/banks/${id}`, { method: 'DELETE' });
+      await makeApiRequest(`/banks/${id}`, {
+        method: 'DELETE',
+      });
       
-      // Mock implementation
       set((state) => ({
         banks: state.banks.filter((bank) => bank.id !== id),
       }));
@@ -207,12 +195,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   fetchTransactions: async () => {
     set({ loading: true, error: null });
     try {
-      // In a real app, this would be an API call
-      // const response = await fetch('/api/transactions');
-      // const transactions = await response.json();
-      
-      // Empty array for transactions
-      const transactions: Transaction[] = [];
+      const transactions = await makeApiRequest('/transactions');
       
       set({ transactions, loading: false });
     } catch (error) {
@@ -222,22 +205,10 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   addTransaction: async (transactionData) => {
     try {
-      // In a real app, this would be an API call
-      // const response = await fetch('/api/transactions', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(transactionData),
-      // });
-      // const newTransaction = await response.json();
-      
-      // Mock implementation
-      const newTransaction: Transaction = {
-        ...transactionData,
-        id: Math.random().toString(36).substr(2, 9),
-        tenantId: useTenantStore.getState().tenantId || 'default-tenant',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      const newTransaction = await makeApiRequest('/transactions', {
+        method: 'POST',
+        body: JSON.stringify(transactionData),
+      });
       
       set((state) => ({
         transactions: [...state.transactions, newTransaction],
@@ -284,18 +255,14 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   updateTransaction: async (id, transactionData) => {
     try {
-      // In a real app, this would be an API call
-      // const response = await fetch(`/api/transactions/${id}`, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(transactionData),
-      // });
-      // const updatedTransaction = await response.json();
+      const updatedTransaction = await makeApiRequest(`/transactions/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(transactionData),
+      });
       
-      // Mock implementation
       set((state) => ({
         transactions: state.transactions.map((transaction) =>
-          transaction.id === id ? { ...transaction, ...transactionData, updatedAt: new Date() } : transaction
+          transaction.id === id ? updatedTransaction : transaction
         ),
       }));
     } catch (error) {
@@ -305,10 +272,10 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   deleteTransaction: async (id) => {
     try {
-      // In a real app, this would be an API call
-      // await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+      await makeApiRequest(`/transactions/${id}`, {
+        method: 'DELETE',
+      });
       
-      // Mock implementation
       set((state) => ({
         transactions: state.transactions.filter((transaction) => transaction.id !== id),
       }));
@@ -321,12 +288,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   fetchCheques: async () => {
     set({ loading: true, error: null });
     try {
-      // In a real app, this would be an API call
-      // const response = await fetch('/api/cheques');
-      // const cheques = await response.json();
-      
-      // Empty array for cheques
-      const cheques: Cheque[] = [];
+      const cheques = await makeApiRequest('/cheques');
       
       set({ cheques, loading: false });
     } catch (error) {
@@ -336,22 +298,10 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   addCheque: async (chequeData) => {
     try {
-      // In a real app, this would be an API call
-      // const response = await fetch('/api/cheques', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(chequeData),
-      // });
-      // const newCheque = await response.json();
-      
-      // Mock implementation
-      const newCheque: Cheque = {
-        ...chequeData,
-        id: Math.random().toString(36).substr(2, 9),
-        tenantId: useTenantStore.getState().tenantId || 'default-tenant',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      const newCheque = await makeApiRequest('/cheques', {
+        method: 'POST',
+        body: JSON.stringify(chequeData),
+      });
       
       set((state) => ({
         cheques: [...state.cheques, newCheque],
@@ -363,18 +313,14 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   updateCheque: async (id, chequeData) => {
     try {
-      // In a real app, this would be an API call
-      // const response = await fetch(`/api/cheques/${id}`, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(chequeData),
-      // });
-      // const updatedCheque = await response.json();
+      const updatedCheque = await makeApiRequest(`/cheques/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(chequeData),
+      });
       
-      // Mock implementation
       set((state) => ({
         cheques: state.cheques.map((cheque) =>
-          cheque.id === id ? { ...cheque, ...chequeData, updatedAt: new Date() } : cheque
+          cheque.id === id ? updatedCheque : cheque
         ),
       }));
     } catch (error) {
@@ -384,10 +330,10 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   deleteCheque: async (id) => {
     try {
-      // In a real app, this would be an API call
-      // await fetch(`/api/cheques/${id}`, { method: 'DELETE' });
+      await makeApiRequest(`/cheques/${id}`, {
+        method: 'DELETE',
+      });
       
-      // Mock implementation
       set((state) => ({
         cheques: state.cheques.filter((cheque) => cheque.id !== id),
       }));
