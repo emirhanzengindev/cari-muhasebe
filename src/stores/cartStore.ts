@@ -38,7 +38,7 @@ export const useCartStore = create<CartState>((set, get) => ({
           ? { 
               ...item, 
               quantity: item.quantity + quantity,
-              totalPrice: (item.quantity + quantity) * product.sellPrice 
+              totalPrice: (item.quantity + quantity) * (product.sellPrice ?? 0) 
             } 
           : item
       );
@@ -48,7 +48,7 @@ export const useCartStore = create<CartState>((set, get) => ({
       const newItem: CartItem = {
         product,
         quantity,
-        totalPrice: quantity * product.sellPrice
+        totalPrice: quantity * (product.sellPrice ?? 0)
       };
       
       set(state => ({ items: [...state.items, newItem] }));
@@ -76,7 +76,7 @@ export const useCartStore = create<CartState>((set, get) => ({
         ? { 
             ...item, 
             quantity,
-            totalPrice: quantity * item.product.sellPrice 
+            totalPrice: quantity * (item.product.sellPrice ?? 0) 
           } 
         : item
     );
@@ -100,7 +100,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
     const discount = 0; // For simplicity, no discount in quick sales
     const vatAmount = items.reduce((sum, item) => {
-      return sum + (item.totalPrice * item.product.vatRate / 100);
+      return sum + (item.totalPrice * (item.product.vatRate ?? 0) / 100);
     }, 0);
     const totalAmount = subtotal - discount + vatAmount;
     

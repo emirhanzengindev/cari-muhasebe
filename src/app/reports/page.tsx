@@ -190,7 +190,7 @@ export default function Reports() {
                       {Math.floor(Math.random() * 100)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(product.sellPrice * Math.floor(Math.random() * 100))}
+                      {formatCurrency((product.sellPrice ?? 0) * Math.floor(Math.random() * 100))}
                     </td>
                   </tr>
                 ))}

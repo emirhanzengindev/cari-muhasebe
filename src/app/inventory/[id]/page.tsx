@@ -166,17 +166,17 @@ export default function ProductDetail() {
             <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-3">
               <div>
                 <dt className="text-sm font-medium text-gray-500">Buy Price</dt>
-                <dd className="mt-1 text-sm text-gray-900">₺{product.buyPrice.toFixed(2)}</dd>
+                <dd className="mt-1 text-sm text-gray-900">₺{(product.buyPrice ?? 0).toFixed(2)}</dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-gray-500">Sell Price</dt>
-                <dd className="mt-1 text-sm text-gray-900">₺{product.sellPrice.toFixed(2)}</dd>
+                <dd className="mt-1 text-sm text-gray-900">₺{(product.sellPrice ?? 0).toFixed(2)}</dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-gray-500">Profit Margin</dt>
                 <dd className="mt-1 text-sm text-gray-900">
-                  {product.buyPrice > 0 
-                    ? `${(((product.sellPrice - product.buyPrice) / product.buyPrice) * 100).toFixed(2)}%` 
+                  {product.buyPrice && product.buyPrice > 0 
+                    ? `${(((product.sellPrice ?? 0) - (product.buyPrice ?? 0)) / (product.buyPrice ?? 1) * 100).toFixed(2)}%` 
                     : "N/A"}
                 </dd>
               </div>
@@ -189,18 +189,18 @@ export default function ProductDetail() {
             <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-3">
               <div>
                 <dt className="text-sm font-medium text-gray-500">Current Stock</dt>
-                <dd className={`mt-1 text-2xl font-bold ${product.stockQuantity <= product.criticalLevel ? "text-red-600" : "text-green-600"}`}>
-                  {product.stockQuantity}
+                <dd className={`mt-1 text-2xl font-bold ${(product.stockQuantity ?? 0) <= (product.criticalLevel ?? 0) ? "text-red-600" : "text-green-600"}`}>
+                  {product.stockQuantity ?? 0}
                 </dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-gray-500">Critical Level</dt>
-                <dd className="mt-1 text-sm text-gray-900">{product.criticalLevel}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{product.criticalLevel ?? 0}</dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-gray-500">Status</dt>
                 <dd className="mt-1">
-                  {product.stockQuantity <= product.criticalLevel ? (
+                  {(product.stockQuantity ?? 0) <= (product.criticalLevel ?? 0) ? (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                       Low Stock
                     </span>

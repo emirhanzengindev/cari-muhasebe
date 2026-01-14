@@ -122,7 +122,7 @@ export default function QuickSales() {
           invoiceId: newInvoice.id,
           productId: item.product.id,
           quantity: item.quantity,
-          unitPrice: item.product.sellPrice,
+          unitPrice: item.product.sellPrice ?? 0,
           vatRate: 0, // KDV kaldırıldı
           total: item.totalPrice,
           currency, // Para birimi eklendi
@@ -139,7 +139,7 @@ export default function QuickSales() {
           productId: item.product.id,
           movementType: "OUT",
           quantity: item.quantity,
-          price: item.product.sellPrice,
+          price: item.product.sellPrice ?? 0,
           description: stockMovementDescription,
           tenantId,
         });
@@ -290,7 +290,7 @@ export default function QuickSales() {
                     <div className="text-sm font-medium text-gray-900 truncate">{product.name}</div>
                     <div className="mt-1 text-sm text-gray-500">{product.sku}</div>
                     <div className="mt-2 text-sm font-medium text-gray-900">
-                      {getCurrencySymbol()}{product.sellPrice.toFixed(2)}
+                      {getCurrencySymbol()}{(product.sellPrice ?? 0).toFixed(2)}
                     </div>
                   </div>
                 ))}
@@ -318,7 +318,7 @@ export default function QuickSales() {
                               {item.product.name}
                             </div>
                             <div className="flex items-center text-sm text-gray-900">
-                              <span>{getCurrencySymbol()}{item.product.sellPrice.toFixed(2)} × {item.quantity}</span>
+                              <span>{getCurrencySymbol()}{(item.product.sellPrice ?? 0).toFixed(2)} × {item.quantity}</span>
                             </div>
                           </div>
                           <div className="flex items-center">

@@ -53,7 +53,7 @@ export default function NewInvoice() {
       // Auto-fill unit price when product is selected
       const product = products.find(p => p.id === value);
       if (product) {
-        newItems[index].unitPrice = invoiceType === "SALES" ? product.sellPrice : product.buyPrice;
+        newItems[index].unitPrice = invoiceType === "SALES" ? (product.sellPrice ?? 0) : (product.buyPrice ?? 0);
       }
     } else if (field === "quantity") {
       newItems[index][field] = Number(value);

@@ -85,7 +85,7 @@ export default function Dashboard() {
     .filter(acc => acc.accountType === 'CUSTOMER')
     .reduce((sum, acc) => sum + acc.balance, 0);
 
-  const lowStockCount = products.filter(p => p.stockQuantity <= p.criticalLevel).length;
+  const lowStockCount = products.filter(p => (p.stockQuantity ?? 0) <= (p.criticalLevel ?? 0)).length;
 
   // Prepare chart data
   const monthlyData = groupInvoicesByMonth(invoices);
