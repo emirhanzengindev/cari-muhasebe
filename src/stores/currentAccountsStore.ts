@@ -2,28 +2,36 @@ import { create } from 'zustand';
 import { CurrentAccount } from '@/types';
 import { useTenantStore } from '@/lib/tenantStore';
 
-// Load accounts from localStorage on initial load
-const loadAccountsFromLocalStorage = (): CurrentAccount[] => {
-  if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('currentAccounts');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed;
-      } catch (e) {
-        console.error('Failed to parse accounts from localStorage', e);
-        return [];
-      }
-    }
+// Helper function to make API requests
+const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
+  const tenantId = useTenantStore.getState().tenantId;
+  
+  if (!tenantId) {
+    throw new Error('Tenant ID not available');
   }
-  return [];
-};
-
-// Save accounts to localStorage
-const saveAccountsToLocalStorage = (accounts: CurrentAccount[]) => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('currentAccounts', JSON.stringify(accounts));
+  
+  // Conditionally add Content-Type header only for requests that have a body
+  const headers: any = {
+    'x-tenant-id': tenantId,
+    ...options.headers,
+  };
+  
+  // Add Content-Type for methods that typically have a body
+  const method = options.method?.toUpperCase();
+  if (method === 'POST' || method === 'PUT' || method === 'PATCH' || (method === undefined && options.body !== undefined)) {
+    headers['Content-Type'] = 'application/json';
   }
+  
+  const response = await fetch(`/api${endpoint}`, {
+    ...options,
+    headers,
+  });
+  
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+  }
+  
+  return response.json();
 };
 
 interface CurrentAccountState {
@@ -42,7 +50,7 @@ interface CurrentAccountState {
 
 export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) => ({
 
-  accounts: loadAccountsFromLocalStorage(),
+  accounts: [],
   loading: false,
   error: null,
 
@@ -50,16 +58,8 @@ export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) =>
   fetchAccounts: async () => {
     set({ loading: true, error: null });
     try {
-      // Get current tenantId from tenant store
-      const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
-                
-      // Load existing accounts from localStorage
-      const existingAccounts = get().accounts;
-          
-      // Filter accounts by tenantId (in real app, this would be dynamic)
-      const tenantAccounts = existingAccounts.filter(account => account.tenantId === currentTenantId);
-          
-      set({ accounts: tenantAccounts, loading: false });
+      const accounts = await makeApiRequest('/current-accounts');
+      set({ accounts, loading: false });
     } catch (error) {
       set({ error: 'Failed to fetch accounts', loading: false });
     }
@@ -67,21 +67,13 @@ export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) =>
 
   addAccount: async (accountData) => {
     try {
-      // Mock implementation - use dynamic tenantId
-      const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
-      const newAccount: CurrentAccount = {
-        ...accountData,
-        id: Math.random().toString(36).substr(2, 9),
-        balance: 0,
-        isActive: true,
-        tenantId: currentTenantId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      const newAccount = await makeApiRequest('/current-accounts', {
+        method: 'POST',
+        body: JSON.stringify(accountData),
+      });
 
       set((state) => {
         const updatedAccounts = [...state.accounts, newAccount];
-        saveAccountsToLocalStorage(updatedAccounts);
         return { accounts: updatedAccounts };
       });
     } catch (error) {
@@ -91,12 +83,15 @@ export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) =>
 
   updateAccount: async (id, accountData) => {
     try {
-      // Mock implementation
+      const updatedAccount = await makeApiRequest(`/current-accounts/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(accountData),
+      });
+
       set((state) => {
         const updatedAccounts = state.accounts.map((account) =>
-          account.id === id ? { ...account, ...accountData, updatedAt: new Date() } : account
+          account.id === id ? updatedAccount : account
         );
-        saveAccountsToLocalStorage(updatedAccounts);
         return { accounts: updatedAccounts };
       });
     } catch (error) {
@@ -106,10 +101,12 @@ export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) =>
 
   deleteAccount: async (id) => {
     try {
-      // Mock implementation
+      await makeApiRequest(`/current-accounts/${id}`, {
+        method: 'DELETE',
+      });
+
       set((state) => {
         const updatedAccounts = state.accounts.filter((account) => account.id !== id);
-        saveAccountsToLocalStorage(updatedAccounts);
         return { accounts: updatedAccounts };
       });
     } catch (error) {
@@ -119,12 +116,18 @@ export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) =>
 
   toggleAccountStatus: async (id) => {
     try {
-      // Mock implementation
+      const currentAccount = get().accounts.find(acc => acc.id === id);
+      if (!currentAccount) return;
+      
+      const updatedAccount = await makeApiRequest(`/current-accounts/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ isActive: !currentAccount.isActive }),
+      });
+
       set((state) => {
         const updatedAccounts = state.accounts.map((account) =>
-          account.id === id ? { ...account, isActive: !account.isActive, updatedAt: new Date() } : account
+          account.id === id ? updatedAccount : account
         );
-        saveAccountsToLocalStorage(updatedAccounts);
         return { accounts: updatedAccounts };
       });
     } catch (error) {
@@ -134,22 +137,24 @@ export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) =>
 
   updateAccountBalance: async (id, amount, type) => {
     try {
-      // Mock implementation
+      const currentAccount = get().accounts.find(acc => acc.id === id);
+      if (!currentAccount) return;
+      
+      const newBalance = type === 'SALES' ? currentAccount.balance + amount : currentAccount.balance - amount;
+      
+      const updatedAccount = await makeApiRequest(`/current-accounts/${id}/balance`, {
+        method: 'PUT',
+        body: JSON.stringify({ balance: newBalance }),
+      });
+
       set((state) => {
         const updatedAccounts = state.accounts.map((account) =>
-          account.id === id 
-            ? { 
-                ...account, 
-                balance: type === 'SALES' ? account.balance + amount : account.balance - amount,
-                updatedAt: new Date() 
-              } 
-            : account
+          account.id === id ? updatedAccount : account
         );
-        saveAccountsToLocalStorage(updatedAccounts);
         return { accounts: updatedAccounts };
       });
     } catch (error) {
       set({ error: 'Failed to update account balance' });
     }
-  },
+  }
 }));
