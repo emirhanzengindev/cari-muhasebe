@@ -28,10 +28,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [tenantId, setTenantId] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('AUTH CONTEXT DEBUG:', { 
+      status, 
+      hasSession: !!session, 
+      userEmail: session?.user?.email,
+      sessionTenantId: (session?.user as User)?.tenantId
+    });
+    
     if (status === "unauthenticated") {
+      console.log('User is unauthenticated, redirecting to signin');
       router.push("/auth/signin");
     } else if (session?.user) {
       const userTenantId = (session.user as User).tenantId || null;
+      console.log('Setting tenant ID from session:', userTenantId);
       setTenantId(userTenantId);
       useTenantStore.getState().setTenantId(userTenantId);
     }
