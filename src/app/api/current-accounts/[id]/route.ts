@@ -24,13 +24,18 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     
     const supabase = createServerSupabaseClient(tenantId);
     
-    const { data, error } = await supabase
+    const { data, error, status } = await supabase
       .from('current_accounts')
       .select('*')
       .eq('id', id)
       .eq('tenant_id', tenantId)
       .single();
 
+    if (error && status === 404) {
+      console.warn('Table current_accounts does not exist or record not found');
+      return Response.json({ error: 'Account not found' }, { status: 404 });
+    }
+    
     if (error) {
       return Response.json({ error: error.message }, { status: 500 });
     }
@@ -67,7 +72,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const supabase = createServerSupabaseClient(tenantId);
 
     // Update the current account
-    const { data, error } = await supabase
+    const { data, error, status } = await supabase
       .from('current_accounts')
       .update({
         ...accountData,
@@ -78,6 +83,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       .select()
       .single();
 
+    if (error && status === 404) {
+      console.warn('Table current_accounts does not exist or record not found for update');
+      return Response.json({ error: 'Account not found' }, { status: 404 });
+    }
+    
     if (error) {
       return Response.json({ error: error.message }, { status: 500 });
     }
@@ -112,12 +122,17 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     const supabase = createServerSupabaseClient(tenantId);
 
-    const { error } = await supabase
+    const { error, status } = await supabase
       .from('current_accounts')
       .delete()
       .eq('id', id)
       .eq('tenant_id', tenantId);
 
+    if (error && status === 404) {
+      console.warn('Table current_accounts does not exist or record not found for delete');
+      return Response.json({ error: 'Account not found' }, { status: 404 });
+    }
+    
     if (error) {
       return Response.json({ error: error.message }, { status: 500 });
     }

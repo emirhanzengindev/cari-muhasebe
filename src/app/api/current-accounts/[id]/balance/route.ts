@@ -26,7 +26,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const supabase = createServerSupabaseClient(tenantId);
 
     // Update the account balance
-    const { data, error } = await supabase
+    const { data, error, status } = await supabase
       .from('current_accounts')
       .update({
         balance: balance,
@@ -37,6 +37,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       .select()
       .single();
 
+    if (error && status === 404) {
+      console.warn('Table current_accounts does not exist or record not found for balance update');
+      return Response.json({ error: 'Account not found' }, { status: 404 });
+    }
+    
     if (error) {
       return Response.json({ error: error.message }, { status: 500 });
     }

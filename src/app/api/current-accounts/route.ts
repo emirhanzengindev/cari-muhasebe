@@ -23,13 +23,20 @@ export async function GET(request: NextRequest) {
     
     const supabase = createServerSupabaseClient(tenantId);
     
-    const { data, error } = await supabase
+    const { data, error, status } = await supabase
       .from('current_accounts')
       .select('*')
       .eq('tenant_id', tenantId);
 
+    // If table doesn't exist, return empty array
+    if (error && status === 404) {
+      console.warn('Table current_accounts does not exist, returning empty array');
+      return Response.json([]);
+    }
+    
     if (error) {
       console.error('SUPABASE ERROR (GET current_accounts):', error);
+      // For other errors, return the error message
       return Response.json({ error: error.message }, { status: 500 });
     }
 
@@ -76,18 +83,23 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServerSupabaseClient(tenantId);
     
-    const { data, error } = await supabase
+    const { data, error, status } = await supabase
       .from('current_accounts')
       .insert([accountWithTenant])
       .select()
       .single();
 
+    if (error && status === 404) {
+      console.error('Table current_accounts does not exist for insert operation');
+      return Response.json({ error: 'Accounts table does not exist' }, { status: 500 });
+    }
+    
     if (error) {
       console.error('SUPABASE ERROR (POST current_accounts):', error);
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json(data);
+    return Response.json(data[0]);
   } catch (error) {
     console.error('Error creating current account:', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
