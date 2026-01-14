@@ -14,22 +14,58 @@ if (!supabaseServiceRoleKey) {
 }
 
 // Function to extract tenant ID from JWT token
-export async function getTenantIdFromJWT(): Promise<string | null> {
+export async function getTenantIdFromJWT(request?: Request): Promise<string | null> {
   try {
     const cookieStore = cookies();
-    const token = cookieStore.get('next-auth.session-token')?.value || 
-                  cookieStore.get('__Secure-next-auth.session-token')?.value;
+    
+    // Check all possible cookie names
+    const possibleTokens = [
+      cookieStore.get('next-auth.session-token'),
+      cookieStore.get('__Secure-next-auth.session-token'),
+      cookieStore.get('next-auth.csrf-token')
+    ];
+    
+    console.log('COOKIE DEBUG: Available cookies:', Object.fromEntries(cookieStore.getAll().map(c => [c.name, c.value.substring(0, 20) + '...'])));
+    
+    const tokenCookie = possibleTokens.find(cookie => cookie?.value);
+    const token = tokenCookie?.value;
     
     if (!token) {
+      console.error('NO AUTH TOKEN FOUND IN COOKIES');
       return null;
     }
+    
+    console.log('TOKEN COOKIE NAME:', tokenCookie?.name);
     
     // Verify and decode JWT
     const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
     const { payload } = await jwtVerify(token, secret);
     
+    console.log('JWT PAYLOAD:', {
+      sub: payload.sub,
+      tenantId: (payload as any).tenantId,
+      exp: payload.exp,
+      iat: payload.iat
+    });
+    
     // Extract tenantId from JWT payload
-    return (payload as any).tenantId || null;
+    let tenantId = (payload as any).tenantId || null;
+    
+    if (!tenantId) {
+      console.error('TENANT ID NOT FOUND IN JWT PAYLOAD');
+      console.error('FULL PAYLOAD KEYS:', Object.keys(payload));
+      
+      // Fallback: Try to get tenantId from request headers if available
+      if (request) {
+        const headerTenantId = request.headers.get('x-tenant-id');
+        if (headerTenantId) {
+          console.warn('Using tenantId from headers as fallback:', headerTenantId);
+          tenantId = headerTenantId;
+        }
+      }
+    }
+    
+    return tenantId;
   } catch (error) {
     console.error('Error extracting tenant ID from JWT:', error);
     return null;

@@ -4,7 +4,7 @@ import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseSe
 export async function GET(request: NextRequest) {
   try {
     // Get tenant ID from JWT token
-    const tenantId = await getTenantIdFromJWT();
+    const tenantId = await getTenantIdFromJWT(request);
     if (!tenantId) {
       return Response.json(
         { error: 'Tenant ID missing from JWT' },
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     console.log('RAW BODY 👉', productData);
     
     // Get tenant ID from JWT token
-    const tenantId = await getTenantIdFromJWT();
+    const tenantId = await getTenantIdFromJWT(request);
     if (!tenantId) {
       return Response.json(
         { error: 'Tenant ID missing from JWT' },
