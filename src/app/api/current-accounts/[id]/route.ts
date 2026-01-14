@@ -25,7 +25,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const supabase = createServerSupabaseClient(tenantId);
     
     const { data, error } = await supabase
-      .from('stock_movements')
+      .from('current_accounts')
       .select('*')
       .eq('id', id)
       .eq('tenant_id', tenantId)
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     return Response.json(data);
   } catch (error) {
-    console.error('Error fetching stock movement:', error);
+    console.error('Error fetching current account:', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
-    const movementData = await request.json();
+    const accountData = await request.json();
     const tenantId = request.headers.get('x-tenant-id');
     if (!tenantId) {
       return Response.json(
@@ -66,11 +66,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     const supabase = createServerSupabaseClient(tenantId);
 
-    // Update the stock movement
+    // Update the current account
     const { data, error } = await supabase
-      .from('stock_movements')
+      .from('current_accounts')
       .update({
-        ...movementData,
+        ...accountData,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
@@ -82,39 +82,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    // Update product stock quantity
-    if (movementData.product_id) {
-      // First get all stock movements for this product to recalculate the stock
-      const { data: allMovements, error: movementsError } = await supabase
-        .from('stock_movements')
-        .select('*')
-        .eq('product_id', movementData.product_id)
-        .eq('tenant_id', tenantId);
-
-      if (movementsError) {
-        return Response.json({ error: movementsError.message }, { status: 500 });
-      }
-
-      // Calculate the total stock based on all movements
-      const totalStock = allMovements.reduce((sum: number, mov: any) => {
-        return mov.movement_type.toLowerCase() === 'in' 
-          ? sum + (mov.quantity || 0) 
-          : sum - (mov.quantity || 0);
-      }, 0);
-
-      await supabase
-        .from('products')
-        .update({ 
-          stock_quantity: totalStock,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', movementData.product_id)
-        .eq('tenant_id', tenantId);
-    }
-
     return Response.json(data);
   } catch (error) {
-    console.error('Error updating stock movement:', error);
+    console.error('Error updating current account:', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -142,20 +112,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     const supabase = createServerSupabaseClient(tenantId);
 
-    // Get the stock movement before deleting to access product_id
-    const { data: movement, error: fetchError } = await supabase
-      .from('stock_movements')
-      .select('*')
-      .eq('id', id)
-      .eq('tenant_id', tenantId)
-      .single();
-
-    if (fetchError) {
-      return Response.json({ error: fetchError.message }, { status: 500 });
-    }
-
     const { error } = await supabase
-      .from('stock_movements')
+      .from('current_accounts')
       .delete()
       .eq('id', id)
       .eq('tenant_id', tenantId);
@@ -164,38 +122,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    // Recalculate product stock quantity
-    if (movement && movement.product_id) {
-      const { data: allMovements, error: movementsError } = await supabase
-        .from('stock_movements')
-        .select('*')
-        .eq('product_id', movement.product_id)
-        .eq('tenant_id', tenantId);
-
-      if (movementsError) {
-        return Response.json({ error: movementsError.message }, { status: 500 });
-      }
-
-      // Calculate the total stock based on all remaining movements
-      const totalStock = allMovements.reduce((sum: number, mov: any) => {
-        return mov.movement_type.toLowerCase() === 'in' 
-          ? sum + (mov.quantity || 0) 
-          : sum - (mov.quantity || 0);
-      }, 0);
-
-      await supabase
-        .from('products')
-        .update({ 
-          stock_quantity: totalStock,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', movement.product_id)
-        .eq('tenant_id', tenantId);
-    }
-
     return Response.json({ success: true });
   } catch (error) {
-    console.error('Error deleting stock movement:', error);
+    console.error('Error deleting current account:', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

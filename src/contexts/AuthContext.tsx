@@ -38,6 +38,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session, status, router]);
 
   const logout = () => {
+    // Clear tenant ID from the tenant store
+    useTenantStore.getState().setTenantId(null);
     signOut({ callbackUrl: "/auth/signin" });
   };
 

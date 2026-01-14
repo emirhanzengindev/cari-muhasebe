@@ -107,23 +107,27 @@ export async function POST(request: NextRequest) {
 
     // Update product stock quantity
     if (movementData.product_id) {
-      const productResponse = await supabase
-        .from('products')
-        .select('stock_quantity')
-        .eq('id', movementData.product_id)
-        .eq('tenant_id', tenantId)
-        .single();
+      // Get all stock movements for this product to recalculate the stock
+      const { data: allMovements, error: movementsError } = await supabase
+        .from('stock_movements')
+        .select('*')
+        .eq('product_id', movementData.product_id)
+        .eq('tenant_id', tenantId);
 
-      if (productResponse.data) {
-        const currentQuantity = productResponse.data.stock_quantity || 0;
-        const newQuantity = movementData.movement_type === 'IN' 
-          ? currentQuantity + movementData.quantity 
-          : currentQuantity - movementData.quantity;
+      if (movementsError) {
+        console.error('Error fetching stock movements for recalculation:', movementsError);
+      } else {
+        // Calculate the total stock based on all movements
+        const totalStock = allMovements.reduce((sum: number, mov: any) => {
+          return mov.movement_type.toLowerCase() === 'in' 
+            ? sum + (mov.quantity || 0) 
+            : sum - (mov.quantity || 0);
+        }, 0);
 
         await supabase
           .from('products')
           .update({ 
-            stock_quantity: newQuantity,
+            stock_quantity: totalStock,
             updated_at: new Date().toISOString()
           })
           .eq('id', movementData.product_id)

@@ -54,6 +54,5 @@ temp/
 
 # Prisma files
 prisma/migrations
-prisma/schema.prisma
 prisma/seed.ts
 prisma/generated
