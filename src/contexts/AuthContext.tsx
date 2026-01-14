@@ -40,6 +40,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     // Clear tenant ID from the tenant store
     useTenantStore.getState().setTenantId(null);
+    // Also clear from localStorage to prevent persistence across sessions
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('tenant-storage');
+    }
     signOut({ callbackUrl: "/auth/signin" });
   };
 
