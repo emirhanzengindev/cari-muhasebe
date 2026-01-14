@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
         data: {
           name: name || email,
           companyName: companyName || '',
-          tenantId: uuidv4(),
+          tenant_id: uuidv4(),
         }
       }
     });
