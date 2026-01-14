@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: error.message, details: error }, { status: 500 });
     }
 
-    return Response.json(data[0]);
+    return Response.json(data);
   } catch (error) {
     console.error('Error creating warehouse:', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });

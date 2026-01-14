@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('SUCCESS DATA:', data);
-    return Response.json(data[0]);
+    return Response.json(data);
   } catch (error) {
     console.error('Error creating category:', error);
     return Response.json({ error: String(error) }, { status: 500 });
