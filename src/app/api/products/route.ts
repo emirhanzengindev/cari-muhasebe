@@ -69,33 +69,35 @@ export async function POST(request: NextRequest) {
     console.log('TENANT ID:', tenantId);
     
     // Map camelCase fields to snake_case for database insertion
-    const productWithTenant = {
-      name: productData.name,
-      sku: productData.sku,
-      barcode: productData.barcode,
-      category_id: productData.categoryId,
-      warehouse_id: productData.warehouseId,
-      buy_price: productData.buyPrice,
-      sell_price: productData.sellPrice,
-      vat_rate: productData.vatRate,
-      stock_quantity: productData.stockQuantity,
-      critical_level: productData.criticalLevel,
-      min_stock_level: productData.minStockLevel,
-      max_stock_level: productData.maxStockLevel,
-      reorder_point: productData.reorderPoint,
-      unit: productData.unit,
-      width: productData.width,
-      height: productData.height,
-      weight: productData.weight,
-      color: productData.color,
-      size: productData.size,
-      description: productData.description,
-      is_active: productData.isActive,
-      reorder_threshold: productData.reorderThreshold,
-      tenant_id: tenantId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+    const productWithTenant: any = {};
+    
+    // Explicitly map each field to ensure no camelCase fields leak through
+    if (productData.name !== undefined) productWithTenant.name = productData.name;
+    if (productData.sku !== undefined) productWithTenant.sku = productData.sku;
+    if (productData.barcode !== undefined) productWithTenant.barcode = productData.barcode;
+    if (productData.categoryId !== undefined) productWithTenant.category_id = productData.categoryId;
+    if (productData.warehouseId !== undefined) productWithTenant.warehouse_id = productData.warehouseId;
+    if (productData.buyPrice !== undefined) productWithTenant.buy_price = productData.buyPrice;
+    if (productData.sellPrice !== undefined) productWithTenant.sell_price = productData.sellPrice;
+    if (productData.vatRate !== undefined) productWithTenant.vat_rate = productData.vatRate;
+    if (productData.stockQuantity !== undefined) productWithTenant.stock_quantity = productData.stockQuantity;
+    if (productData.criticalLevel !== undefined) productWithTenant.critical_level = productData.criticalLevel;
+    if (productData.minStockLevel !== undefined) productWithTenant.min_stock_level = productData.minStockLevel;
+    if (productData.maxStockLevel !== undefined) productWithTenant.max_stock_level = productData.maxStockLevel;
+    if (productData.reorderPoint !== undefined) productWithTenant.reorder_point = productData.reorderPoint;
+    if (productData.unit !== undefined) productWithTenant.unit = productData.unit;
+    if (productData.width !== undefined) productWithTenant.width = productData.width;
+    if (productData.height !== undefined) productWithTenant.height = productData.height;
+    if (productData.weight !== undefined) productWithTenant.weight = productData.weight;
+    if (productData.color !== undefined) productWithTenant.color = productData.color;
+    if (productData.size !== undefined) productWithTenant.size = productData.size;
+    if (productData.description !== undefined) productWithTenant.description = productData.description;
+    if (productData.isActive !== undefined) productWithTenant.is_active = productData.isActive;
+    if (productData.reorderThreshold !== undefined) productWithTenant.reorder_threshold = productData.reorderThreshold;
+    
+    productWithTenant.tenant_id = tenantId;
+    productWithTenant.created_at = new Date().toISOString();
+    productWithTenant.updated_at = new Date().toISOString();
     
 
     
