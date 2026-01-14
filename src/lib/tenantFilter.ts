@@ -4,7 +4,12 @@ import { useTenantStore } from "@/lib/tenantStore";
 // Utility function to filter data by tenant ID
 export function filterByTenant<T extends { tenantId: string }>(data: T[]): T[] {
   // Get tenantId from tenant store
-  const currentTenantId = useTenantStore.getState().tenantId || 'default-tenant';
+  const currentTenantId = useTenantStore.getState().tenantId;
+  
+  // If no tenant ID, return empty array to prevent unauthorized access
+  if (!currentTenantId) {
+    return [];
+  }
   
   return data.filter(item => item.tenantId === currentTenantId);
 }

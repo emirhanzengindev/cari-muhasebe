@@ -4,7 +4,24 @@ import { createServerSupabaseClient } from '@/lib/supabaseServer';
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
-    const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
+    const tenantId = request.headers.get('x-tenant-id');
+    
+    if (!tenantId) {
+      return Response.json(
+        { error: 'Tenant ID missing' },
+        { status: 401 }
+      );
+    }
+    
+    // Validate that tenantId is a proper UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(tenantId)) {
+      console.error('INVALID TENANT ID FORMAT:', tenantId);
+      return Response.json(
+        { error: 'Invalid tenant ID format' },
+        { status: 400 }
+      );
+    }
     
     const supabase = createServerSupabaseClient(tenantId);
     
@@ -30,7 +47,24 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   try {
     const { id } = params;
     const warehouseData = await request.json();
-    const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
+    const tenantId = request.headers.get('x-tenant-id');
+    
+    if (!tenantId) {
+      return Response.json(
+        { error: 'Tenant ID missing' },
+        { status: 401 }
+      );
+    }
+    
+    // Validate that tenantId is a proper UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(tenantId)) {
+      console.error('INVALID TENANT ID FORMAT:', tenantId);
+      return Response.json(
+        { error: 'Invalid tenant ID format' },
+        { status: 400 }
+      );
+    }
     
     const supabase = createServerSupabaseClient(tenantId);
     
@@ -59,7 +93,24 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
-    const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
+    const tenantId = request.headers.get('x-tenant-id');
+    
+    if (!tenantId) {
+      return Response.json(
+        { error: 'Tenant ID missing' },
+        { status: 401 }
+      );
+    }
+    
+    // Validate that tenantId is a proper UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(tenantId)) {
+      console.error('INVALID TENANT ID FORMAT:', tenantId);
+      return Response.json(
+        { error: 'Invalid tenant ID format' },
+        { status: 400 }
+      );
+    }
     
     const supabase = createServerSupabaseClient(tenantId);
     

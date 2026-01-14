@@ -47,10 +47,18 @@ export default function NewAccount() {
         return;
       }
       
+      const tenantId = useTenantStore.getState().tenantId;
+      
+      if (!tenantId) {
+        setError("Tenant ID not available. Please log in again.");
+        setLoading(false);
+        return;
+      }
+      
       await addAccount({
         ...formData,
         balance: 0, // Yeni hesapların bakiyesi 0 olur
-        tenantId: useTenantStore.getState().tenantId || 'default-tenant'
+        tenantId
       });
       
       router.push("/current-accounts");

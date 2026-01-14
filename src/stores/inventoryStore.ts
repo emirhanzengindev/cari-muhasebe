@@ -86,8 +86,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
       try {
         const products = await makeApiRequest('/products');
         set({ products, loading: false });
-      } catch (error) {
-        set({ error: 'Failed to fetch products', loading: false });
+      } catch (error: any) {
+        set({ error: error.message || 'Failed to fetch products', loading: false });
       }
     },
 
@@ -101,8 +101,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
         set((state) => ({
           products: [...state.products, newProduct]
         }));
-      } catch (error) {
-        set({ error: 'Failed to add product' });
+      } catch (error: any) {
+        set({ error: error.message || 'Failed to add product' });
       }
     },
 
@@ -118,8 +118,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
             product.id === id ? updatedProduct : product
           ),
         }));
-      } catch (error) {
-        set({ error: 'Failed to update product' });
+      } catch (error: any) {
+        set({ error: error.message || 'Failed to update product' });
       }
     },
 
@@ -132,8 +132,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
         set((state) => ({
           products: state.products.filter((product) => product.id !== id),
         }));
-      } catch (error) {
-        set({ error: 'Failed to delete product' });
+      } catch (error: any) {
+        set({ error: error.message || 'Failed to delete product' });
       }
     },
 
@@ -143,8 +143,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
       try {
         const categories = await makeApiRequest('/categories');
         set({ categories, loading: false });
-      } catch (error) {
-        set({ error: 'Failed to fetch categories', loading: false });
+      } catch (error: any) {
+        set({ error: error.message || 'Failed to fetch categories', loading: false });
       }
     },
 
@@ -158,8 +158,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
         set((state) => ({
           categories: [...state.categories, newCategory]
         }));
-      } catch (error) {
-        set({ error: 'Failed to add category' });
+      } catch (error: any) {
+        set({ error: error.message || 'Failed to add category' });
       }
     },
 
@@ -175,8 +175,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
             category.id === id ? updatedCategory : category
           ),
         }));
-      } catch (error) {
-        set({ error: 'Failed to update category' });
+      } catch (error: any) {
+        set({ error: error.message || 'Failed to update category' });
       }
     },
 
@@ -189,8 +189,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
         set((state) => ({
           categories: state.categories.filter((category) => category.id !== id),
         }));
-      } catch (error) {
-        set({ error: 'Failed to delete category' });
+      } catch (error: any) {
+        set({ error: error.message || 'Failed to delete category' });
       }
     },
 
@@ -200,8 +200,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
       try {
         const warehouses = await makeApiRequest('/warehouses');
         set({ warehouses, loading: false });
-      } catch (error) {
-        set({ error: 'Failed to fetch warehouses', loading: false });
+      } catch (error: any) {
+        set({ error: error.message || 'Failed to fetch warehouses', loading: false });
       }
     },
 
@@ -215,8 +215,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
         set((state) => ({
           warehouses: [...state.warehouses, newWarehouse]
         }));
-      } catch (error) {
-        set({ error: 'Failed to add warehouse' });
+      } catch (error: any) {
+        set({ error: error.message || 'Failed to add warehouse' });
       }
     },
 
@@ -232,8 +232,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
             warehouse.id === id ? updatedWarehouse : warehouse
           ),
         }));
-      } catch (error) {
-        set({ error: 'Failed to update warehouse' });
+      } catch (error: any) {
+        set({ error: error.message || 'Failed to update warehouse' });
       }
     },
 
@@ -246,8 +246,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
         set((state) => ({
           warehouses: state.warehouses.filter((warehouse) => warehouse.id !== id),
         }));
-      } catch (error) {
-        set({ error: 'Failed to delete warehouse' });
+      } catch (error: any) {
+        set({ error: error.message || 'Failed to delete warehouse' });
       }
     },
 
@@ -257,8 +257,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
       try {
         const stockMovements = await makeApiRequest('/stock-movements');
         set({ stockMovements, loading: false });
-      } catch (error) {
-        set({ error: 'Failed to fetch stock movements', loading: false });
+      } catch (error: any) {
+        set({ error: error.message || 'Failed to fetch stock movements', loading: false });
       }
     },
 
@@ -278,8 +278,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
           // Fetch updated products to ensure state is current
           get().fetchProducts();
         }
-      } catch (error) {
-        set({ error: 'Failed to add stock movement' });
+      } catch (error: any) {
+        set({ error: error.message || 'Failed to add stock movement' });
       }
     },
 

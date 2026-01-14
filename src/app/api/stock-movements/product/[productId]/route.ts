@@ -7,7 +7,24 @@ export async function GET(
 ) {
   try {
     const { productId } = params;
-    const tenantId = request.headers.get('x-tenant-id') || 'default-tenant';
+    const tenantId = request.headers.get('x-tenant-id');
+    
+    if (!tenantId) {
+      return Response.json(
+        { error: 'Tenant ID missing' },
+        { status: 401 }
+      );
+    }
+    
+    // Validate that tenantId is a proper UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(tenantId)) {
+      console.error('INVALID TENANT ID FORMAT:', tenantId);
+      return Response.json(
+        { error: 'Invalid tenant ID format' },
+        { status: 400 }
+      );
+    }
     
     const supabase = createServerSupabaseClient(tenantId);
     

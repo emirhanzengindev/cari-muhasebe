@@ -88,6 +88,12 @@ export default function QuickSales() {
       const invoiceNumber = `INV-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`;
       
       // Create invoice
+      const tenantId = useTenantStore.getState().tenantId;
+      if (!tenantId) {
+        alert('Tenant ID not available. Please log in again.');
+        return;
+      }
+      
       const newInvoice = await addInvoice({
         invoiceNumber,
         invoiceType: 'SALES',
@@ -100,7 +106,7 @@ export default function QuickSales() {
         currency, // Para birimi eklendi
         description: description || undefined, // Açıklama yalnızca girilmişse eklensin
         isDraft: false,
-        tenantId: useTenantStore.getState().tenantId || 'default-tenant'
+        tenantId,
       });
       
       // Update account balance
@@ -120,7 +126,7 @@ export default function QuickSales() {
           vatRate: 0, // KDV kaldırıldı
           total: item.totalPrice,
           currency, // Para birimi eklendi
-          tenantId: useTenantStore.getState().tenantId || 'default-tenant'
+          tenantId,
         });
         
         // Create stock movement record
@@ -135,7 +141,7 @@ export default function QuickSales() {
           quantity: item.quantity,
           price: item.product.sellPrice,
           description: stockMovementDescription,
-          tenantId: useTenantStore.getState().tenantId || 'default-tenant'
+          tenantId,
         });
       }
       
