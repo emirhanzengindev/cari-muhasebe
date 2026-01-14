@@ -85,7 +85,19 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
       set({ loading: true, error: null });
       try {
         const products = await makeApiRequest('/products');
-        set({ products, loading: false });
+        // Transform snake_case fields to camelCase to match Product interface
+        const transformedProducts = products.map((product: any) => ({
+          ...product,
+          buyPrice: product.buy_price,
+          sellPrice: product.sell_price,
+          vatRate: product.vat_rate,
+          stockQuantity: product.stock_quantity,
+          criticalLevel: product.critical_level,
+          minStockLevel: product.min_stock_level,
+          categoryId: product.category_id,
+          warehouseId: product.warehouse_id,
+        }));
+        set({ products: transformedProducts, loading: false });
       } catch (error: any) {
         set({ error: error.message || 'Failed to fetch products', loading: false });
       }
@@ -98,8 +110,21 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
           body: JSON.stringify(productData),
         });
         
+        // Transform snake_case fields to camelCase to match Product interface
+        const transformedProduct = {
+          ...newProduct,
+          buyPrice: newProduct.buy_price,
+          sellPrice: newProduct.sell_price,
+          vatRate: newProduct.vat_rate,
+          stockQuantity: newProduct.stock_quantity,
+          criticalLevel: newProduct.critical_level,
+          minStockLevel: newProduct.min_stock_level,
+          categoryId: newProduct.category_id,
+          warehouseId: newProduct.warehouse_id,
+        };
+        
         set((state) => ({
-          products: [...state.products, newProduct]
+          products: [...state.products, transformedProduct]
         }));
       } catch (error: any) {
         set({ error: error.message || 'Failed to add product' });
@@ -113,9 +138,22 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
           body: JSON.stringify(productData),
         });
         
+        // Transform snake_case fields to camelCase to match Product interface
+        const transformedProduct = {
+          ...updatedProduct,
+          buyPrice: updatedProduct.buy_price,
+          sellPrice: updatedProduct.sell_price,
+          vatRate: updatedProduct.vat_rate,
+          stockQuantity: updatedProduct.stock_quantity,
+          criticalLevel: updatedProduct.critical_level,
+          minStockLevel: updatedProduct.min_stock_level,
+          categoryId: updatedProduct.category_id,
+          warehouseId: updatedProduct.warehouse_id,
+        };
+        
         set((state) => ({
           products: state.products.map((product) =>
-            product.id === id ? updatedProduct : product
+            product.id === id ? transformedProduct : product
           ),
         }));
       } catch (error: any) {

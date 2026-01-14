@@ -56,7 +56,7 @@ export default function Inventory() {
                          (product.barcode && product.barcode.toLowerCase().includes(searchTerm.toLowerCase()));
     
     if (filter === "ALL") return matchesSearch;
-    if (filter === "LOW_STOCK") return matchesSearch && product.stockQuantity <= product.criticalLevel;
+    if (filter === "LOW_STOCK") return matchesSearch && Number(product.stockQuantity || product.stock_quantity || 0) <= Number(product.criticalLevel || product.critical_level || 0);
     return matchesSearch;
   });
 
@@ -359,21 +359,21 @@ export default function Inventory() {
                   <div className="text-sm text-gray-500">{product.barcode || "-"}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {getCategoryName(product.categoryId)}
+                  {getCategoryName(product.categoryId || product.category_id)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {getWarehouseName(product.warehouseId)}
+                  {getWarehouseName(product.warehouseId || product.warehouse_id)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">Buy: ₺{product.buyPrice.toFixed(2)}</div>
-                  <div className="text-sm text-gray-900">Sell: ₺{product.sellPrice.toFixed(2)}</div>
-                  <div className="text-sm text-gray-500">VAT: %{product.vatRate}</div>
+                  <div className="text-sm text-gray-900">Buy: ₺{(Number(product.buyPrice || product.buy_price || 0)).toFixed(2)}</div>
+                  <div className="text-sm text-gray-900">Sell: ₺{(Number(product.sellPrice || product.sell_price || 0)).toFixed(2)}</div>
+                  <div className="text-sm text-gray-500">VAT: %{Number(product.vatRate || product.vat_rate || 0)}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className={`text-sm font-medium ${product.stockQuantity <= product.criticalLevel ? "text-red-600" : "text-green-600"}`}>
-                    {product.stockQuantity}
+                  <div className={`text-sm font-medium ${Number(product.stockQuantity || product.stock_quantity || 0) <= Number(product.criticalLevel || product.critical_level || 0) ? "text-red-600" : "text-green-600"}`}>
+                    {Number(product.stockQuantity || product.stock_quantity || 0)}
                   </div>
-                  <div className="text-xs text-gray-500">Critical: {product.criticalLevel}</div>
+                  <div className="text-xs text-gray-500">Critical: {Number(product.criticalLevel || product.critical_level || 0)}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {product.color && (

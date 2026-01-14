@@ -19,21 +19,30 @@ export interface Product {
   name: string;
   sku?: string;
   barcode?: string;
-  buyPrice: number;
-  sellPrice: number;
-  vatRate: number;
-  stockQuantity: number;
-  criticalLevel: number;
+  // Backward compatibility: both camelCase and snake_case
+  buyPrice?: number;
+  buy_price?: number;
+  sellPrice?: number;
+  sell_price?: number;
+  vatRate?: number;
+  vat_rate?: number;
+  stockQuantity?: number;
+  stock_quantity?: number;
+  criticalLevel?: number;
+  critical_level?: number;
+  minStockLevel?: number;
+  min_stock_level?: number;
   tenantId: string;
   categoryId?: string;
+  category_id?: string;
   warehouseId?: string;
+  warehouse_id?: string;
   createdAt: Date;
   updatedAt: Date;
   
   // Fabric-specific fields
   color?: string;         // Fabric color (e.g., "Blue", "Red")
   unit?: string;          // Measurement unit (e.g., "meter", "kilogram", "piece")
-  minStockLevel?: number; // Minimum stock level alert
   pattern?: string;       // Fabric pattern/design
   composition?: string;   // Fabric composition (e.g., "100% Cotton", "Polyester Blend")
   width?: number;         // Fabric width in centimeters
