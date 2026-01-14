@@ -26,12 +26,19 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        // tenantId'nin metadata'da olması zorunludur, yoksa kullanıcı geçersizdir
+        const tenantId = data.user.user_metadata?.tenantId;
+        if (!tenantId) {
+          console.error('User has no tenantId in metadata:', data.user.id);
+          return null; // Girişe izin verme
+        }
+        
         // Kullanıcı bilgilerini döndür
         return {
           id: data.user.id,
           email: data.user.email,
           name: data.user.user_metadata?.name || data.user.email,
-          tenantId: data.user.user_metadata?.tenantId || uuidv4(),
+          tenantId: tenantId,
         };
       }
     })
