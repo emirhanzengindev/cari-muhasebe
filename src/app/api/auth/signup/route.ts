@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, password, name } = body;
+    const { email, password, name, companyName } = body;
 
     if (!email || !password) {
       return Response.json(
@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
       options: {
         data: {
           name: name || email,
+          companyName: companyName || '',
           tenantId: uuidv4(),
         }
       }

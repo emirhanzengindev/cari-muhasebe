@@ -26,11 +26,23 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        // tenantId'nin metadata'da olması zorunludur, yoksa kullanıcı geçersizdir
-        const tenantId = data.user.user_metadata?.tenantId;
+        // Kullanıcının tenantId'si yoksa yeni bir tane oluştur (mevcut kullanıcılar için)
+        let tenantId = data.user.user_metadata?.tenantId;
         if (!tenantId) {
-          console.error('User has no tenantId in metadata:', data.user.id);
-          return null; // Girişe izin verme
+          console.warn('User has no tenantId in metadata, generating new one:', data.user.id);
+          tenantId = uuidv4();
+          
+          // Yeni tenantId'yi kullanıcı metadata'ya kaydet
+          try {
+            await supabase.auth.updateUser({
+              data: {
+                ...data.user.user_metadata,
+                tenantId: tenantId
+              }
+            });
+          } catch (updateError) {
+            console.error('Failed to update user metadata with tenantId:', updateError);
+          }
         }
         
         // Kullanıcı bilgilerini döndür
