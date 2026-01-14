@@ -9,9 +9,9 @@ datasource db {
 
 // Application database schema matching Supabase tables
 model User {
-  id    String  @id @default(uuid())
-  email String  @unique
-  name  String?
+  id         String   @id @default(uuid())
+  email      String   @unique
+  name       String?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
@@ -27,42 +27,43 @@ model Product {
   tenant_id      String
   created_at     DateTime @default(now())
   updated_at     DateTime @updatedAt
-  
+
   // Relations
-  category Category? @relation(fields: [category_id], references: [id])
+  category       Category?       @relation(fields: [category_id], references: [id])
+  stockMovements StockMovement[]
 }
 
 model Category {
-  id         String   @id @default(uuid())
-  name       String
+  id          String   @id @default(uuid())
+  name        String
   description String?
-  tenant_id  String
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-  
+  tenant_id   String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
   // Relations
   products Product[]
 }
 
 model Warehouse {
-  id          String   @id @default(uuid())
-  name        String
-  location    String?
-  tenant_id   String
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  id         String   @id @default(uuid())
+  name       String
+  location   String?
+  tenant_id  String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
 
 model StockMovement {
   id            String   @id @default(uuid())
   product_id    String
   warehouse_id  String
-  movement_type String   // 'in' or 'out'
+  movement_type String // 'in' or 'out'
   quantity      Int
   description   String?
   tenant_id     String
   created_at    DateTime @default(now())
-  
+
   // Relations
   product Product @relation(fields: [product_id], references: [id])
 }
