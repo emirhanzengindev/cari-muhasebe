@@ -91,6 +91,13 @@ export default function NewInvoice() {
       // Generate invoice number
       const invoiceNumber = `INV-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`;
       
+      // Check if tenant ID is available
+      const tenantId = useTenantStore.getState().tenantId;
+      if (!tenantId) {
+        setError('Tenant ID not available. Please log in again.');
+        return;
+      }
+      
       // Create the invoice
       const newInvoice = await addInvoice({
         invoiceNumber,
@@ -104,7 +111,7 @@ export default function NewInvoice() {
         currency,
         description: description || undefined, // Açıklama yalnızca girilmişse eklensin
         isDraft: false,
-        tenantId: useTenantStore.getState().tenantId
+        tenantId
       });
       
       // Create invoice items
@@ -119,7 +126,7 @@ export default function NewInvoice() {
             vatRate: 0, // KDV kaldırıldı
             total: item.quantity * item.unitPrice,
             currency,
-            tenantId: useTenantStore.getState().tenantId
+            tenantId
           });
           
           // Add stock movement for sales invoices (reduce stock)
@@ -135,7 +142,7 @@ export default function NewInvoice() {
               quantity: item.quantity,
               price: item.unitPrice,
               description: stockMovementDescription,
-              tenantId: useTenantStore.getState().tenantId
+              tenantId
             });
           }
           // For purchase invoices, we would add stock (movementType: "IN")
@@ -151,7 +158,7 @@ export default function NewInvoice() {
               quantity: item.quantity,
               price: item.unitPrice,
               description: stockMovementDescription,
-              tenantId: useTenantStore.getState().tenantId
+              tenantId
             });
           }
         }

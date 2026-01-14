@@ -46,9 +46,14 @@ export const useReportStore = create<ReportState>((set, get) => ({
   fetchSalesByProduct: async () => {
     set({ loading: true, error: null });
     try {
+      const tenantId = useTenantStore.getState().tenantId;
+      if (!tenantId) {
+        throw new Error('Tenant ID not available');
+      }
+      
       const response = await fetch('/api/reports/sales-by-product', {
         headers: {
-          'x-tenant-id': useTenantStore.getState().tenantId || '',
+          'x-tenant-id': tenantId,
         },
       });
       
@@ -67,9 +72,14 @@ export const useReportStore = create<ReportState>((set, get) => ({
   fetchMonthlyProfitLoss: async () => {
     set({ loading: true, error: null });
     try {
+      const tenantId = useTenantStore.getState().tenantId;
+      if (!tenantId) {
+        throw new Error('Tenant ID not available');
+      }
+      
       const response = await fetch('/api/reports/monthly-profit-loss', {
         headers: {
-          'x-tenant-id': useTenantStore.getState().tenantId || '',
+          'x-tenant-id': tenantId,
         },
       });
       
@@ -88,9 +98,14 @@ export const useReportStore = create<ReportState>((set, get) => ({
   fetchAccountBalances: async () => {
     set({ loading: true, error: null });
     try {
+      const tenantId = useTenantStore.getState().tenantId;
+      if (!tenantId) {
+        throw new Error('Tenant ID not available');
+      }
+      
       const response = await fetch('/api/reports/account-balances', {
         headers: {
-          'x-tenant-id': useTenantStore.getState().tenantId || '',
+          'x-tenant-id': tenantId,
         },
       });
       
