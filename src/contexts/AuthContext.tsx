@@ -1,15 +1,15 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useTenantStore } from "@/lib/tenantStore";
+import { supabase } from "@/lib/supabase";
+import { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface User {
   id: string;
   name?: string | null;
   email?: string | null;
-  image?: string | null;
   tenantId?: string;
 }
 
@@ -17,40 +17,101 @@ interface AuthContextType {
   user: User | null;
   tenantId: string | null;
   isLoading: boolean;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { data: session, status } = useSession();
   const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
   const [tenantId, setTenantId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/auth/signin");
-    } else if (session?.user) {
-      const userTenantId = (session.user as User).tenantId || null;
-      setTenantId(userTenantId);
-      useTenantStore.getState().setTenantId(userTenantId);
-    }
-  }, [session, status, router]);
+    // Check active session
+    const checkSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error("Auth session error:", error);
+        setIsLoading(false);
+        return;
+      }
 
-  const logout = () => {
+      if (!session) {
+        router.push("/auth/signin");
+        setIsLoading(false);
+        return;
+      }
+
+      // Convert Supabase user to our User type
+      const supabaseUser = session.user;
+      const userData: User = {
+        id: supabaseUser.id,
+        name: supabaseUser.user_metadata?.name || supabaseUser.email,
+        email: supabaseUser.email,
+        tenantId: supabaseUser.user_metadata?.tenant_id || null
+      };
+
+      setUser(userData);
+      setTenantId(userData.tenantId || null);
+      useTenantStore.getState().setTenantId(userData.tenantId || null);
+      setIsLoading(false);
+    };
+
+    checkSession();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        const supabaseUser = session.user;
+        const userData: User = {
+          id: supabaseUser.id,
+          name: supabaseUser.user_metadata?.name || supabaseUser.email,
+          email: supabaseUser.email,
+          tenantId: supabaseUser.user_metadata?.tenant_id || null
+        };
+
+        setUser(userData);
+        setTenantId(userData.tenantId || null);
+        useTenantStore.getState().setTenantId(userData.tenantId || null);
+      } else {
+        setUser(null);
+        setTenantId(null);
+        useTenantStore.getState().setTenantId(null);
+        router.push("/auth/signin");
+      }
+      setIsLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [router]);
+
+  const logout = async () => {
     // Clear tenant ID from the tenant store
     useTenantStore.getState().setTenantId(null);
     // Also clear from localStorage to prevent persistence across sessions
     if (typeof window !== 'undefined') {
       localStorage.removeItem('tenant-storage');
     }
-    signOut({ callbackUrl: "/auth/signin" });
+    
+    // Sign out from Supabase
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Sign out error:", error);
+    }
+    
+    // Redirect to signin page
+    router.push("/auth/signin");
   };
 
   const value = {
-    user: session?.user ? session.user as User : null,
+    user,
     tenantId,
-    isLoading: status === "loading",
+    isLoading,
     logout,
   };
 

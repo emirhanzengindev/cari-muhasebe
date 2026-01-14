@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
@@ -18,15 +18,14 @@ export default function SignIn() {
     setError("");
 
     try {
-      const result = await signIn("credentials", {
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
-        redirect: false,
       });
 
-      if (result?.error) {
+      if (error) {
         setError("Geçersiz e-posta veya şifre");
-      } else {
+      } else if (data.user) {
         router.push("/");
         router.refresh();
       }
