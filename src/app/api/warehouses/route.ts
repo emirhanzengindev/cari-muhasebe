@@ -1,12 +1,13 @@
 import { NextRequest } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
-    const tenantId = request.headers.get('x-tenant-id');
+    // Get tenant ID from JWT token
+    const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
       return Response.json(
-        { error: 'Tenant ID missing' },
+        { error: 'Tenant ID missing from JWT' },
         { status: 401 }
       );
     }
@@ -48,10 +49,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const warehouseData = await request.json();
-    const tenantId = request.headers.get('x-tenant-id');
+    // Get tenant ID from JWT token
+    const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
       return Response.json(
-        { error: 'Tenant ID missing' },
+        { error: 'Tenant ID missing from JWT' },
         { status: 401 }
       );
     }
