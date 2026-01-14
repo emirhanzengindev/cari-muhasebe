@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
-    const tenantId = request.headers.get('x-tenant-id');
+    const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
       return Response.json(
         { error: 'Tenant ID missing' },
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       );
     }
     
-    const supabase = createServerSupabaseClient(tenantId);
+    const supabase = createServerSupabaseClient();
     
     const { data, error } = await supabase
       .from('stock_movements')
@@ -46,7 +46,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   try {
     const { id } = params;
     const movementData = await request.json();
-    const tenantId = request.headers.get('x-tenant-id');
+    const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
       return Response.json(
         { error: 'Tenant ID missing' },
@@ -64,7 +64,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       );
     }
 
-    const supabase = createServerSupabaseClient(tenantId);
+    const supabase = createServerSupabaseClient();
 
     // Update the stock movement
     const { data, error } = await supabase
@@ -122,7 +122,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
-    const tenantId = request.headers.get('x-tenant-id');
+    const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
       return Response.json(
         { error: 'Tenant ID missing' },
@@ -140,7 +140,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       );
     }
 
-    const supabase = createServerSupabaseClient(tenantId);
+    const supabase = createServerSupabaseClient();
 
     // Get the stock movement before deleting to access product_id
     const { data: movement, error: fetchError } = await supabase

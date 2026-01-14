@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
 
 // Define types for the report data
 interface SalesByProduct {
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const reportType = url.pathname.split('/').pop(); // Get the last part of the path
     
-    const tenantId = request.headers.get('x-tenant-id');
+    const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
       return Response.json(
         { error: 'Tenant ID missing' },
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const supabase = createServerSupabaseClient(tenantId);
+    const supabase = createServerSupabaseClient();
     
     let reportData: any[] = [];
     

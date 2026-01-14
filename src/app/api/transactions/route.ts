@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
-    const tenantId = request.headers.get('x-tenant-id');
+    const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
       return Response.json(
         { error: 'Tenant ID missing' },
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const supabase = createServerSupabaseClient(tenantId);
+    const supabase = createServerSupabaseClient();
     
     const { data, error, status } = await supabase
       .from('transactions')
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const transactionData = await request.json();
-    const tenantId = request.headers.get('x-tenant-id');
+    const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
       return Response.json(
         { error: 'Tenant ID missing' },
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Amount is required' }, { status: 400 });
     }
 
-    const supabase = createServerSupabaseClient(tenantId);
+    const supabase = createServerSupabaseClient();
     
     const { data, error, status } = await supabase
       .from('transactions')

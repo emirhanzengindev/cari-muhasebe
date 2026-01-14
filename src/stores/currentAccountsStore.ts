@@ -25,6 +25,7 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const response = await fetch(`/api${endpoint}`, {
     ...options,
     headers,
+    credentials: 'include',
   });
   
   if (!response.ok) {

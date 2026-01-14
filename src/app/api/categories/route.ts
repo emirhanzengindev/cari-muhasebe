@@ -4,7 +4,7 @@ import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseSe
 export async function GET(request: NextRequest) {
   try {
     // Get tenant ID from JWT token
-    const tenantId = await getTenantIdFromJWT(request);
+    const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
       return Response.json(
         { error: 'Tenant ID missing from JWT' },
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const supabase = createServerSupabaseClient(tenantId);
+    const supabase = createServerSupabaseClient();
     
     const { data, error } = await supabase
       .from('categories')
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     console.log('BODY:', categoryData);
     
     // Get tenant ID from JWT token
-    const tenantId = await getTenantIdFromJWT(request);
+    const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
       return Response.json(
         { error: 'Tenant ID missing from JWT' },
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Category name is required' }, { status: 400 });
     }
     
-    const supabase = createServerSupabaseClient(tenantId);
+    const supabase = createServerSupabaseClient();
     
     const { data, error } = await supabase
       .from('categories')

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
 
 export async function GET(
   request: NextRequest,
@@ -7,7 +7,7 @@ export async function GET(
 ) {
   try {
     const { id } = params;
-    const tenantId = request.headers.get('x-tenant-id');
+    const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
       return Response.json(
         { error: 'Tenant ID missing' },
@@ -25,7 +25,7 @@ export async function GET(
       );
     }
     
-    const supabase = createServerSupabaseClient(tenantId);
+    const supabase = createServerSupabaseClient();
     
     const { data, error, status } = await supabase
       .from('invoice_items')
@@ -62,7 +62,7 @@ export async function PUT(
   try {
     const { id } = params;
     const invoiceItemData = await request.json();
-    const tenantId = request.headers.get('x-tenant-id');
+    const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
       return Response.json(
         { error: 'Tenant ID missing' },
@@ -80,7 +80,7 @@ export async function PUT(
       );
     }
     
-    const supabase = createServerSupabaseClient(tenantId);
+    const supabase = createServerSupabaseClient();
     
     // First check if the record exists and belongs to the tenant
     const { data: existingItem, error: fetchError } = await supabase
@@ -133,7 +133,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = params;
-    const tenantId = request.headers.get('x-tenant-id');
+    const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
       return Response.json(
         { error: 'Tenant ID missing' },
@@ -151,7 +151,7 @@ export async function DELETE(
       );
     }
     
-    const supabase = createServerSupabaseClient(tenantId);
+    const supabase = createServerSupabaseClient();
     
     // First check if the record exists and belongs to the tenant
     const { data: existingItem, error: fetchError } = await supabase

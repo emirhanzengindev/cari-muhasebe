@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
 
 export async function GET(
   request: NextRequest, 
@@ -7,7 +7,7 @@ export async function GET(
 ) {
   try {
     const { productId } = params;
-    const tenantId = request.headers.get('x-tenant-id');
+    const tenantId = await getTenantIdFromJWT();
     
     if (!tenantId) {
       return Response.json(
@@ -26,7 +26,7 @@ export async function GET(
       );
     }
     
-    const supabase = createServerSupabaseClient(tenantId);
+    const supabase = createServerSupabaseClient();
     
     const { data, error } = await supabase
       .from('stock_movements')

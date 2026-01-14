@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.45.1",
     "@types/uuid": "^10.0.0",
     "bcryptjs": "^3.0.3",
