@@ -69,58 +69,35 @@ export async function POST(request: NextRequest) {
     console.log('TENANT ID:', tenantId);
     
     // Map camelCase fields to snake_case for database insertion
-    const {
-      name,
-      sku,
-      barcode,
-      categoryId,
-      warehouseId,
-      buyPrice,
-      sellPrice,
-      vatRate,
-      stockQuantity,
-      criticalLevel,
-      minStockLevel,
-      maxStockLevel,
-      reorderPoint,
-      unit,
-      width,
-      height,
-      weight,
-      color,
-      size,
-      description,
-      isActive,
-      reorderThreshold
-    } = productData;
-    
     const productWithTenant = {
-      name,
-      sku,
-      barcode,
-      category_id: categoryId,
-      warehouse_id: warehouseId,
-      buy_price: buyPrice,
-      sell_price: sellPrice,
-      vat_rate: vatRate,
-      stock_quantity: stockQuantity,
-      critical_level: criticalLevel,
-      min_stock_level: minStockLevel,
-      max_stock_level: maxStockLevel,
-      reorder_point: reorderPoint,
-      unit,
-      width,
-      height,
-      weight,
-      color,
-      size,
-      description,
-      is_active: isActive,
-      reorder_threshold: reorderThreshold,
+      name: productData.name,
+      sku: productData.sku,
+      barcode: productData.barcode,
+      category_id: productData.categoryId,
+      warehouse_id: productData.warehouseId,
+      buy_price: productData.buyPrice,
+      sell_price: productData.sellPrice,
+      vat_rate: productData.vatRate,
+      stock_quantity: productData.stockQuantity,
+      critical_level: productData.criticalLevel,
+      min_stock_level: productData.minStockLevel,
+      max_stock_level: productData.maxStockLevel,
+      reorder_point: productData.reorderPoint,
+      unit: productData.unit,
+      width: productData.width,
+      height: productData.height,
+      weight: productData.weight,
+      color: productData.color,
+      size: productData.size,
+      description: productData.description,
+      is_active: productData.isActive,
+      reorder_threshold: productData.reorderThreshold,
       tenant_id: tenantId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
+    
+
     
     console.log('PRODUCT WITH TENANT:', productWithTenant);
     
