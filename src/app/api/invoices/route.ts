@@ -90,7 +90,6 @@ export async function POST(request: NextRequest) {
     
     const invoiceWithTenant = {
       ...invoiceData,
-      tenant_id: tenantId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };

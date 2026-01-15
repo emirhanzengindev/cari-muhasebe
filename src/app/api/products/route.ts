@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     if (productData.isActive !== undefined) productWithTenant.is_active = productData.isActive;
     if (productData.reorderThreshold !== undefined) productWithTenant.reorder_threshold = productData.reorderThreshold;
     
-    productWithTenant.tenant_id = tenantId;
+
     productWithTenant.created_at = new Date().toISOString();
     productWithTenant.updated_at = new Date().toISOString();
     

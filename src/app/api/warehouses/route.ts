@@ -89,7 +89,6 @@ export async function POST(request: NextRequest) {
     
     const warehouseWithTenant = {
       ...warehouseData,
-      tenant_id: tenantId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
