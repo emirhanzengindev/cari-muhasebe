@@ -38,6 +38,10 @@ export async function getTenantIdFromJWT() {
     error,
   } = await supabase.auth.getUser()
 
+  console.log('DEBUG: getTenantIdFromJWT called');
+  console.log('DEBUG: Supabase auth error:', error);
+  console.log('DEBUG: User object:', user);
+
   if (error || !user) {
     console.error('SUPABASE AUTH ERROR:', error)
     return null
@@ -46,11 +50,13 @@ export async function getTenantIdFromJWT() {
   // Get tenant_id directly from user metadata
   const tenantId = user.user_metadata?.tenant_id
   
+  console.log('DEBUG: Extracted tenantId:', tenantId);
+
   if (!tenantId) {
     console.error('TENANT ID MISSING IN USER METADATA')
     console.error('USER METADATA:', user.user_metadata)
     return null
   }
-//selam
+  
   return tenantId
 }

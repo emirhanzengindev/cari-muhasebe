@@ -11,7 +11,11 @@ const getTenantId = () => {
 const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const tenantId = getTenantId();
   
+  console.log('DEBUG: makeApiRequest called for endpoint:', endpoint);
+  console.log('DEBUG: Retrieved tenantId:', tenantId);
+  
   if (!tenantId) {
+    console.error('ERROR: Tenant ID not available');
     throw new Error('Tenant ID not available');
   }
   
@@ -20,6 +24,8 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
     'x-tenant-id': tenantId,
     ...options.headers,
   };
+  
+  console.log('DEBUG: Headers being sent:', headers);
   
   // Add Content-Type for methods that typically have a body
   const method = options.method?.toUpperCase();
@@ -33,7 +39,12 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
     credentials: 'include',
   });
   
+  console.log('DEBUG: API response status:', response.status);
+  
   if (!response.ok) {
+    console.error('ERROR: API request failed with status:', response.status);
+    const errorText = await response.text();
+    console.error('ERROR: API response text:', errorText);
     throw new Error(`API request failed: ${response.status} ${response.statusText}`);
   }
   
