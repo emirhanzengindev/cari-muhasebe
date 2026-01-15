@@ -53,6 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: supabaseUser.email,
         tenantId: supabaseUser.user_metadata?.tenant_id || null
       };
+      
+      console.log('DEBUG: Setting tenantId from auth context:', userData.tenantId);
 
       setUser(userData);
       setTenantId(userData.tenantId || null);
@@ -72,6 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: supabaseUser.email,
           tenantId: supabaseUser.user_metadata?.tenant_id || null
         };
+        
+        console.log('DEBUG: Setting tenantId from auth state change:', userData.tenantId);
 
         setUser(userData);
         setTenantId(userData.tenantId || null);

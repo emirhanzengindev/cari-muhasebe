@@ -5,6 +5,7 @@ import { useTenantStore } from '@/lib/tenantStore';
 // Helper function to make API requests
 const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const tenantId = useTenantStore.getState().tenantId;
+    console.log('DEBUG: Raw tenantId from store in invoiceStore:', tenantId);
   
   console.log('DEBUG: makeApiRequest called for endpoint:', endpoint);
   console.log('DEBUG: Retrieved tenantId:', tenantId);

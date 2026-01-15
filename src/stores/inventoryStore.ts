@@ -4,7 +4,9 @@ import { useTenantStore } from '@/lib/tenantStore';
 
 // Helper function to get tenant ID
 const getTenantId = () => {
-  return useTenantStore.getState().tenantId;
+  const tenantId = useTenantStore.getState().tenantId;
+  console.log('DEBUG: Raw tenantId from store:', tenantId);
+  return tenantId;
 };
 
 // Helper function to make API requests
