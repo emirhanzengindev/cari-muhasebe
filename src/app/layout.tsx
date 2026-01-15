@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google"; // Geist yerine Inter fontunu kullan
 import "./globals.css";
 import MainLayout from "@/components/MainLayout";
-import Providers from "@/components/Providers";
+import dynamic from "next/dynamic";
+
+const Providers = dynamic(() => import("@/components/Providers"), { ssr: false });
 
 const inter = Inter({
   variable: "--font-inter",
