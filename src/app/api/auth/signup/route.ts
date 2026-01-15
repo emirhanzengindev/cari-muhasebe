@@ -1,9 +1,6 @@
 import { NextRequest } from "next/server";
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from "@/lib/supabase";
 import { v4 as uuidv4 } from 'uuid';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,8 +15,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Supabase'te yeni kullanıcı oluştur
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,

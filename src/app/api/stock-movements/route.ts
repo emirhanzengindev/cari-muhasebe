@@ -3,10 +3,28 @@ import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseSe
 
 export async function GET(request: NextRequest) {
   try {
-    const tenantId = await getTenantIdFromJWT();
+    const { data: { user }, error: userError } = await createServerSupabaseClient().auth.getUser();
+    
+    if (userError || !user) {
+      return Response.json(
+        { error: 'Auth session missing' },
+        { status: 401 }
+      );
+    }
+    
+    let tenantId = user.user_metadata?.tenant_id;
+    
+    // Clean tenant ID if it has unwanted suffix
+    if (tenantId && typeof tenantId === 'string') {
+      if (tenantId.endsWith('ENANT_ID')) {
+        // Remove the suffix
+        tenantId = tenantId.replace(/ENANT_ID$/, '');
+      }
+    }
+    
     if (!tenantId) {
       return Response.json(
-        { error: 'Tenant ID missing' },
+        { error: 'Tenant ID missing from JWT' },
         { status: 401 }
       );
     }
@@ -48,10 +66,28 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const movementData = await request.json();
-    const tenantId = await getTenantIdFromJWT();
+    const { data: { user }, error: userError } = await createServerSupabaseClient().auth.getUser();
+    
+    if (userError || !user) {
+      return Response.json(
+        { error: 'Auth session missing' },
+        { status: 401 }
+      );
+    }
+    
+    let tenantId = user.user_metadata?.tenant_id;
+    
+    // Clean tenant ID if it has unwanted suffix
+    if (tenantId && typeof tenantId === 'string') {
+      if (tenantId.endsWith('ENANT_ID')) {
+        // Remove the suffix
+        tenantId = tenantId.replace(/ENANT_ID$/, '');
+      }
+    }
+    
     if (!tenantId) {
       return Response.json(
-        { error: 'Tenant ID missing' },
+        { error: 'Tenant ID missing from JWT' },
         { status: 401 }
       );
     }

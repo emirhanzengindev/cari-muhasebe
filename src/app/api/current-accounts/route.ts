@@ -7,17 +7,31 @@ export async function GET(request: NextRequest) {
     console.log('DEBUG: GET /api/current-accounts called');
     
     // Get tenant ID from JWT token (Supabase session)
-    const tenantId = await getTenantIdFromJWT();
+    const { data: { user }, error: userError } = await createServerSupabaseClient().auth.getUser();
+    
+    if (userError || !user) {
+      return Response.json(
+        { error: 'Auth session missing' },
+        { status: 401 }
+      );
+    }
+    
+    let tenantId = user.user_metadata?.tenant_id;
+    
+    // Clean tenant ID if it has unwanted suffix
+    if (tenantId && typeof tenantId === 'string') {
+      if (tenantId.endsWith('ENANT_ID')) {
+        // Remove the suffix
+        tenantId = tenantId.replace(/ENANT_ID$/, '');
+      }
+    }
     
     if (!tenantId) {
-      console.log('DEBUG: Supabase session not available');
       return Response.json(
         { error: 'Tenant ID missing from JWT' },
         { status: 401 }
       );
     }
-    
-    console.log('DEBUG: Using tenant ID from JWT:', tenantId);
     
     // Validate that tenantId is a proper UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -59,10 +73,28 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const accountData = await request.json();
-    const tenantId = await getTenantIdFromJWT();
+    const { data: { user }, error: userError } = await createServerSupabaseClient().auth.getUser();
+    
+    if (userError || !user) {
+      return Response.json(
+        { error: 'Auth session missing' },
+        { status: 401 }
+      );
+    }
+    
+    let tenantId = user.user_metadata?.tenant_id;
+    
+    // Clean tenant ID if it has unwanted suffix
+    if (tenantId && typeof tenantId === 'string') {
+      if (tenantId.endsWith('ENANT_ID')) {
+        // Remove the suffix
+        tenantId = tenantId.replace(/ENANT_ID$/, '');
+      }
+    }
+    
     if (!tenantId) {
       return Response.json(
-        { error: 'Tenant ID missing' },
+        { error: 'Tenant ID missing from JWT' },
         { status: 401 }
       );
     }
