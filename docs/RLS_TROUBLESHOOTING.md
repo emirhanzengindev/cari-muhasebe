@@ -134,3 +134,4 @@ WHERE tablename IN ('products', 'stock_movements', 'categories', 'warehouses');
 4. Confirm that frontend requests include credentials
 5. Test policy functionality with mock JWT claims
 6. Monitor application logs for auth-related errors
+7. **Verify that user metadata contains tenant_id**: Check that when users sign up/log in, the tenant_id is properly stored in user.user_metadata.tenant_id in the Supabase Auth system
