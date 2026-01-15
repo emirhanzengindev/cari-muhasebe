@@ -67,6 +67,7 @@ export function createServerSupabaseClient() {
 export async function getTenantIdFromJWT() {
   const supabase = createServerSupabaseClient();
 
+  // First, try to get the user session
   const {
     data: { user },
     error,
@@ -79,6 +80,14 @@ export async function getTenantIdFromJWT() {
 
   if (error || !user) {
     console.error('SUPABASE AUTH ERROR:', error);
+    console.error('USER OBJECT:', user);
+    // Check if there are cookies available
+    const cookieStore = cookies();
+    const accessToken = cookieStore.get('sb-access-token')?.value;
+    console.log('DEBUG: Access token in cookies:', !!accessToken);
+    if (!accessToken) {
+      console.error('ERROR: No access token found in cookies');
+    }
     return null;
   }
 
