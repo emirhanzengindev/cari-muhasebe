@@ -1,39 +1,29 @@
 import { NextRequest } from 'next/server';
 import { headers, cookies } from 'next/headers';
-import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
+import { createServerSupabaseClient } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('DEBUG: GET /api/warehouses called');
-    
-    // Get tenant ID from JWT token (Supabase session)
-    const tenantId = await getTenantIdFromJWT();
-    
-    if (!tenantId) {
+    console.log('DEBUG: GET /api/warehouses called')
+
+    const supabase = createServerSupabaseClient()
+
+    const {
+      data: { user },
+      error: authError
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      console.error('DEBUG: Auth session missing')
       return Response.json(
-        { error: 'Tenant ID missing from JWT' },
+        { error: 'Auth session missing' },
         { status: 401 }
-      );
+      )
     }
-    
-    console.log('DEBUG: Using tenant ID from JWT:', tenantId);
-    
-    // Validate that tenantId is a proper UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(tenantId)) {
-      console.error('INVALID TENANT ID FORMAT:', tenantId);
-      return Response.json(
-        { error: 'Invalid tenant ID format' },
-        { status: 400 }
-      );
-    }
-    
-    const supabase = createServerSupabaseClient();
-    
+
     const { data, error } = await supabase
       .from('warehouses')
       .select('*')
-      .eq('tenant_id', tenantId);
 
     if (error) {
       console.error('SUPABASE ERROR DETAILS (GET):', {
@@ -56,23 +46,17 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const warehouseData = await request.json();
-    // Get tenant ID from JWT token
-    const tenantId = await getTenantIdFromJWT();
     
-    if (!tenantId) {
+    const supabase = createServerSupabaseClient();
+    
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+    
+    if (!user) {
       return Response.json(
-        { error: 'Tenant ID missing from JWT' },
+        { error: 'Auth session missing' },
         { status: 401 }
-      );
-    }
-    
-    // Validate that tenantId is a proper UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(tenantId)) {
-      console.error('INVALID TENANT ID FORMAT:', tenantId);
-      return Response.json(
-        { error: 'Invalid tenant ID format' },
-        { status: 400 }
       );
     }
     
@@ -96,8 +80,6 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Warehouse name is required' }, { status: 400 });
     }
 
-    const supabase = createServerSupabaseClient();
-    
     const { data, error } = await supabase
       .from('warehouses')
       .insert([warehouseWithTenant])

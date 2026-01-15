@@ -1,46 +1,33 @@
 import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
-import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
+import { createServerSupabaseClient } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
-    // Get tenant ID from JWT token (Supabase session)
-    const tenantId = await getTenantIdFromJWT();
-    
-    if (!tenantId) {
+    console.log('DEBUG: GET /api/stock-movements called')
+
+    const supabase = createServerSupabaseClient()
+
+    const {
+      data: { user },
+      error: authError
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      console.error('DEBUG: Auth session missing')
       return Response.json(
-        { error: 'Tenant ID missing from JWT' },
+        { error: 'Auth session missing' },
         { status: 401 }
-      );
+      )
     }
-    
-    console.log('DEBUG: Using tenant ID from JWT:', tenantId);
-    
-    // Validate that tenantId is a proper UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(tenantId)) {
-      console.error('INVALID TENANT ID FORMAT:', tenantId);
-      return Response.json(
-        { error: 'Invalid tenant ID format' },
-        { status: 400 }
-      );
-    }
-    
-    const supabase = createServerSupabaseClient();
-    
+
     const { data, error } = await supabase
       .from('stock_movements')
       .select('*')
-      .eq('tenant_id', tenantId);
 
     if (error) {
-      console.error('SUPABASE ERROR DETAILS (GET):', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint
-      });
-      return Response.json({ error: error.message, details: error }, { status: 500 });
+      console.error('SUPABASE ERROR:', error);
+      return Response.json({ error: error.message }, { status: 500 });
     }
 
     return Response.json(data);
@@ -52,109 +39,63 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const movementData = await request.json();
-    // Get tenant ID from JWT token (Supabase session)
-    const tenantId = await getTenantIdFromJWT();
-    
-    if (!tenantId) {
+    const movementData = await request.json()
+
+    const supabase = createServerSupabaseClient()
+
+    const {
+      data: { user }
+    } = await supabase.auth.getUser()
+
+    if (!user) {
       return Response.json(
-        { error: 'Tenant ID missing from JWT' },
+        { error: 'Auth session missing' },
         { status: 401 }
-      );
+      )
+    }
+
+    const movement: any = {}
+
+    if (movementData.productId !== undefined) movement.product_id = movementData.productId
+    if (movementData.movementType !== undefined) movement.movement_type = movementData.movementType
+    if (movementData.quantity !== undefined) movement.quantity = movementData.quantity
+    if (movementData.description !== undefined) movement.description = movementData.description
+    if (movementData.reference !== undefined) movement.reference = movementData.reference
+    if (movementData.date !== undefined) movement.date = movementData.date
+
+    movement.created_at = new Date().toISOString()
+    movement.updated_at = new Date().toISOString()
+
+    if (!movement.product_id || !movement.movement_type || !movement.quantity) {
+      return Response.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      )
     }
     
-    console.log('DEBUG: Using tenant ID from JWT:', tenantId);
-    
-    // Validate that tenantId is a proper UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(tenantId)) {
-      console.error('INVALID TENANT ID FORMAT:', tenantId);
+    // Validate movement type is one of the allowed values
+    const validMovementTypes = ['in', 'out'];
+    if (!validMovementTypes.includes(movement.movement_type.toLowerCase())) {
       return Response.json(
-        { error: 'Invalid tenant ID format' },
+        { error: 'Invalid movement type. Must be "in" or "out"' },
         { status: 400 }
       );
     }
-    
-    // Map camelCase fields to snake_case for database insertion
-    const movementWithTenant: any = {};
-    
-    // Explicitly map each field to ensure no camelCase fields leak through
-    if (movementData.productId !== undefined) movementWithTenant.product_id = movementData.productId;
-    if (movementData.movementType !== undefined) movementWithTenant.movement_type = movementData.movementType;
-    if (movementData.quantity !== undefined) movementWithTenant.quantity = movementData.quantity;
-    if (movementData.description !== undefined) movementWithTenant.description = movementData.description;
-    if (movementData.reference !== undefined) movementWithTenant.reference = movementData.reference;
-    if (movementData.date !== undefined) movementWithTenant.date = movementData.date;
-    
-    movementWithTenant.tenant_id = tenantId;
-    movementWithTenant.created_at = new Date().toISOString();
-    movementWithTenant.updated_at = new Date().toISOString();
-    
-    // Validate required fields
-    if (!movementWithTenant.product_id) {
-      console.error('MISSING REQUIRED FIELD: product_id');
-      return Response.json({ error: 'Product ID is required' }, { status: 400 });
-    }
-    if (!movementWithTenant.movement_type) {
-      console.error('MISSING REQUIRED FIELD: movement_type');
-      return Response.json({ error: 'Movement type is required' }, { status: 400 });
-    }
-    if (!movementWithTenant.quantity) {
-      console.error('MISSING REQUIRED FIELD: quantity');
-      return Response.json({ error: 'Quantity is required' }, { status: 400 });
-    }
 
-    const supabase = createServerSupabaseClient();
-    
     const { data, error } = await supabase
       .from('stock_movements')
-      .insert([movementWithTenant])
+      .insert(movement)
       .select()
-      .single();
+      .single()
 
     if (error) {
-      console.error('SUPABASE ERROR DETAILS:', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint
-      });
-      return Response.json({ error: error.message, details: error }, { status: 500 });
+      console.error('SUPABASE ERROR:', error)
+      return Response.json({ error: error.message }, { status: 500 })
     }
 
-    // Update product stock quantity
-    if (movementData.product_id) {
-      // Get all stock movements for this product to recalculate the stock
-      const { data: allMovements, error: movementsError } = await supabase
-        .from('stock_movements')
-        .select('*')
-        .eq('product_id', movementData.product_id)
-        .eq('tenant_id', tenantId);
-
-      if (movementsError) {
-        console.error('Error fetching stock movements for recalculation:', movementsError);
-      } else {
-        // Calculate the total stock based on all movements
-        const totalStock = allMovements.reduce((sum: number, mov: any) => {
-          return mov.movement_type.toLowerCase() === 'in' 
-            ? sum + (mov.quantity || 0) 
-            : sum - (mov.quantity || 0);
-        }, 0);
-
-        await supabase
-          .from('products')
-          .update({ 
-            stock_quantity: totalStock,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', movementData.product_id)
-          .eq('tenant_id', tenantId);
-      }
-    }
-
-    return Response.json(data);
+    return Response.json(data)
   } catch (error) {
-    console.error('Error creating stock movement:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error creating stock movement:', error)
+    return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
