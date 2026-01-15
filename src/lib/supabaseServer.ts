@@ -51,6 +51,6 @@ export async function getTenantIdFromJWT() {
     console.error('USER METADATA:', user.user_metadata)
     return null
   }
-
+//selam
   return tenantId
 }
