@@ -52,9 +52,7 @@ export const useReportStore = create<ReportState>((set, get) => ({
       }
       
       const response = await fetch('/api/reports/sales-by-product', {
-        headers: {
-          'x-tenant-id': tenantId,
-        },
+        credentials: 'include',
       });
       
       if (!response.ok) {
@@ -78,9 +76,7 @@ export const useReportStore = create<ReportState>((set, get) => ({
       }
       
       const response = await fetch('/api/reports/monthly-profit-loss', {
-        headers: {
-          'x-tenant-id': tenantId,
-        },
+        credentials: 'include',
       });
       
       if (!response.ok) {
@@ -104,9 +100,7 @@ export const useReportStore = create<ReportState>((set, get) => ({
       }
       
       const response = await fetch('/api/reports/account-balances', {
-        headers: {
-          'x-tenant-id': tenantId,
-        },
+        credentials: 'include',
       });
       
       if (!response.ok) {

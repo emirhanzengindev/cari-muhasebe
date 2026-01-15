@@ -6,29 +6,18 @@ export async function GET(request: NextRequest) {
   try {
     console.log('DEBUG: GET /api/invoices called');
     
-    // Try to get tenant ID from JWT token (Supabase session)
-    let tenantId = await getTenantIdFromJWT();
+    // Get tenant ID from JWT token (Supabase session)
+    const tenantId = await getTenantIdFromJWT();
     
-    // If Supabase session is not available, try to get from headers (fallback)
     if (!tenantId) {
-      console.log('DEBUG: Supabase session not available, trying header fallback');
-      
-      // Get tenant ID from headers
-      const headersList = await headers();
-      tenantId = headersList.get('x-tenant-id');
-      
-      if (!tenantId) {
-        console.error('DEBUG: Both JWT and header tenant ID missing');
-        return Response.json(
-          { error: 'Tenant ID missing from JWT and headers' },
-          { status: 401 }
-        );
-      }
-      
-      console.log('DEBUG: Using tenant ID from header:', tenantId);
-    } else {
-      console.log('DEBUG: Using tenant ID from JWT:', tenantId);
+      console.log('DEBUG: Supabase session not available');
+      return Response.json(
+        { error: 'Tenant ID missing from JWT' },
+        { status: 401 }
+      );
     }
+    
+    console.log('DEBUG: Using tenant ID from JWT:', tenantId);
     
     // Validate that tenantId is a proper UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

@@ -12,7 +12,6 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   
   // Conditionally add Content-Type header only for requests that have a body
   const headers: any = {
-    'x-tenant-id': tenantId,
     ...options.headers,
   };
   
