@@ -15,7 +15,7 @@ if (!supabaseAnonKey) {
 // Function to create a Supabase client that reads cookies automatically
 export function createServerSupabaseClient() {
   const cookieStore = cookies()
-  
+
   return createServerClient(
     supabaseUrl,
     supabaseAnonKey,
@@ -23,22 +23,8 @@ export function createServerSupabaseClient() {
       cookies: {
         get(name: string) {
           return cookieStore.get(name)?.value
-        },
-        set(name: string, value: string, options: any) {
-          try {
-            cookieStore.set(name, value, options)
-          } catch (error) {
-            console.error(`Error setting cookie ${name}:`, error)
-          }
-        },
-        remove(name: string, options: any) {
-          try {
-            cookieStore.delete({ name, ...options })
-          } catch (error) {
-            console.error(`Error removing cookie ${name}:`, error)
-          }
-        },
-      },
+        }
+      }
     }
   )
 }
@@ -54,16 +40,10 @@ export async function getTenantIdFromJWT() {
 
   if (error || !user) {
     console.error('SUPABASE AUTH ERROR:', error);
-    // Additional check to see if cookies exist
-    const cookieStore = cookies();
-    const accessToken = cookieStore.get('sb-access-token');
-    const refreshToken = cookieStore.get('sb-refresh-token');
-    console.error('Access token exists:', !!accessToken);
-    console.error('Refresh token exists:', !!refreshToken);
     return null;
   }
 
-  // Get tenant_id directly from user metadata
+  // Get tenant_id from user metadata as fallback
   let tenantId = user.user_metadata?.tenant_id;
   
   // Clean tenant ID if it has unwanted suffix (fix for malformed tenant IDs)
@@ -74,8 +54,8 @@ export async function getTenantIdFromJWT() {
   }
   
   if (!tenantId) {
-    console.error('TENANT ID MISSING IN USER METADATA');
-    return null;
+    // Fallback to user ID
+    tenantId = user.id;
   }
   
   return tenantId;

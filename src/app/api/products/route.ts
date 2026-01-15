@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { headers, cookies } from 'next/headers';
-import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
+import { createServerSupabaseClient } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,15 +16,8 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    let tenantId = user.user_metadata?.tenant_id;
-    
-    // Clean tenant ID if it has unwanted suffix
-    if (tenantId && typeof tenantId === 'string') {
-      if (tenantId.endsWith('ENANT_ID')) {
-        // Remove the suffix
-        tenantId = tenantId.replace(/ENANT_ID$/, '');
-      }
-    }
+    // Use user ID as tenant ID for RLS policies
+    const tenantId = user.id;
     
     if (!tenantId) {
       return Response.json(
@@ -81,15 +74,8 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    let tenantId = user.user_metadata?.tenant_id;
-    
-    // Clean tenant ID if it has unwanted suffix
-    if (tenantId && typeof tenantId === 'string') {
-      if (tenantId.endsWith('ENANT_ID')) {
-        // Remove the suffix
-        tenantId = tenantId.replace(/ENANT_ID$/, '');
-      }
-    }
+    // Use user ID as tenant ID for RLS policies
+    const tenantId = user.id;
     
     if (!tenantId) {
       return Response.json(
