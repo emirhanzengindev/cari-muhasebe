@@ -65,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
       
       console.log('DEBUG: Setting tenantId from auth context:', userData.tenantId);
+            console.log('DEBUG: Raw tenant ID before cleaning:', supabaseUser.user_metadata?.tenant_id);
 
       setUser(userData);
       setTenantId(userData.tenantId || null);
@@ -96,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
         
         console.log('DEBUG: Setting tenantId from auth state change:', userData.tenantId);
+                console.log('DEBUG: Raw tenant ID before cleaning in auth state change:', supabaseUser.user_metadata?.tenant_id);
 
         setUser(userData);
         setTenantId(userData.tenantId || null);
