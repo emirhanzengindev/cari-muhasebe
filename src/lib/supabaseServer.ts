@@ -16,13 +16,18 @@ if (!supabaseAnonKey) {
 export function createServerSupabaseClient() {
   const cookieStore = cookies()
 
+  // Log for debugging
+  console.log('DEBUG: Creating Supabase client');
+
   return createServerClient(
     supabaseUrl,
     supabaseAnonKey,
     {
       cookies: {
         get(name: string) {
-          return cookieStore.get(name)?.value
+          const value = cookieStore.get(name)?.value;
+          console.log(`DEBUG: Getting cookie ${name}: ${value ? 'exists' : 'missing'}`);
+          return value;
         },
       },
     }

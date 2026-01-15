@@ -1,14 +1,33 @@
 import { NextRequest } from 'next/server';
+import { headers } from 'next/headers';
 import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
-    const tenantId = await getTenantIdFromJWT();
+    console.log('DEBUG: GET /api/invoices called');
+    
+    // Try to get tenant ID from JWT token (Supabase session)
+    let tenantId = await getTenantIdFromJWT();
+    
+    // If Supabase session is not available, try to get from headers (fallback)
     if (!tenantId) {
-      return Response.json(
-        { error: 'Tenant ID missing' },
-        { status: 401 }
-      );
+      console.log('DEBUG: Supabase session not available, trying header fallback');
+      
+      // Get tenant ID from headers
+      const headersList = await headers();
+      tenantId = headersList.get('x-tenant-id');
+      
+      if (!tenantId) {
+        console.error('DEBUG: Both JWT and header tenant ID missing');
+        return Response.json(
+          { error: 'Tenant ID missing from JWT and headers' },
+          { status: 401 }
+        );
+      }
+      
+      console.log('DEBUG: Using tenant ID from header:', tenantId);
+    } else {
+      console.log('DEBUG: Using tenant ID from JWT:', tenantId);
     }
     
     // Validate that tenantId is a proper UUID format
@@ -40,6 +59,7 @@ export async function GET(request: NextRequest) {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
+    console.log('DEBUG: Successfully fetched', data?.length || 0, 'invoices');
     return Response.json(data);
   } catch (error) {
     console.error('Error fetching invoices:', error);
