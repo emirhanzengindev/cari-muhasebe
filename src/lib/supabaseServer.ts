@@ -14,15 +14,31 @@ if (!supabaseAnonKey) {
 
 // Function to create a Supabase client that reads cookies automatically
 export function createServerSupabaseClient() {
+  const cookieStore = cookies()
+  
   return createServerClient(
     supabaseUrl,
     supabaseAnonKey,
     {
       cookies: {
         get(name: string) {
-          return cookies().get(name)?.value
-        }
-      }
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: any) {
+          try {
+            cookieStore.set(name, value, options)
+          } catch (error) {
+            console.error(`Error setting cookie ${name}:`, error)
+          }
+        },
+        remove(name: string, options: any) {
+          try {
+            cookieStore.delete({ name, ...options })
+          } catch (error) {
+            console.error(`Error removing cookie ${name}:`, error)
+          }
+        },
+      },
     }
   )
 }
@@ -38,6 +54,12 @@ export async function getTenantIdFromJWT() {
 
   if (error || !user) {
     console.error('SUPABASE AUTH ERROR:', error);
+    // Additional check to see if cookies exist
+    const cookieStore = cookies();
+    const accessToken = cookieStore.get('sb-access-token');
+    const refreshToken = cookieStore.get('sb-refresh-token');
+    console.error('Access token exists:', !!accessToken);
+    console.error('Refresh token exists:', !!refreshToken);
     return null;
   }
 

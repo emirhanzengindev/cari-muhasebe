@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
