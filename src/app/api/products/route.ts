@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
     // Get tenant ID from JWT token
     const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
+      console.log('DEBUG: Supabase session not available in products route');
       return Response.json(
         { error: 'Tenant ID missing from JWT' },
         { status: 401 }

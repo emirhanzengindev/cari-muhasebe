@@ -60,15 +60,6 @@ export function createServerSupabaseClient() {
     }
   );
 
-  // Ensure the session is properly set if tokens are available
-  if (accessToken) {
-    // For SSR, we need to make sure the client is aware of the session
-    // The SSR client should handle authentication via cookies automatically
-    console.log('DEBUG: Access token available, SSR client should auto-authenticate');
-  } else {
-    console.log('DEBUG: No access token available for authentication');
-  }
-
   return supabase;
 }
 
