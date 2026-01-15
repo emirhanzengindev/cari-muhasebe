@@ -87,11 +87,19 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const warehouseWithTenant = {
-      ...warehouseData,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+    // Map camelCase fields to snake_case for database insertion
+    const warehouseWithTenant: any = {};
+    
+    // Explicitly map each field to ensure no camelCase fields leak through
+    if (warehouseData.name !== undefined) warehouseWithTenant.name = warehouseData.name;
+    if (warehouseData.description !== undefined) warehouseWithTenant.description = warehouseData.description;
+    if (warehouseData.location !== undefined) warehouseWithTenant.location = warehouseData.location;
+    if (warehouseData.manager !== undefined) warehouseWithTenant.manager = warehouseData.manager;
+    if (warehouseData.capacity !== undefined) warehouseWithTenant.capacity = warehouseData.capacity;
+    if (warehouseData.isActive !== undefined) warehouseWithTenant.is_active = warehouseData.isActive;
+    
+    warehouseWithTenant.created_at = new Date().toISOString();
+    warehouseWithTenant.updated_at = new Date().toISOString();
     
     // Validate required fields
     if (!warehouseWithTenant.name) {

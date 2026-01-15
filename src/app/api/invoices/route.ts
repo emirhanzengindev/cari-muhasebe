@@ -88,11 +88,25 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const invoiceWithTenant = {
-      ...invoiceData,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+    // Map camelCase fields to snake_case for database insertion
+    const invoiceWithTenant: any = {};
+    
+    // Explicitly map each field to ensure no camelCase fields leak through
+    if (invoiceData.invoiceNumber !== undefined) invoiceWithTenant.invoice_number = invoiceData.invoiceNumber;
+    if (invoiceData.currentAccountId !== undefined) invoiceWithTenant.current_account_id = invoiceData.currentAccountId;
+    if (invoiceData.invoiceDate !== undefined) invoiceWithTenant.invoice_date = invoiceData.invoiceDate;
+    if (invoiceData.dueDate !== undefined) invoiceWithTenant.due_date = invoiceData.dueDate;
+    if (invoiceData.totalAmount !== undefined) invoiceWithTenant.total_amount = invoiceData.totalAmount;
+    if (invoiceData.status !== undefined) invoiceWithTenant.status = invoiceData.status;
+    if (invoiceData.notes !== undefined) invoiceWithTenant.notes = invoiceData.notes;
+    if (invoiceData.taxRate !== undefined) invoiceWithTenant.tax_rate = invoiceData.taxRate;
+    if (invoiceData.discount !== undefined) invoiceWithTenant.discount = invoiceData.discount;
+    if (invoiceData.paymentTerms !== undefined) invoiceWithTenant.payment_terms = invoiceData.paymentTerms;
+    if (invoiceData.currency !== undefined) invoiceWithTenant.currency = invoiceData.currency;
+    if (invoiceData.exchangeRate !== undefined) invoiceWithTenant.exchange_rate = invoiceData.exchangeRate;
+    
+    invoiceWithTenant.created_at = new Date().toISOString();
+    invoiceWithTenant.updated_at = new Date().toISOString();
     
     // Validate required fields
     if (!invoiceWithTenant.invoice_number) {

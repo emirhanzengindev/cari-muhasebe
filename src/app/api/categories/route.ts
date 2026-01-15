@@ -88,11 +88,19 @@ export async function POST(request: NextRequest) {
     
     console.log('TENANT ID:', tenantId);
     
-    const categoryWithTenant = {
-      ...categoryData,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+    // Map camelCase fields to snake_case for database insertion
+    const categoryWithTenant: any = {};
+    
+    // Explicitly map each field to ensure no camelCase fields leak through
+    if (categoryData.name !== undefined) categoryWithTenant.name = categoryData.name;
+    if (categoryData.description !== undefined) categoryWithTenant.description = categoryData.description;
+    if (categoryData.parentId !== undefined) categoryWithTenant.parent_id = categoryData.parentId;
+    if (categoryData.level !== undefined) categoryWithTenant.level = categoryData.level;
+    if (categoryData.order !== undefined) categoryWithTenant.order = categoryData.order;
+    if (categoryData.isActive !== undefined) categoryWithTenant.is_active = categoryData.isActive;
+    
+    categoryWithTenant.created_at = new Date().toISOString();
+    categoryWithTenant.updated_at = new Date().toISOString();
     
     console.log('CATEGORY WITH TENANT:', categoryWithTenant);
     
