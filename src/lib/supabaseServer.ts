@@ -60,23 +60,21 @@ export function createServerSupabaseClient() {
     }
   );
 
-  // The Supabase client should now be properly authenticated via cookies
-  // The RLS policies should work as the client has access to the auth token via cookies
+  // Ensure the session is properly set if tokens are available
+  if (accessToken) {
+    // For SSR, we need to make sure the client is aware of the session
+    // The SSR client should handle authentication via cookies automatically
+    console.log('DEBUG: Access token available, SSR client should auto-authenticate');
+  } else {
+    console.log('DEBUG: No access token available for authentication');
+  }
+
   return supabase;
 }
 
 // Function to extract tenant ID from Supabase auth
 export async function getTenantIdFromJWT() {
   const supabase = createServerSupabaseClient();
-
-  // Check if access token exists in cookies before attempting to get user
-  const cookieStore = cookies();
-  const accessToken = cookieStore.get('sb-access-token')?.value;
-  
-  if (!accessToken) {
-    console.log('DEBUG: No access token found in cookies');
-    return null;
-  }
 
   const {
     data: { user },
