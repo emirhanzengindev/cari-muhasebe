@@ -47,11 +47,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Convert Supabase user to our User type
       const supabaseUser = session.user;
+      let rawTenantId = supabaseUser.user_metadata?.tenant_id || null;
+      // Clean tenant ID if it has unwanted suffix
+      if (rawTenantId && typeof rawTenantId === 'string') {
+        // Remove any suffix like 'ENANT_ID' if it exists
+        if (rawTenantId.endsWith('ENANT_ID')) {
+          rawTenantId = rawTenantId.replace(/ENANT_ID$/, '');
+          console.log('DEBUG: Fixed malformed tenant ID by removing suffix');
+        }
+      }
+      
       const userData: User = {
         id: supabaseUser.id,
         name: supabaseUser.user_metadata?.name || supabaseUser.email,
         email: supabaseUser.email,
-        tenantId: supabaseUser.user_metadata?.tenant_id || null
+        tenantId: rawTenantId
       };
       
       console.log('DEBUG: Setting tenantId from auth context:', userData.tenantId);
@@ -68,11 +78,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         const supabaseUser = session.user;
+        let rawTenantId = supabaseUser.user_metadata?.tenant_id || null;
+        // Clean tenant ID if it has unwanted suffix
+        if (rawTenantId && typeof rawTenantId === 'string') {
+          // Remove any suffix like 'ENANT_ID' if it exists
+          if (rawTenantId.endsWith('ENANT_ID')) {
+            rawTenantId = rawTenantId.replace(/ENANT_ID$/, '');
+            console.log('DEBUG: Fixed malformed tenant ID by removing suffix in auth state change');
+          }
+        }
+        
         const userData: User = {
           id: supabaseUser.id,
           name: supabaseUser.user_metadata?.name || supabaseUser.email,
           email: supabaseUser.email,
-          tenantId: supabaseUser.user_metadata?.tenant_id || null
+          tenantId: rawTenantId
         };
         
         console.log('DEBUG: Setting tenantId from auth state change:', userData.tenantId);
