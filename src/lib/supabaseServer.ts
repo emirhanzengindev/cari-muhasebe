@@ -15,7 +15,7 @@ if (!supabaseAnonKey) {
 // Function to create a Supabase client that reads cookies automatically
 export function createServerSupabaseClient() {
   const cookieStore = cookies()
-
+  
   return createServerClient(
     supabaseUrl,
     supabaseAnonKey,
@@ -23,8 +23,22 @@ export function createServerSupabaseClient() {
       cookies: {
         get(name: string) {
           return cookieStore.get(name)?.value
-        }
-      }
+        },
+        set(name: string, value: string, options: any) {
+          try {
+            cookieStore.set(name, value, options)
+          } catch (error) {
+            console.error(`Error setting cookie ${name}:`, error)
+          }
+        },
+        remove(name: string, options: any) {
+          try {
+            cookieStore.delete({ name, ...options })
+          } catch (error) {
+            console.error(`Error removing cookie ${name}:`, error)
+          }
+        },
+      },
     }
   )
 }

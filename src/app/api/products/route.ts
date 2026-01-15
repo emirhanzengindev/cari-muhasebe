@@ -1,23 +1,13 @@
 import { NextRequest } from 'next/server';
 import { headers, cookies } from 'next/headers';
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
     console.log('DEBUG: GET /api/products called');
     
     // Get tenant ID from JWT token (Supabase session)
-    const { data: { user }, error: userError } = await createServerSupabaseClient().auth.getUser();
-    
-    if (userError || !user) {
-      return Response.json(
-        { error: 'Auth session missing' },
-        { status: 401 }
-      );
-    }
-    
-    // Use user ID as tenant ID for RLS policies
-    const tenantId = user.id;
+    const tenantId = await getTenantIdFromJWT();
     
     if (!tenantId) {
       return Response.json(
@@ -25,6 +15,8 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       );
     }
+    
+    console.log('DEBUG: Using tenant ID from JWT:', tenantId);
     
     // Validate that tenantId is a proper UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -65,17 +57,7 @@ export async function POST(request: NextRequest) {
     console.log('RAW BODY 👉', productData);
     
     // Get tenant ID from JWT token
-    const { data: { user }, error: userError } = await createServerSupabaseClient().auth.getUser();
-    
-    if (userError || !user) {
-      return Response.json(
-        { error: 'Auth session missing' },
-        { status: 401 }
-      );
-    }
-    
-    // Use user ID as tenant ID for RLS policies
-    const tenantId = user.id;
+    const tenantId = await getTenantIdFromJWT();
     
     if (!tenantId) {
       return Response.json(
