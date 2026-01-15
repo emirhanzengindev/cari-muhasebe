@@ -66,12 +66,20 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const movementWithTenant = {
-      ...movementData,
-      tenant_id: tenantId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+    // Map camelCase fields to snake_case for database insertion
+    const movementWithTenant: any = {};
+    
+    // Explicitly map each field to ensure no camelCase fields leak through
+    if (movementData.productId !== undefined) movementWithTenant.product_id = movementData.productId;
+    if (movementData.movementType !== undefined) movementWithTenant.movement_type = movementData.movementType;
+    if (movementData.quantity !== undefined) movementWithTenant.quantity = movementData.quantity;
+    if (movementData.description !== undefined) movementWithTenant.description = movementData.description;
+    if (movementData.reference !== undefined) movementWithTenant.reference = movementData.reference;
+    if (movementData.date !== undefined) movementWithTenant.date = movementData.date;
+    
+    movementWithTenant.tenant_id = tenantId;
+    movementWithTenant.created_at = new Date().toISOString();
+    movementWithTenant.updated_at = new Date().toISOString();
     
     // Validate required fields
     if (!movementWithTenant.product_id) {
