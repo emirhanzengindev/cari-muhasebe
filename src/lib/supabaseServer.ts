@@ -46,6 +46,7 @@ export async function getTenantIdFromJWT() {
   console.log('DEBUG: getTenantIdFromJWT called');
   console.log('DEBUG: Supabase auth error:', error);
   console.log('DEBUG: User object:', user);
+  console.log('DEBUG: User metadata:', user?.user_metadata);
 
   if (error || !user) {
     console.error('SUPABASE AUTH ERROR:', error)
