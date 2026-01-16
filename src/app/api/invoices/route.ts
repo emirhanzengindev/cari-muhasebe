@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest } from 'next/server';
 import { headers, cookies } from 'next/headers';
 import { createServerSupabaseClient } from '@/lib/supabaseServer';
@@ -81,6 +83,9 @@ export async function POST(request: NextRequest) {
     
     invoiceWithTenant.created_at = new Date().toISOString();
     invoiceWithTenant.updated_at = new Date().toISOString();
+    
+    // Add tenant_id from authenticated user
+    invoiceWithTenant.tenant_id = user.id;
     
     // Validate required fields
     if (!invoiceWithTenant.invoice_number) {
