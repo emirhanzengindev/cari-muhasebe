@@ -1,32 +1,29 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest } from 'next/server';
-import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
+import { headers, cookies } from 'next/headers';
+import { createServerSupabaseClient } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
-    const tenantId = await getTenantIdFromJWT();
-    if (!tenantId) {
+    const supabase = createServerSupabaseClient()
+
+    const {
+      data: { user },
+      error: authError
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      console.error('DEBUG: Auth session missing')
       return Response.json(
-        { error: 'Tenant ID missing' },
+        { error: 'Auth session missing' },
         { status: 401 }
-      );
+      )
     }
-    
-    // Validate that tenantId is a proper UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(tenantId)) {
-      console.error('INVALID TENANT ID FORMAT:', tenantId);
-      return Response.json(
-        { error: 'Invalid tenant ID format' },
-        { status: 400 }
-      );
-    }
-    
-    const supabase = createServerSupabaseClient();
-    
+
     const { data, error, status } = await supabase
       .from('safes')
       .select('*')
-      .eq('tenant_id', tenantId);
 
     // If table doesn't exist, return empty array
     if (error && status === 404) {
@@ -50,29 +47,25 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const safeData = await request.json();
-    const tenantId = await getTenantIdFromJWT();
-    if (!tenantId) {
-      return Response.json(
-        { error: 'Tenant ID missing' },
-        { status: 401 }
-      );
-    }
     
-    // Validate that tenantId is a proper UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(tenantId)) {
-      console.error('INVALID TENANT ID FORMAT:', tenantId);
+    const supabase = createServerSupabaseClient();
+    
+    const {
+      data: { user }
+    } = await supabase.auth.getUser();
+    
+    if (!user) {
       return Response.json(
-        { error: 'Invalid tenant ID format' },
-        { status: 400 }
+        { error: 'Auth session missing' },
+        { status: 401 }
       );
     }
     
     const safeWithTenant = {
       ...safeData,
-      tenant_id: tenantId,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      tenant_id: user.id  // Add tenant_id from authenticated user
     };
     
     // Validate required fields
@@ -81,8 +74,6 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Safe name is required' }, { status: 400 });
     }
 
-    const supabase = createServerSupabaseClient();
-    
     const { data, error, status } = await supabase
       .from('safes')
       .insert([safeWithTenant])
