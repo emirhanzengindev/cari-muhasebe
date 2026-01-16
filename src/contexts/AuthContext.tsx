@@ -29,6 +29,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Clear problematic localStorage entries on app start
+    const clearLocalStorage = () => {
+      console.log('🧹 Clearing localStorage entries...');
+      
+      // Clear all tenant-related storage
+      const keysToRemove = [
+        'tenant-storage',
+        'tenantId',
+        'auth-token',
+        'sb-access-token',
+        'sb-refresh-token'
+      ];
+      
+      keysToRemove.forEach(key => {
+        if (localStorage.getItem(key)) {
+          console.log(`🗑️  Removing localStorage key: ${key}`);
+          localStorage.removeItem(key);
+        }
+      });
+      
+      // Also clear all Supabase-related items
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-')) {
+          console.log(`🗑️  Removing Supabase key: ${key}`);
+          localStorage.removeItem(key);
+        }
+      });
+      
+      console.log('✅ localStorage cleanup completed!');
+    };
+    
+    // Run cleanup once on app start
+    clearLocalStorage();
+    
     // Check active session
     const checkSession = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
