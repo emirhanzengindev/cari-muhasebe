@@ -22,9 +22,12 @@ export function createServerSupabaseClient() {
     {
       cookies: {
         get(name: string) {
-          return cookieStore.get(name)?.value
+          const value = cookieStore.get(name)?.value
+          console.log('DEBUG: Getting cookie:', name, 'value:', value ? '***HIDDEN***' : 'null')
+          return value
         },
         set(name: string, value: string, options: any) {
+          console.log('DEBUG: Setting cookie:', name)
           try {
             cookieStore.set(name, value, options)
           } catch (error) {
@@ -32,6 +35,7 @@ export function createServerSupabaseClient() {
           }
         },
         remove(name: string, options: any) {
+          console.log('DEBUG: Removing cookie:', name)
           try {
             cookieStore.delete({ name, ...options })
           } catch (error) {
