@@ -12,7 +12,7 @@ if (!supabaseAnonKey) {
   throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not defined');
 }
 
-// Function to create a Supabase client that reads cookies automatically
+// Function to create a Supabase client that reads cookies automatically - Updated for Vercel deployment
 export function createServerSupabaseClient() {
   const cookieStore = cookies()
   
