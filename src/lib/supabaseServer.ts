@@ -23,21 +23,27 @@ export function createServerSupabaseClient() {
       cookies: {
         get(name: string) {
           const value = cookieStore.get(name)?.value
-          console.log('DEBUG: Getting cookie:', name, 'value:', value ? '***HIDDEN***' : 'null')
+          if (name.startsWith('sb-')) {
+            console.log('DEBUG: Supabase cookie found:', name, 'exists:', !!value)
+          }
           return value
         },
         set(name: string, value: string, options: any) {
-          console.log('DEBUG: Setting cookie:', name)
           try {
             cookieStore.set(name, value, options)
+            if (name.startsWith('sb-')) {
+              console.log('DEBUG: Supabase cookie set:', name)
+            }
           } catch (error) {
             console.error(`Error setting cookie ${name}:`, error)
           }
         },
         remove(name: string, options: any) {
-          console.log('DEBUG: Removing cookie:', name)
           try {
             cookieStore.delete({ name, ...options })
+            if (name.startsWith('sb-')) {
+              console.log('DEBUG: Supabase cookie removed:', name)
+            }
           } catch (error) {
             console.error(`Error removing cookie ${name}:`, error)
           }
