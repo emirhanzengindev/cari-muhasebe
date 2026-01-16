@@ -57,20 +57,6 @@ export async function getTenantIdFromJWT() {
     return null;
   }
 
-  // Get tenant_id from user metadata as fallback
-  let tenantId = user.user_metadata?.tenant_id;
-  
-  // Clean tenant ID if it has unwanted suffix (fix for malformed tenant IDs)
-  if (tenantId && typeof tenantId === 'string') {
-    if (tenantId.endsWith('ENANT_ID')) {
-      tenantId = tenantId.replace(/ENANT_ID$/, '');
-    }
-  }
-  
-  if (!tenantId) {
-    // Fallback to user ID
-    tenantId = user.id;
-  }
-  
-  return tenantId;
+  // Always use user.id as tenantId since it's the correct UUID
+  return user.id;
 }
