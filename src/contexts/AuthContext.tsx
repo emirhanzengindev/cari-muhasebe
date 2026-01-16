@@ -95,6 +95,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('DEBUG: User ID from session:', supabaseUser.id);
       console.log('DEBUG: User metadata tenant_id:', supabaseUser.user_metadata?.tenant_id);
       console.log('DEBUG: Raw tenantId before any processing:', rawTenantId);
+      
+      // Warn if user metadata contains corrupted tenant_id
+      if (supabaseUser.user_metadata?.tenant_id && supabaseUser.user_metadata.tenant_id.includes('ENANT_ID')) {
+        console.warn('⚠️  CORRUPTED tenant_id in user metadata detected! Using user.id instead.');
+        console.warn('Corrupted value:', supabaseUser.user_metadata.tenant_id);
+      }
 
       setUser(userData);
       setTenantId(userData.tenantId || null);
@@ -122,6 +128,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('DEBUG: User ID from state change:', supabaseUser.id);
         console.log('DEBUG: User metadata tenant_id in state change:', supabaseUser.user_metadata?.tenant_id);
         console.log('DEBUG: Raw tenantId before any processing in state change:', rawTenantId);
+        
+        // Warn if user metadata contains corrupted tenant_id
+        if (supabaseUser.user_metadata?.tenant_id && supabaseUser.user_metadata.tenant_id.includes('ENANT_ID')) {
+          console.warn('⚠️  CORRUPTED tenant_id in user metadata detected! Using user.id instead.');
+          console.warn('Corrupted value:', supabaseUser.user_metadata.tenant_id);
+        }
 
         setUser(userData);
         setTenantId(userData.tenantId || null);
