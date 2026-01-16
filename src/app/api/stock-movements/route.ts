@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerSupabaseClient } from '@/lib/supabaseServer';
@@ -24,7 +26,6 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase
       .from('stock_movements')
       .select('*')
-      .eq('tenant_id', user.id)
 
     if (error) {
       console.error('SUPABASE ERROR:', error);
@@ -66,7 +67,9 @@ export async function POST(request: NextRequest) {
 
     movement.created_at = new Date().toISOString()
     movement.updated_at = new Date().toISOString()
-    movement.tenant_id = user.id // Set tenant_id from authenticated user
+    
+    // Use the user.id as tenant_id since that's how RLS is configured
+    movement.tenant_id = user.id
 
     if (!movement.product_id || !movement.movement_type || !movement.quantity) {
       return Response.json(
