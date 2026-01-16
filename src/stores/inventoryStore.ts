@@ -46,6 +46,14 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
     console.error('ERROR: API request failed with status:', response.status);
     const errorText = await response.text();
     console.error('ERROR: API response text:', errorText);
+    
+    // Check if it's an auth session error
+    if (response.status === 401 && errorText.includes('Auth session missing')) {
+      console.error('AUTH SESSION ERROR: Redirecting to login');
+      // Optionally redirect to login
+      // window.location.href = '/auth/signin';
+    }
+    
     throw new Error(`API request failed: ${response.status} ${response.statusText}`);
   }
   
