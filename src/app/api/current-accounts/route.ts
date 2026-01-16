@@ -9,11 +9,19 @@ export async function GET(request: NextRequest) {
     console.log('DEBUG: GET /api/current-accounts called')
 
     const supabase = createServerSupabaseClient()
+    
+    // Debug request
+    console.log('DEBUG: API request received');
+    console.log('DEBUG: Request headers:', Object.fromEntries(request.headers));
+    console.log('DEBUG: Request cookies:', request.headers.get('cookie'));
 
     const {
       data: { user },
       error: authError
     } = await supabase.auth.getUser()
+    
+    console.log('DEBUG: Auth result - user:', user ? 'exists' : 'null');
+    console.log('DEBUG: Auth result - error:', authError);
 
     if (!user) {
       console.error('DEBUG: Auth session missing')
