@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase
       .from('products')
       .select('*')
+      .eq('tenant_id', user.id)
 
     if (error) {
       console.error('SUPABASE ERROR:', error)
@@ -88,6 +89,7 @@ export async function POST(request: NextRequest) {
     
     productWithTenant.created_at = new Date().toISOString();
     productWithTenant.updated_at = new Date().toISOString();
+    productWithTenant.tenant_id = user.id; // Set tenant_id from authenticated user
     
     console.log('PRODUCT WITH TENANT:', productWithTenant);
     

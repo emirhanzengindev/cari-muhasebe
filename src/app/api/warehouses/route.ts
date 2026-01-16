@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase
       .from('warehouses')
       .select('*')
+      .eq('tenant_id', user.id)
 
     if (error) {
       console.error('SUPABASE ERROR DETAILS (GET):', {
@@ -73,6 +74,7 @@ export async function POST(request: NextRequest) {
     
     warehouseWithTenant.created_at = new Date().toISOString();
     warehouseWithTenant.updated_at = new Date().toISOString();
+    warehouseWithTenant.tenant_id = user.id; // Set tenant_id from authenticated user
     
     // Validate required fields
     if (!warehouseWithTenant.name) {

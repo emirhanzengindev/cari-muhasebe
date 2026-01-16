@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase
       .from('categories')
       .select('*')
+      .eq('tenant_id', user.id)
 
     if (error) {
       console.error('SUPABASE ERROR:', error);
@@ -73,6 +74,7 @@ export async function POST(request: NextRequest) {
     
     categoryWithTenant.created_at = new Date().toISOString();
     categoryWithTenant.updated_at = new Date().toISOString();
+    categoryWithTenant.tenant_id = user.id; // Set tenant_id from authenticated user
     
     console.log('CATEGORY WITH TENANT:', categoryWithTenant);
     
