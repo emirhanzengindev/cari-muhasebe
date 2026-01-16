@@ -14,6 +14,17 @@ export async function GET(request: NextRequest) {
     console.log('DEBUG: API request received');
     console.log('DEBUG: Request headers:', Object.fromEntries(request.headers));
     console.log('DEBUG: Request cookies:', request.headers.get('cookie'));
+    
+    // Manual cookie check
+    const cookieHeader = request.headers.get('cookie');
+    if (cookieHeader) {
+      const cookies = cookieHeader.split(';').map(c => c.trim());
+      console.log('DEBUG: Parsed cookies count:', cookies.length);
+      const supabaseCookies = cookies.filter(c => c.startsWith('sb-'));
+      console.log('DEBUG: Supabase cookies found:', supabaseCookies);
+    } else {
+      console.log('DEBUG: NO COOKIE HEADER FOUND!');
+    }
 
     const {
       data: { user },
