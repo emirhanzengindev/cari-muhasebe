@@ -14,43 +14,54 @@ if (!supabaseAnonKey) {
 
 // Function to create a Supabase client that reads cookies automatically - Updated for Vercel deployment
 export function createServerSupabaseClient() {
-  const cookieStore = cookies()
-  
   return createServerClient(
     supabaseUrl,
     supabaseAnonKey,
     {
       cookies: {
         get(name: string) {
-          const value = cookieStore.get(name)?.value
-          if (name.startsWith('sb-')) {
-            console.log('DEBUG: Supabase cookie found:', name, 'exists:', !!value)
+          try {
+            const cookieStore = cookies();
+            // Next.js 14 returns a synchronous cookies object
+            // Use type assertion to handle the typing issue
+            const syncCookieStore = cookieStore as any;
+            const value = syncCookieStore.get(name)?.value;
+            if (name.startsWith('sb-')) {
+              console.log('DEBUG: Supabase cookie found:', name, 'exists:', !!value);
+            }
+            return value;
+          } catch (error) {
+            console.error('Error getting cookie:', error);
+            return undefined;
           }
-          return value
         },
         set(name: string, value: string, options: any) {
           try {
-            cookieStore.set(name, value, options)
+            const cookieStore = cookies();
+            const syncCookieStore = cookieStore as any;
+            syncCookieStore.set(name, value, options);
             if (name.startsWith('sb-')) {
-              console.log('DEBUG: Supabase cookie set:', name)
+              console.log('DEBUG: Supabase cookie set:', name);
             }
           } catch (error) {
-            console.error(`Error setting cookie ${name}:`, error)
+            console.error(`Error setting cookie ${name}:`, error);
           }
         },
         remove(name: string, options: any) {
           try {
-            cookieStore.delete({ name, ...options })
+            const cookieStore = cookies();
+            const syncCookieStore = cookieStore as any;
+            syncCookieStore.delete({ name, ...options });
             if (name.startsWith('sb-')) {
-              console.log('DEBUG: Supabase cookie removed:', name)
+              console.log('DEBUG: Supabase cookie removed:', name);
             }
           } catch (error) {
-            console.error(`Error removing cookie ${name}:`, error)
+            console.error(`Error removing cookie ${name}:`, error);
           }
         },
       },
     }
-  )
+  );
 }
 
 // Function to extract tenant ID from Supabase auth
