@@ -49,9 +49,12 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
     
     // Check if it's an auth session error
     if (response.status === 401 && errorText.includes('Auth session missing')) {
-      console.error('AUTH SESSION ERROR: Redirecting to login');
-      // Optionally redirect to login
-      // window.location.href = '/auth/signin';
+      console.error('AUTH SESSION ERROR: Session expired or missing. Redirecting to login...');
+      // Clear any stored auth data and redirect to login
+      localStorage.removeItem('sb-access-token');
+      localStorage.removeItem('sb-refresh-token');
+      window.location.href = '/auth/signin';
+      return;
     }
     
     throw new Error(`API request failed: ${response.status} ${response.statusText}`);
