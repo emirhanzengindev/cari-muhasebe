@@ -21,7 +21,17 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  await supabase.auth.getUser()
+  // Debug cookie transfer
+  console.log('MIDDLEWARE: Request cookies:', request.cookies.getAll().map(c => c.name));
+  
+  const { data: { user }, error } = await supabase.auth.getUser()
+  
+  console.log('MIDDLEWARE: User from session:', user ? 'exists' : 'null');
+  console.log('MIDDLEWARE: Session error:', error);
+  
+  // Debug response cookies
+  console.log('MIDDLEWARE: Response cookies being set:', response.cookies.getAll().map(c => c.name));
+  
   return response
 }
 
