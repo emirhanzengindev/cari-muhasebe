@@ -12,3 +12,10 @@ if (!supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+export const createBrowserClient = () => {
+  if (typeof window === 'undefined') {
+    throw new Error('createBrowserClient can only be called in the browser');
+  }
+  return createClient(supabaseUrl, supabaseAnonKey);
+};

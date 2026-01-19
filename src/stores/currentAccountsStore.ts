@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { CurrentAccount } from '@/types';
 import { useTenantStore } from '@/lib/tenantStore';
+import { createBrowserClient } from '@/lib/supabase';
 
 // Helper function to make API requests
 const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
@@ -15,11 +16,20 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
     throw new Error('Tenant ID not available');
   }
   
+  // Get Supabase session token
+  const supabase = createBrowserClient();
+  const { data: { session } } = await supabase.auth.getSession();
+    
   // Conditionally add Content-Type header only for requests that have a body
   const headers: any = {
     ...options.headers,
   };
   
+  // Add Authorization header if session exists
+  if (session?.access_token) {
+    headers['Authorization'] = `Bearer ${session.access_token}`;
+  }
+    
   console.log('DEBUG: Headers being sent:', headers);
   
   // Add Content-Type for methods that typically have a body
