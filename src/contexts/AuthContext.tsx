@@ -63,8 +63,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Run cleanup once on app start
     clearLocalStorage();
     
-    // Check active session
+    // Check active session with delay to avoid race conditions
     const checkSession = async () => {
+      // Small delay to ensure auth state is properly initialized
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error) {
@@ -74,7 +77,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (!session) {
-        router.push("/auth/signin");
+        // Only redirect if we're not already on auth pages
+        if (!window.location.pathname.startsWith('/auth')) {
+          router.push("/auth/signin");
+        }
         setIsLoading(false);
         return;
       }

@@ -26,8 +26,11 @@ export default function SignIn() {
       if (error) {
         setError("Geçersiz e-posta veya şifre");
       } else if (data.user) {
-        router.push("/");
-        router.refresh();
+        // Session'ın gerçekten kurulmasını bekle
+        setTimeout(() => {
+          router.push("/");
+          router.refresh();
+        }, 100);
       }
     } catch (err) {
       setError("Beklenmeyen bir hata oluştu");
