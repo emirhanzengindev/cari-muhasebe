@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
@@ -7,7 +7,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const { balance } = await request.json();
     const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
-      return Response.json(
+      return NextResponse.json(
         { error: 'Tenant ID missing' },
         { status: 401 }
       );
@@ -17,7 +17,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(tenantId)) {
       console.error('INVALID TENANT ID FORMAT:', tenantId);
-      return Response.json(
+      return NextResponse.json(
         { error: 'Invalid tenant ID format' },
         { status: 400 }
       );
@@ -39,16 +39,16 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     if (error && status === 404) {
       console.warn('Table current_accounts does not exist or record not found for balance update');
-      return Response.json({ error: 'Account not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Account not found' }, { status: 404 });
     }
     
     if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json(data);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error updating account balance:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

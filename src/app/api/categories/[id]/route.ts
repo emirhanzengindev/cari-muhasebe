@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -6,7 +6,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const { id } = params;
     const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
-      return Response.json(
+      return NextResponse.json(
         { error: 'Tenant ID missing' },
         { status: 401 }
       );
@@ -22,13 +22,13 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       .single();
 
     if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json(data);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching category:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -38,7 +38,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const categoryData = await request.json();
     const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
-      return Response.json(
+      return NextResponse.json(
         { error: 'Tenant ID missing' },
         { status: 401 }
       );
@@ -58,13 +58,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       .single();
 
     if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json(data);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error updating category:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -73,7 +73,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const { id } = params;
     const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
-      return Response.json(
+      return NextResponse.json(
         { error: 'Tenant ID missing' },
         { status: 401 }
       );
@@ -88,12 +88,12 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       .eq('tenant_id', tenantId);
 
     if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json({ message: 'Category deleted successfully' });
+    return NextResponse.json({ message: 'Category deleted successfully' });
   } catch (error) {
     console.error('Error deleting category:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
 
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
     const { id } = params;
     const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
-      return Response.json(
+      return NextResponse.json(
         { error: 'Tenant ID missing' },
         { status: 401 }
       );
@@ -19,7 +19,7 @@ export async function GET(
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(tenantId)) {
       console.error('INVALID TENANT ID FORMAT:', tenantId);
-      return Response.json(
+      return NextResponse.json(
         { error: 'Invalid tenant ID format' },
         { status: 400 }
       );
@@ -41,17 +41,17 @@ export async function GET(
     
     if (error) {
       console.error('SUPABASE ERROR (GET invoice_items by id):', error);
-      return Response.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     if (!data) {
-      return Response.json({ error: 'Invoice item not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Invoice item not found' }, { status: 404 });
     }
 
-    return Response.json(data);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching invoice item:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -64,7 +64,7 @@ export async function PUT(
     const invoiceItemData = await request.json();
     const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
-      return Response.json(
+      return NextResponse.json(
         { error: 'Tenant ID missing' },
         { status: 401 }
       );
@@ -74,7 +74,7 @@ export async function PUT(
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(tenantId)) {
       console.error('INVALID TENANT ID FORMAT:', tenantId);
-      return Response.json(
+      return NextResponse.json(
         { error: 'Invalid tenant ID format' },
         { status: 400 }
       );
@@ -92,11 +92,11 @@ export async function PUT(
       
     if (fetchError) {
       console.error('SUPABASE ERROR (check existing invoice_item):', fetchError);
-      return Response.json({ error: 'Invoice item not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Invoice item not found' }, { status: 404 });
     }
     
     if (!existingItem) {
-      return Response.json({ error: 'Invoice item not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Invoice item not found' }, { status: 404 });
     }
     
     const { data, error, status } = await supabase
@@ -117,13 +117,13 @@ export async function PUT(
     
     if (error) {
       console.error('SUPABASE ERROR (PUT invoice_items):', error);
-      return Response.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json(data);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error updating invoice item:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -135,7 +135,7 @@ export async function DELETE(
     const { id } = params;
     const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
-      return Response.json(
+      return NextResponse.json(
         { error: 'Tenant ID missing' },
         { status: 401 }
       );
@@ -145,7 +145,7 @@ export async function DELETE(
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(tenantId)) {
       console.error('INVALID TENANT ID FORMAT:', tenantId);
-      return Response.json(
+      return NextResponse.json(
         { error: 'Invalid tenant ID format' },
         { status: 400 }
       );
@@ -163,11 +163,11 @@ export async function DELETE(
       
     if (fetchError) {
       console.error('SUPABASE ERROR (check existing invoice_item):', fetchError);
-      return Response.json({ error: 'Invoice item not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Invoice item not found' }, { status: 404 });
     }
     
     if (!existingItem) {
-      return Response.json({ error: 'Invoice item not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Invoice item not found' }, { status: 404 });
     }
     
     const { error, status } = await supabase
@@ -183,12 +183,12 @@ export async function DELETE(
     
     if (error) {
       console.error('SUPABASE ERROR (DELETE invoice_items):', error);
-      return Response.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json({ success: true });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting invoice item:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
