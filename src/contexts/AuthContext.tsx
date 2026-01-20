@@ -56,8 +56,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Convert Supabase user to our User type
       const supabaseUser = session.user;
-      // Use user.id as tenantId since it's the correct UUID
-      const rawTenantId = supabaseUser.id;
+      // Check if user metadata contains valid tenant_id, otherwise use user.id
+      let rawTenantId = supabaseUser.id;
+      
+      // Validate user metadata tenant_id
+      const metadataTenantId = supabaseUser.user_metadata?.tenant_id;
+      if (metadataTenantId && typeof metadataTenantId === 'string' && metadataTenantId.length > 0) {
+        // Validate UUID format
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(metadataTenantId) && !metadataTenantId.includes('ENANT_ID')) {
+          console.log('DEBUG: Using tenant_id from user metadata in checkSession:', metadataTenantId);
+          rawTenantId = metadataTenantId;
+        } else {
+          console.warn('⚠️  Invalid tenant_id in metadata in checkSession, using user.id instead:', metadataTenantId);
+        }
+      }
       
       const userData: User = {
         id: supabaseUser.id,
@@ -92,8 +105,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await new Promise(resolve => setTimeout(resolve, 300));
         
         const supabaseUser = session.user;
-        // Use user.id as tenantId since it's the correct UUID
-        const rawTenantId = supabaseUser.id;
+        // Check if user metadata contains valid tenant_id, otherwise use user.id
+        let rawTenantId = supabaseUser.id;
+        
+        // Validate user metadata tenant_id
+        const metadataTenantId = supabaseUser.user_metadata?.tenant_id;
+        if (metadataTenantId && typeof metadataTenantId === 'string' && metadataTenantId.length > 0) {
+          // Validate UUID format
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          if (uuidRegex.test(metadataTenantId) && !metadataTenantId.includes('ENANT_ID')) {
+            console.log('DEBUG: Using tenant_id from user metadata:', metadataTenantId);
+            rawTenantId = metadataTenantId;
+          } else {
+            console.warn('⚠️  Invalid tenant_id in metadata, using user.id instead:', metadataTenantId);
+          }
+        }
         
         const userData: User = {
           id: supabaseUser.id,
