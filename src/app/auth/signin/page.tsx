@@ -25,12 +25,12 @@ export default function SignIn() {
 
       if (error) {
         setError("Geçersiz e-posta veya şifre");
-      } else if (data.user) {
-        // Session'ın gerçekten kurulmasını bekle
-        setTimeout(() => {
-          router.push("/");
-          router.refresh();
-        }, 100);
+      } else if (data.session) {
+        // Session'ın tarayıcıda güvenli bir şekilde kurulmasını bekle
+        // ve AuthContext'in haberdar olmasını sağla
+        await new Promise(resolve => setTimeout(resolve, 300));
+        router.push("/");
+        router.refresh();
       }
     } catch (err) {
       setError("Beklenmeyen bir hata oluştu");

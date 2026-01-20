@@ -65,8 +65,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     // Check active session with delay to avoid race conditions
     const checkSession = async () => {
-      // Small delay to ensure auth state is properly initialized
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Increased delay to ensure auth state is properly initialized
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       const { data: { session }, error } = await supabase.auth.getSession();
       
@@ -117,8 +117,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkSession();
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
+        // Delay to ensure session is fully established
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
         const supabaseUser = session.user;
         // Use user.id as tenantId since it's the correct UUID
         const rawTenantId = supabaseUser.id;
