@@ -1,13 +1,13 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const tenantId = await getTenantIdFromJWT();
     
     if (!tenantId) {
-      return Response.json(
+      return NextResponse.json(
         { error: 'Tenant ID missing' },
         { status: 401 }
       );
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(tenantId)) {
       console.error('INVALID TENANT ID FORMAT:', tenantId);
-      return Response.json(
+      return NextResponse.json(
         { error: 'Invalid tenant ID format' },
         { status: 400 }
       );
@@ -33,24 +33,24 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       .single();
 
     if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json(data);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching warehouse:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const warehouseData = await request.json();
     const tenantId = await getTenantIdFromJWT();
     
     if (!tenantId) {
-      return Response.json(
+      return NextResponse.json(
         { error: 'Tenant ID missing' },
         { status: 401 }
       );
@@ -60,7 +60,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(tenantId)) {
       console.error('INVALID TENANT ID FORMAT:', tenantId);
-      return Response.json(
+      return NextResponse.json(
         { error: 'Invalid tenant ID format' },
         { status: 400 }
       );
@@ -80,23 +80,23 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       .single();
 
     if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json(data);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error updating warehouse:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const tenantId = await getTenantIdFromJWT();
     
     if (!tenantId) {
-      return Response.json(
+      return NextResponse.json(
         { error: 'Tenant ID missing' },
         { status: 401 }
       );
@@ -106,7 +106,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(tenantId)) {
       console.error('INVALID TENANT ID FORMAT:', tenantId);
-      return Response.json(
+      return NextResponse.json(
         { error: 'Invalid tenant ID format' },
         { status: 400 }
       );
@@ -121,12 +121,12 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       .eq('tenant_id', tenantId);
 
     if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json({ message: 'Warehouse deleted successfully' });
+    return NextResponse.json({ message: 'Warehouse deleted successfully' });
   } catch (error) {
     console.error('Error deleting warehouse:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

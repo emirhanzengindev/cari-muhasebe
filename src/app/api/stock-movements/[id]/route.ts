@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -6,7 +6,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params;
     const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
-      return Response.json(
+      return NextResponse.json(
         { error: 'Tenant ID missing' },
         { status: 401 }
       );
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(tenantId)) {
       console.error('INVALID TENANT ID FORMAT:', tenantId);
-      return Response.json(
+      return NextResponse.json(
         { error: 'Invalid tenant ID format' },
         { status: 400 }
       );
@@ -32,13 +32,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .single();
 
     if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json(data);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching stock movement:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -48,7 +48,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const movementData = await request.json();
     const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
-      return Response.json(
+      return NextResponse.json(
         { error: 'Tenant ID missing' },
         { status: 401 }
       );
@@ -58,7 +58,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(tenantId)) {
       console.error('INVALID TENANT ID FORMAT:', tenantId);
-      return Response.json(
+      return NextResponse.json(
         { error: 'Invalid tenant ID format' },
         { status: 400 }
       );
@@ -79,7 +79,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       .single();
 
     if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     // Update product stock quantity
@@ -112,10 +112,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         .eq('tenant_id', tenantId);
     }
 
-    return Response.json(data);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error updating stock movement:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -124,7 +124,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const { id } = await params;
     const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
-      return Response.json(
+      return NextResponse.json(
         { error: 'Tenant ID missing' },
         { status: 401 }
       );
@@ -134,7 +134,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(tenantId)) {
       console.error('INVALID TENANT ID FORMAT:', tenantId);
-      return Response.json(
+      return NextResponse.json(
         { error: 'Invalid tenant ID format' },
         { status: 400 }
       );
@@ -161,7 +161,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       .eq('tenant_id', tenantId);
 
     if (error) {
-      return Response.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     // Recalculate product stock quantity
@@ -193,9 +193,9 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
         .eq('tenant_id', tenantId);
     }
 
-    return Response.json({ success: true });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting stock movement:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
