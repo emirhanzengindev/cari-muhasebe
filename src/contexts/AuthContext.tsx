@@ -29,39 +29,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Clear problematic localStorage entries on app start
-    const clearLocalStorage = () => {
-      console.log('🧹 Clearing localStorage entries...');
-      
-      // Clear all tenant-related storage
-      const keysToRemove = [
-        'tenant-storage',
-        'tenantId',
-        'auth-token',
-        'sb-access-token',
-        'sb-refresh-token'
-      ];
-      
-      keysToRemove.forEach(key => {
-        if (localStorage.getItem(key)) {
-          console.log(`🗑️  Removing localStorage key: ${key}`);
-          localStorage.removeItem(key);
-        }
-      });
-      
-      // Also clear all Supabase-related items
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('sb-')) {
-          console.log(`🗑️  Removing Supabase key: ${key}`);
-          localStorage.removeItem(key);
-        }
-      });
-      
-      console.log('✅ localStorage cleanup completed!');
-    };
-    
-    // Run cleanup once on app start
-    clearLocalStorage();
+    // Only clear localStorage on explicit logout, not on app start
+    // This prevents removing valid session tokens during app initialization
     
     // Check active session with delay to avoid race conditions
     const checkSession = async () => {
@@ -164,9 +133,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     // Clear tenant ID from the tenant store
     useTenantStore.getState().setTenantId(null);
-    // Also clear from localStorage to prevent persistence across sessions
+    
+    // Clear problematic localStorage entries on logout
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('tenant-storage');
+      console.log('🧹 Clearing localStorage entries on logout...');
+      
+      // Clear all tenant-related storage
+      const keysToRemove = [
+        'tenant-storage',
+        'tenantId',
+        'auth-token',
+        'sb-access-token',
+        'sb-refresh-token'
+      ];
+      
+      keysToRemove.forEach(key => {
+        if (localStorage.getItem(key)) {
+          console.log(`🗑️  Removing localStorage key: ${key}`);
+          localStorage.removeItem(key);
+        }
+      });
+      
+      // Also clear all Supabase-related items
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-')) {
+          console.log(`🗑️  Removing Supabase key: ${key}`);
+          localStorage.removeItem(key);
+        }
+      });
+      
+      console.log('✅ localStorage cleanup completed on logout!');
     }
     
     // Sign out from Supabase
