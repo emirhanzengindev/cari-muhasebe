@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server';
 import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
       return Response.json(
@@ -32,9 +32,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const productData = await request.json();
     const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
@@ -68,9 +68,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
       return Response.json(
