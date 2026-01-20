@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server';
 import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { balance } = await request.json();
     const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
