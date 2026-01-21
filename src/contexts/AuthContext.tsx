@@ -109,6 +109,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('DEBUG: Auth state change event:', event);
+      
+      // Prevent processing the same session repeatedly
+      if (event === 'INITIAL_SESSION' && user && session?.user.id === user.id) {
+        console.log('DEBUG: Skipping duplicate initial session event for same user');
+        setIsLoading(false);
+        return;
+      }
+      
       if (session) {
         // Delay to ensure session is fully established
         await new Promise(resolve => setTimeout(resolve, 300));
