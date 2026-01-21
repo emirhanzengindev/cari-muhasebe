@@ -141,8 +141,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
           
       // For INITIAL_SESSION, we need to handle both logged-in and logged-out cases
-      // If session exists, process user data
-      if (session?.user) {
+      // The session object might be present but not fully populated in some cases
+      if (session && session.user) {
         // Delay to ensure session is fully established
         await new Promise(resolve => setTimeout(resolve, 300));
               
@@ -218,17 +218,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }, 100);
         }
       } else {
-        // If no session, clear user data
-        // But only clear and redirect if this is truly a logout event
-        if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
-          console.log('DEBUG: Auth state change triggered logout - event:', event);
+        // If no session or no user in session, check the event type
+        // For INITIAL_SESSION with no session/user, it might mean user is not logged in
+        if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && (!session || !session.user))) {
+          console.log('DEBUG: Auth state change triggered logout - event:', event, 'session:', !!session, 'user:', !!(session && session.user));
           setUser(null);
           setTenantId(null);
           useTenantStore.getState().setTenantId(null);
           // Don't redirect here since middleware handles it
         } else {
           // For other events with no session, just update loading state
-          console.log('DEBUG: Event without session:', event);
+          console.log('DEBUG: Event without session:', event, 'session:', !!session, 'user:', !!(session && session.user));
         }
       }
       setIsLoading(false);
