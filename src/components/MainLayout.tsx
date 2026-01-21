@@ -35,11 +35,10 @@ export default function MainLayout({
 
   // Oturum açmamışsa giriş sayfasına yönlendir
   if (!user && !isLoading && !pathname.startsWith("/auth")) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    if (typeof window !== 'undefined') {
+      window.location.href = '/auth/signin';
+    }
+    return null;
   }
 
   // Yükleme durumu
