@@ -27,24 +27,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sessionChecked, setSessionChecked] = useState(false);
 
   useEffect(() => {
     // Only clear localStorage on explicit logout, not on app start
     // This prevents removing valid session tokens during app initialization
-    
+      
     // Check active session with delay to avoid race conditions
     const checkSession = async () => {
+        
       // Increased delay to ensure auth state is properly initialized
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+        
       const { data: { session }, error } = await supabase.auth.getSession();
-      
+        
       if (error) {
         console.error("Auth session error:", error);
         setIsLoading(false);
         return;
       }
-
+  
       if (!session) {
         // Only redirect if we're not already on auth pages
         if (!window.location.pathname.startsWith('/auth')) {
@@ -53,12 +55,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
         return;
       }
-
+  
       // Convert Supabase user to our User type
       const supabaseUser = session.user;
       // Check if user metadata contains valid tenant_id, otherwise use user.id
       let rawTenantId = supabaseUser.id;
-      
+            
+      const userData: User = {
+        id: supabaseUser.id,
+        name: supabaseUser.user_metadata?.name || supabaseUser.email,
+        email: supabaseUser.email,
+        tenantId: rawTenantId
+      };
+            
       // Validate user metadata tenant_id
       const metadataTenantId = supabaseUser.user_metadata?.tenant_id;
       if (metadataTenantId && typeof metadataTenantId === 'string' && metadataTenantId.length > 0) {
@@ -67,78 +76,82 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (uuidRegex.test(metadataTenantId) && !metadataTenantId.includes('ENANT_ID')) {
           console.log('DEBUG: Using tenant_id from user metadata in checkSession:', metadataTenantId);
           rawTenantId = metadataTenantId;
+          // Update userData with the correct tenantId
+          userData.tenantId = rawTenantId;
         } else {
           console.warn('⚠️  Invalid tenant_id in metadata in checkSession, using user.id instead:', metadataTenantId);
         }
       }
-      
-      const userData: User = {
-        id: supabaseUser.id,
-        name: supabaseUser.user_metadata?.name || supabaseUser.email,
-        email: supabaseUser.email,
-        tenantId: rawTenantId
-      };
-      
+        
       console.log('DEBUG: Setting tenantId from auth context:', userData.tenantId);
       console.log('DEBUG: User ID from session:', supabaseUser.id);
       console.log('DEBUG: User metadata tenant_id:', supabaseUser.user_metadata?.tenant_id);
       console.log('DEBUG: Raw tenantId before any processing:', rawTenantId);
-      
+        
       // Warn if user metadata contains corrupted tenant_id
       if (supabaseUser.user_metadata?.tenant_id && supabaseUser.user_metadata.tenant_id.includes('ENANT_ID')) {
         console.warn('⚠️  CORRUPTED tenant_id in user metadata detected! Using user.id instead.');
         console.warn('Corrupted value:', supabaseUser.user_metadata.tenant_id);
       }
-
+  
       setUser(userData);
       setTenantId(userData.tenantId || null);
       useTenantStore.getState().setTenantId(userData.tenantId || null);
       setIsLoading(false);
+      setSessionChecked(true);
     };
-
-    checkSession();
-
+    
+    if (!sessionChecked) {
+      checkSession();
+    }
+  
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
         // Delay to ensure session is fully established
         await new Promise(resolve => setTimeout(resolve, 300));
-        
+          
         const supabaseUser = session.user;
         // Check if user metadata contains valid tenant_id, otherwise use user.id
         let rawTenantId = supabaseUser.id;
-        
-        // Validate user metadata tenant_id
-        const metadataTenantId = supabaseUser.user_metadata?.tenant_id;
-        if (metadataTenantId && typeof metadataTenantId === 'string' && metadataTenantId.length > 0) {
-          // Validate UUID format
-          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-          if (uuidRegex.test(metadataTenantId) && !metadataTenantId.includes('ENANT_ID')) {
-            console.log('DEBUG: Using tenant_id from user metadata:', metadataTenantId);
-            rawTenantId = metadataTenantId;
-          } else {
-            console.warn('⚠️  Invalid tenant_id in metadata, using user.id instead:', metadataTenantId);
-          }
-        }
-        
+          
+        // Create userData first to have access to it
         const userData: User = {
           id: supabaseUser.id,
           name: supabaseUser.user_metadata?.name || supabaseUser.email,
           email: supabaseUser.email,
           tenantId: rawTenantId
         };
-        
+                
+        // Validate user metadata tenant_id
+        const metadataTenantId = supabaseUser.user_metadata?.tenant_id;
+        if (metadataTenantId && typeof metadataTenantId === 'string' && metadataTenantId.length > 0) {
+          // Validate UUID format
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          if (uuidRegex.test(metadataTenantId) && !metadataTenantId.includes('ENANT_ID')) {
+            // Only log if it's different from current stored value to reduce noise
+            if (rawTenantId !== userData.tenantId) {
+              console.log('DEBUG: Using tenant_id from user metadata:', metadataTenantId);
+            }
+            rawTenantId = metadataTenantId;
+            // Update userData with the correct tenantId
+            userData.tenantId = rawTenantId;
+          } else {
+            console.warn('⚠️  Invalid tenant_id in metadata, using user.id instead:', metadataTenantId);
+          }
+        };
+          
         console.log('DEBUG: Setting tenantId from auth state change:', userData.tenantId);
         console.log('DEBUG: User ID from state change:', supabaseUser.id);
         console.log('DEBUG: User metadata tenant_id in state change:', supabaseUser.user_metadata?.tenant_id);
         console.log('DEBUG: Raw tenantId before any processing in state change:', rawTenantId);
-        
+          
         // Warn if user metadata contains corrupted tenant_id
         if (supabaseUser.user_metadata?.tenant_id && supabaseUser.user_metadata.tenant_id.includes('ENANT_ID')) {
           console.warn('⚠️  CORRUPTED tenant_id in user metadata detected! Using user.id instead.');
           console.warn('Corrupted value:', supabaseUser.user_metadata.tenant_id);
         }
-
+  
         setUser(userData);
         setTenantId(userData.tenantId || null);
         useTenantStore.getState().setTenantId(userData.tenantId || null);
@@ -150,11 +163,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setIsLoading(false);
     });
-
+  
     return () => {
       subscription.unsubscribe();
     };
-  }, [router]);
+  }, [router, sessionChecked]);
 
   const logout = async () => {
     // Clear tenant ID from the tenant store
