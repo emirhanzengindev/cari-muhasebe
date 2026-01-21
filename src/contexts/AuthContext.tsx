@@ -134,13 +134,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('DEBUG: Auth state change event:', event);
           
       // Prevent processing the same session repeatedly
-      if (event === 'INITIAL_SESSION' && user && session?.user.id === user.id) {
+      if (event === 'INITIAL_SESSION' && user && session?.user && session.user.id === user.id) {
         console.log('DEBUG: Skipping duplicate initial session event for same user');
         setIsLoading(false);
         return;
       }
           
-      if (session) {
+      // For INITIAL_SESSION, we need to handle both logged-in and logged-out cases
+      // If session exists, process user data
+      if (session?.user) {
         // Delay to ensure session is fully established
         await new Promise(resolve => setTimeout(resolve, 300));
               
@@ -205,9 +207,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (currentTenantId !== userData.tenantId) {
           useTenantStore.getState().setTenantId(userData.tenantId || null);
         }
-        
-        // Handle redirect after sign-in (only for INITIAL_SESSION event)
-        if (event === 'INITIAL_SESSION' && window.location.pathname.startsWith('/auth')) {
+            
+        // Handle redirect after sign-in (only for INITIAL_SESSION event when coming from auth pages)
+        if (event === 'INITIAL_SESSION' && typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
           // Redirect to home after successful sign-in
           setTimeout(() => {
             if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
@@ -216,11 +218,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }, 100);
         }
       } else {
-        console.log('DEBUG: Auth state change triggered logout - event:', event);
-        setUser(null);
-        setTenantId(null);
-        useTenantStore.getState().setTenantId(null);
-        // Don't redirect here since middleware handles it
+        // If no session, clear user data
+        // But only clear and redirect if this is truly a logout event
+        if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
+          console.log('DEBUG: Auth state change triggered logout - event:', event);
+          setUser(null);
+          setTenantId(null);
+          useTenantStore.getState().setTenantId(null);
+          // Don't redirect here since middleware handles it
+        } else {
+          // For other events with no session, just update loading state
+          console.log('DEBUG: Event without session:', event);
+        }
       }
       setIsLoading(false);
     });
