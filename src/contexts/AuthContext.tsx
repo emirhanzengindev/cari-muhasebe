@@ -48,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
   
       if (!session) {
+        console.log('DEBUG: No session found in checkSession, redirecting to login');
         // Only redirect if we're not already on auth pages
         if (!window.location.pathname.startsWith('/auth')) {
           router.push("/auth/signin");
@@ -106,7 +107,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('DEBUG: Auth state change event:', event);
       if (session) {
         // Delay to ensure session is fully established
         await new Promise(resolve => setTimeout(resolve, 300));
@@ -156,6 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setTenantId(userData.tenantId || null);
         useTenantStore.getState().setTenantId(userData.tenantId || null);
       } else {
+        console.log('DEBUG: Auth state change triggered logout - event:', event);
         setUser(null);
         setTenantId(null);
         useTenantStore.getState().setTenantId(null);
