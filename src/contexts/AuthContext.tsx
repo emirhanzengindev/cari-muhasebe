@@ -189,7 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [router, sessionChecked, user, tenantId]);
+  }, [router, sessionChecked]);
 
   const logout = async () => {
     // Clear tenant ID from the tenant store
