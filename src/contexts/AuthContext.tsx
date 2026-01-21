@@ -134,15 +134,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('DEBUG: Auth state change event:', event);
           
-      // Prevent processing the same session repeatedly
-      if (event === 'INITIAL_SESSION' && user && session?.user && session.user.id === user.id) {
-        console.log('DEBUG: Skipping duplicate initial session event for same user');
+      // INITIAL_SESSION should only be listened to, not trigger logout
+      if (event === 'INITIAL_SESSION') {
+        // Don't do anything for INITIAL_SESSION, just let it initialize
+        console.log('DEBUG: Received INITIAL_SESSION event, ignoring for logout purposes');
         setIsLoading(false);
         return;
       }
           
-      // For INITIAL_SESSION, we need to handle both logged-in and logged-out cases
-      // The session object might be present but not fully populated in some cases
+      // Handle SIGNED_OUT separately
+      if (event === 'SIGNED_OUT') {
+        console.log('DEBUG: Auth state change triggered logout - event: SIGNED_OUT');
+        setUser(null);
+        setTenantId(null);
+        useTenantStore.getState().setTenantId(null);
+        // Don't redirect here since middleware handles it
+        setIsLoading(false);
+        return;
+      }
+          
+      // Handle SIGNED_IN and other events with session data
       if (session && session.user) {
         // Delay to ensure session is fully established
         await new Promise(resolve => setTimeout(resolve, 300));
@@ -209,27 +220,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           useTenantStore.getState().setTenantId(userData.tenantId || null);
         }
             
-        // Handle redirect after sign-in (only for INITIAL_SESSION event when coming from auth pages)
-        if (event === 'INITIAL_SESSION' && typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
+        // Handle redirect after sign-in (only when coming from auth pages)
+        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
           // Redirect to home after successful sign-in
           setTimeout(() => {
             if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
               router.push("/");
             }
           }, 100);
-        }
-      } else {
-        // If no session or no user in session, check the event type
-        // For INITIAL_SESSION with no session/user, it might mean user is not logged in
-        if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && (!session || !session.user))) {
-          console.log('DEBUG: Auth state change triggered logout - event:', event, 'session:', !!session, 'user:', !!(session && session.user));
-          setUser(null);
-          setTenantId(null);
-          useTenantStore.getState().setTenantId(null);
-          // Don't redirect here since middleware handles it
-        } else {
-          // For other events with no session, just update loading state
-          console.log('DEBUG: Event without session:', event, 'session:', !!session, 'user:', !!(session && session.user));
         }
       }
       setIsLoading(false);
@@ -238,7 +236,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [router, sessionChecked]);
+  }, [router]);
 
   const logout = async () => {
     // Clear tenant ID from the tenant store
