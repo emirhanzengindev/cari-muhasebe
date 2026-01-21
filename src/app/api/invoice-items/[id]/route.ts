@@ -1,194 +1,88 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
+import { NextRequest, NextResponse } from 'next/server'
+import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer'
+
+type Params = {
+  id: string
+}
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<Params> }
 ) {
-  try {
-    const { id } = await params;
-    const tenantId = await getTenantIdFromJWT();
-    if (!tenantId) {
-      return NextResponse.json(
-        { error: 'Tenant ID missing' },
-        { status: 401 }
-      );
-    }
-    
-    // Validate that tenantId is a proper UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(tenantId)) {
-      console.error('INVALID TENANT ID FORMAT:', tenantId);
-      return NextResponse.json(
-        { error: 'Invalid tenant ID format' },
-        { status: 400 }
-      );
-    }
-    
-    const supabase = createServerSupabaseClient();
-    
-    const { data, error, status } = await supabase
-      .from('invoice_items')
-      .select('*')
-      .eq('id', id)
-      .eq('tenant_id', tenantId)
-      .single();
+  const { id } = await context.params
+  const tenantId = await getTenantIdFromJWT()
 
-    if (error && status === 404) {
-      console.error('Table invoice_items does not exist for select operation');
-      return Response.json({ error: 'Invoice items table does not exist' }, { status: 500 });
-    }
-    
-    if (error) {
-      console.error('SUPABASE ERROR (GET invoice_items by id):', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    if (!data) {
-      return NextResponse.json({ error: 'Invoice item not found' }, { status: 404 });
-    }
-
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error('Error fetching invoice item:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  if (!tenantId) {
+    return NextResponse.json({ error: 'Tenant ID missing' }, { status: 401 })
   }
+
+  const supabase = createServerSupabaseClient()
+
+  const { data, error } = await supabase
+    .from('invoice_items')
+    .select('*')
+    .eq('id', id)
+    .eq('tenant_id', tenantId)
+    .single()
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json(data)
 }
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<Params> }
 ) {
-  try {
-    const { id } = await params;
-    const invoiceItemData = await request.json();
-    const tenantId = await getTenantIdFromJWT();
-    if (!tenantId) {
-      return NextResponse.json(
-        { error: 'Tenant ID missing' },
-        { status: 401 }
-      );
-    }
-    
-    // Validate that tenantId is a proper UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(tenantId)) {
-      console.error('INVALID TENANT ID FORMAT:', tenantId);
-      return NextResponse.json(
-        { error: 'Invalid tenant ID format' },
-        { status: 400 }
-      );
-    }
-    
-    const supabase = createServerSupabaseClient();
-    
-    // First check if the record exists and belongs to the tenant
-    const { data: existingItem, error: fetchError } = await supabase
-      .from('invoice_items')
-      .select('id')
-      .eq('id', id)
-      .eq('tenant_id', tenantId)
-      .single();
-      
-    if (fetchError) {
-      console.error('SUPABASE ERROR (check existing invoice_item):', fetchError);
-      return NextResponse.json({ error: 'Invoice item not found' }, { status: 404 });
-    }
-    
-    if (!existingItem) {
-      return NextResponse.json({ error: 'Invoice item not found' }, { status: 404 });
-    }
-    
-    const { data, error, status } = await supabase
-      .from('invoice_items')
-      .update({
-        ...invoiceItemData,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', id)
-      .eq('tenant_id', tenantId)
-      .select()
-      .single();
+  const { id } = await context.params
+  const body = await request.json()
+  const tenantId = await getTenantIdFromJWT()
 
-    if (error && status === 404) {
-      console.error('Table invoice_items does not exist for update operation');
-      return Response.json({ error: 'Invoice items table does not exist' }, { status: 500 });
-    }
-    
-    if (error) {
-      console.error('SUPABASE ERROR (PUT invoice_items):', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error('Error updating invoice item:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  if (!tenantId) {
+    return NextResponse.json({ error: 'Tenant ID missing' }, { status: 401 })
   }
+
+  const supabase = createServerSupabaseClient()
+
+  const { data, error } = await supabase
+    .from('invoice_items')
+    .update(body)
+    .eq('id', id)
+    .eq('tenant_id', tenantId)
+    .select()
+    .single()
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json(data)
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<Params> }
 ) {
-  try {
-    const { id } = await params;
-    const tenantId = await getTenantIdFromJWT();
-    if (!tenantId) {
-      return NextResponse.json(
-        { error: 'Tenant ID missing' },
-        { status: 401 }
-      );
-    }
-    
-    // Validate that tenantId is a proper UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(tenantId)) {
-      console.error('INVALID TENANT ID FORMAT:', tenantId);
-      return NextResponse.json(
-        { error: 'Invalid tenant ID format' },
-        { status: 400 }
-      );
-    }
-    
-    const supabase = createServerSupabaseClient();
-    
-    // First check if the record exists and belongs to the tenant
-    const { data: existingItem, error: fetchError } = await supabase
-      .from('invoice_items')
-      .select('id')
-      .eq('id', id)
-      .eq('tenant_id', tenantId)
-      .single();
-      
-    if (fetchError) {
-      console.error('SUPABASE ERROR (check existing invoice_item):', fetchError);
-      return NextResponse.json({ error: 'Invoice item not found' }, { status: 404 });
-    }
-    
-    if (!existingItem) {
-      return NextResponse.json({ error: 'Invoice item not found' }, { status: 404 });
-    }
-    
-    const { error, status } = await supabase
-      .from('invoice_items')
-      .delete()
-      .eq('id', id)
-      .eq('tenant_id', tenantId);
+  const { id } = await context.params
+  const tenantId = await getTenantIdFromJWT()
 
-    if (error && status === 404) {
-      console.error('Table invoice_items does not exist for delete operation');
-      return Response.json({ error: 'Invoice items table does not exist' }, { status: 500 });
-    }
-    
-    if (error) {
-      console.error('SUPABASE ERROR (DELETE invoice_items):', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting invoice item:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  if (!tenantId) {
+    return NextResponse.json({ error: 'Tenant ID missing' }, { status: 401 })
   }
+
+  const supabase = createServerSupabaseClient()
+
+  const { error } = await supabase
+    .from('invoice_items')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', tenantId)
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ success: true })
 }
