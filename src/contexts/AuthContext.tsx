@@ -170,7 +170,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setTenantId(null);
         useTenantStore.getState().setTenantId(null);
-        router.push("/auth/signin");
+        // Only redirect if not already on auth pages
+        if (!window.location.pathname.startsWith('/auth')) {
+          router.push("/auth/signin");
+        }
       }
       setIsLoading(false);
     });
@@ -178,7 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [router, sessionChecked]);
+  }, [router, sessionChecked, user, tenantId]);
 
   const logout = async () => {
     // Clear tenant ID from the tenant store
