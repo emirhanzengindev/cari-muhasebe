@@ -28,10 +28,9 @@ interface AccountBalance {
 }
 
 // Placeholder API route for sales by product report
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ reportType: string }> }) {
   try {
-    const url = new URL(request.url);
-    const reportType = url.pathname.split('/').pop(); // Get the last part of the path
+    const { reportType } = await params;
     
     const tenantId = await getTenantIdFromJWT();
     if (!tenantId) {
