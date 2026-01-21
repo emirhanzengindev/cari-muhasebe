@@ -33,8 +33,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Only clear localStorage on explicit logout, not on app start
     // This prevents removing valid session tokens during app initialization
       
+    // Flag to prevent multiple checkSession executions
+    let isCheckSessionRunning = false;
+      
     // Check active session with delay to avoid race conditions
     const checkSession = async () => {
+      if (isCheckSessionRunning) return; // Prevent concurrent executions
+      isCheckSessionRunning = true;
         
       // Increased delay to ensure auth state is properly initialized
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -44,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error("Auth session error:", error);
         setIsLoading(false);
+        isCheckSessionRunning = false;
         return;
       }
   
@@ -54,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           router.push("/auth/signin");
         }
         setIsLoading(false);
+        isCheckSessionRunning = false;
         return;
       }
   
@@ -100,6 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       useTenantStore.getState().setTenantId(userData.tenantId || null);
       setIsLoading(false);
       setSessionChecked(true);
+      isCheckSessionRunning = false;
     };
     
     if (!sessionChecked) {
