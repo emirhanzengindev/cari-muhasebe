@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, redirect } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import TenantSwitcher from "@/components/TenantSwitcher";
@@ -33,13 +33,7 @@ export default function MainLayout({
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
 
-  // Oturum açmamışsa giriş sayfasına yönlendir
-  if (!user && !isLoading && !pathname.startsWith("/auth")) {
-    if (typeof window !== 'undefined') {
-      window.location.href = '/auth/signin';
-    }
-    return null;
-  }
+
 
   // Yükleme durumu
   if (isLoading) {
