@@ -54,7 +54,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
   
       if (!session) {
-        console.log('DEBUG: No session found in checkSession');
         // Set loading to false but don't redirect here since middleware handles it
         setIsLoading(false);
         isCheckSessionRunning = false;
@@ -79,7 +78,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Validate UUID format
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         if (uuidRegex.test(metadataTenantId) && !metadataTenantId.includes('ENANT_ID')) {
-          console.log('DEBUG: Using tenant_id from user metadata in checkSession:', metadataTenantId);
           rawTenantId = metadataTenantId;
           // Update userData with the correct tenantId
           userData.tenantId = rawTenantId;
@@ -88,17 +86,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
         
-      console.log('DEBUG: Setting tenantId from auth context:', userData.tenantId);
-      console.log('DEBUG: User ID from session:', supabaseUser.id);
-      console.log('DEBUG: User metadata tenant_id:', supabaseUser.user_metadata?.tenant_id);
-      console.log('DEBUG: Raw tenantId before any processing:', rawTenantId);
-        
-      // Warn if user metadata contains corrupted tenant_id
-      if (supabaseUser.user_metadata?.tenant_id && supabaseUser.user_metadata.tenant_id.includes('ENANT_ID')) {
-        console.warn('⚠️  CORRUPTED tenant_id in user metadata detected! Using user.id instead.');
-        console.warn('Corrupted value:', supabaseUser.user_metadata.tenant_id);
-      }
-  
       setUser(prevUser => {
         // Only update if the user data actually changed
         if (prevUser?.id !== userData.id || prevUser?.tenantId !== userData.tenantId) {
@@ -132,19 +119,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('DEBUG: Auth state change event:', event);
-          
       // INITIAL_SESSION should only be listened to, not trigger logout
       if (event === 'INITIAL_SESSION') {
         // Don't do anything for INITIAL_SESSION, just let it initialize
-        console.log('DEBUG: Received INITIAL_SESSION event, ignoring for logout purposes');
         setIsLoading(false);
         return;
       }
           
       // Handle SIGNED_OUT separately
       if (event === 'SIGNED_OUT') {
-        console.log('DEBUG: Auth state change triggered logout - event: SIGNED_OUT');
         setUser(null);
         setTenantId(null);
         useTenantStore.getState().setTenantId(null);
@@ -176,10 +159,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Validate UUID format
           const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
           if (uuidRegex.test(metadataTenantId) && !metadataTenantId.includes('ENANT_ID')) {
-            // Only log if it's different from current stored value to reduce noise
-            if (rawTenantId !== userData.tenantId) {
-              console.log('DEBUG: Using tenant_id from user metadata:', metadataTenantId);
-            }
             rawTenantId = metadataTenantId;
             // Update userData with the correct tenantId
             userData.tenantId = rawTenantId;
@@ -188,17 +167,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         };
               
-        console.log('DEBUG: Setting tenantId from auth state change:', userData.tenantId);
-        console.log('DEBUG: User ID from state change:', supabaseUser.id);
-        console.log('DEBUG: User metadata tenant_id in state change:', supabaseUser.user_metadata?.tenant_id);
-        console.log('DEBUG: Raw tenantId before any processing in state change:', rawTenantId);
-              
-        // Warn if user metadata contains corrupted tenant_id
-        if (supabaseUser.user_metadata?.tenant_id && supabaseUser.user_metadata.tenant_id.includes('ENANT_ID')) {
-          console.warn('⚠️  CORRUPTED tenant_id in user metadata detected! Using user.id instead.');
-          console.warn('Corrupted value:', supabaseUser.user_metadata.tenant_id);
-        }
-    
         setUser(prevUser => {
           // Only update if the user data actually changed
           if (prevUser?.id !== userData.id || prevUser?.tenantId !== userData.tenantId) {
