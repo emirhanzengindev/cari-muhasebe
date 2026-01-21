@@ -125,7 +125,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isCheckSessionRunning = false;
     };
     
-    if (!sessionChecked) {
+    // Only run checkSession if no session has been checked yet and auth state listener hasn't set the user
+    if (!sessionChecked && !user) {
       checkSession();
     }
   
