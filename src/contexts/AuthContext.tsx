@@ -57,7 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('DEBUG: No session found in checkSession, redirecting to login');
         // Only redirect if we're not already on auth pages
         if (!window.location.pathname.startsWith('/auth')) {
-          router.push("/auth/signin");
+          setTimeout(() => {
+            router.push("/auth/signin");
+          }, 100);
         }
         setIsLoading(false);
         isCheckSessionRunning = false;
@@ -180,7 +182,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         useTenantStore.getState().setTenantId(null);
         // Only redirect if not already on auth pages
         if (!window.location.pathname.startsWith('/auth')) {
-          router.push("/auth/signin");
+          setTimeout(() => {
+            router.push("/auth/signin");
+          }, 100);
         }
       }
       setIsLoading(false);
@@ -233,7 +237,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     
     // Redirect to signin page
-    router.push("/auth/signin");
+    setTimeout(() => {
+      router.push("/auth/signin");
+    }, 100);
   };
 
   const value = {
