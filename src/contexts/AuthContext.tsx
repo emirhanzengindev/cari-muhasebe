@@ -205,6 +205,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (currentTenantId !== userData.tenantId) {
           useTenantStore.getState().setTenantId(userData.tenantId || null);
         }
+        
+        // Handle redirect after sign-in (only for INITIAL_SESSION event)
+        if (event === 'INITIAL_SESSION' && window.location.pathname.startsWith('/auth')) {
+          // Redirect to home after successful sign-in
+          setTimeout(() => {
+            if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
+              router.push("/");
+            }
+          }, 100);
+        }
       } else {
         console.log('DEBUG: Auth state change triggered logout - event:', event);
         setUser(null);

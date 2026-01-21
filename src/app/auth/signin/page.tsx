@@ -26,11 +26,9 @@ export default function SignIn() {
       if (error) {
         setError("Geçersiz e-posta veya şifre");
       } else if (data.session) {
-        // Session'ın tarayıcıda güvenli bir şekilde kurulmasını bekle
-        // ve AuthContext'in haberdar olmasını sağla
+        // Session will be handled by AuthContext which will redirect automatically
+        // Just show success feedback and let AuthContext handle the redirect
         await new Promise(resolve => setTimeout(resolve, 300));
-        router.push("/");
-        router.refresh();
       }
     } catch (err) {
       setError("Beklenmeyen bir hata oluştu");
