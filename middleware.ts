@@ -21,16 +21,25 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Debug cookie transfer
-  console.log('MIDDLEWARE: Request cookies:', request.cookies.getAll().map(c => c.name));
-  
   const { data: { user }, error } = await supabase.auth.getUser()
   
-  console.log('MIDDLEWARE: User from session:', user ? 'exists' : 'null');
-  console.log('MIDDLEWARE: Session error:', error);
+  // Check if the requested path is protected (not auth pages)
+  const isAuthPage = request.nextUrl.pathname.startsWith('/auth')
   
-  // Debug response cookies
-  console.log('MIDDLEWARE: Response cookies being set:', response.cookies.getAll().map(c => c.name));
+  // If user is not authenticated and trying to access protected route
+  if (!user && !isAuthPage) {
+    // Redirect to login page
+    const url = request.nextUrl.clone()
+    url.pathname = '/auth/signin'
+    return NextResponse.redirect(url)
+  }
+  
+  // If user is authenticated and trying to access auth pages, redirect to home
+  if (user && isAuthPage) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return NextResponse.redirect(url)
+  }
   
   return response
 }
