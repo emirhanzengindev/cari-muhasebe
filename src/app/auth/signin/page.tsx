@@ -24,9 +24,10 @@ export default function SignIn() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // If already submitting, redirected, redirecting, or if we're no longer on the signin page, don't process
-    if (isSubmitting || hasRedirected || isRedirecting || (typeof window !== 'undefined' && window.location.pathname !== '/auth/signin')) {
-      console.log('DEBUG: Submit already in progress, redirected, redirecting, or page changed, ignoring submit');
+    // If already submitting or if we're no longer on the signin page, don't process
+    // We reset hasRedirected and isRedirecting states when entering the page
+    if (isSubmitting || (typeof window !== 'undefined' && window.location.pathname !== '/auth/signin')) {
+      console.log('DEBUG: Submit already in progress or page changed, ignoring submit');
       return;
     }
     
@@ -46,6 +47,9 @@ export default function SignIn() {
       if (error) {
         console.log('DEBUG: Auth error:', error.message);
         setError("Geçersiz e-posta veya şifre");
+        // Reset redirect states on auth error so user can try again
+        setHasRedirected(false);
+        setIsRedirecting(false);
       } else if (data.session) {
         console.log('DEBUG: Auth successful, session created');
         // Wait longer for AuthContext to process the session and redirect
