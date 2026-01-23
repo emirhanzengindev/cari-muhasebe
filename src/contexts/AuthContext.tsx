@@ -4,13 +4,13 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { useRouter } from "next/navigation";
 import { useTenantStore } from "@/lib/tenantStore";
 import { supabase } from "@/lib/supabase";
-import { User as SupabaseUser } from "@supabase/supabase-js";
+import { User as SupabaseUser, Session } from "@supabase/supabase-js";
 
 interface User {
   id: string;
   name?: string | null;
   email?: string | null;
-  tenantId?: string;
+  tenantId: string;
 }
 
 interface AuthContextType {
@@ -22,198 +22,69 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Helper function to build User object from session
+function buildUser(session: Session): User {
+  const u = session.user;
+  const uuidRegex = /^[0-9a-f-]{36}$/i;
+
+  let tenantId = u.user_metadata?.tenant_id;
+  if (!tenantId || !uuidRegex.test(tenantId)) {
+    tenantId = u.id;
+  }
+
+  return {
+    id: u.id,
+    email: u.email,
+    name: u.user_metadata?.name ?? u.email,
+    tenantId
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [sessionChecked, setSessionChecked] = useState(false);
 
   useEffect(() => {
-    // Only clear localStorage on explicit logout, not on app start
-    // This prevents removing valid session tokens during app initialization
-      
-    // Flag to prevent multiple checkSession executions
-    let isCheckSessionRunning = false;
-      
-    // Check active session with delay to avoid race conditions
-    const checkSession = async () => {
-      if (isCheckSessionRunning) return; // Prevent concurrent executions
-      isCheckSessionRunning = true;
-        
-      // Increased delay to ensure auth state is properly initialized
-      await new Promise(resolve => setTimeout(resolve, 500));
-        
-      const { data: { session }, error } = await supabase.auth.getSession();
-        
-      if (error) {
-        console.error("Auth session error:", error);
-        setIsLoading(false);
-        isCheckSessionRunning = false;
-        return;
-      }
-  
-      if (!session) {
-        // Set loading to false but don't redirect here since middleware handles it
-        setIsLoading(false);
-        isCheckSessionRunning = false;
-        return;
-      }
-  
-      // Convert Supabase user to our User type
-      const supabaseUser = session.user;
-      // Check if user metadata contains valid tenant_id, otherwise use user.id
-      let rawTenantId = supabaseUser.id;
-            
-      const userData: User = {
-        id: supabaseUser.id,
-        name: supabaseUser.user_metadata?.name || supabaseUser.email,
-        email: supabaseUser.email,
-        tenantId: rawTenantId
-      };
-            
-      // Validate user metadata tenant_id
-      const metadataTenantId = supabaseUser.user_metadata?.tenant_id;
-      if (metadataTenantId && typeof metadataTenantId === 'string' && metadataTenantId.length > 0) {
-        // Validate UUID format
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (uuidRegex.test(metadataTenantId) && !metadataTenantId.includes('ENANT_ID')) {
-          rawTenantId = metadataTenantId;
-          // Update userData with the correct tenantId
-          userData.tenantId = rawTenantId;
-        } else {
-          console.warn('⚠️  Invalid tenant_id in metadata in checkSession, using user.id instead:', metadataTenantId);
-        }
-      }
-        
-      setUser(prevUser => {
-        // Only update if the user data actually changed
-        if (prevUser?.id !== userData.id || prevUser?.tenantId !== userData.tenantId) {
-          return userData;
-        }
-        return prevUser;
-      });
-      
-      setTenantId(prevTenantId => {
-        if (prevTenantId !== userData.tenantId) {
-          return userData.tenantId || null;
-        }
-        return prevTenantId;
-      });
-      
-      // Update tenant store only if needed
-      const currentTenantId = useTenantStore.getState().tenantId;
-      if (currentTenantId !== userData.tenantId) {
-        useTenantStore.getState().setTenantId(userData.tenantId || null);
-      }
-      
-      setIsLoading(false);
-      setSessionChecked(true);
-      isCheckSessionRunning = false;
-    };
-    
-    // Only run checkSession if no session has been checked yet and auth state listener hasn't set the user
-    if (!sessionChecked && !user) {
-      checkSession();
-    }
-  
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // INITIAL_SESSION should only be listened to, not trigger logout
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'INITIAL_SESSION') {
-        // Don't do anything for INITIAL_SESSION, just let it initialize
         setIsLoading(false);
         return;
       }
-          
-      // Handle SIGNED_OUT separately
+
       if (event === 'SIGNED_OUT') {
         setUser(null);
         setTenantId(null);
         useTenantStore.getState().setTenantId(null);
-        // Don't redirect here since middleware handles it
         setIsLoading(false);
         return;
       }
-          
-      // Handle SIGNED_IN and other events with session data
-      if (session && session.user) {
-        // Delay to ensure session is fully established
-        await new Promise(resolve => setTimeout(resolve, 300));
-              
-        const supabaseUser = session.user;
-        // Check if user metadata contains valid tenant_id, otherwise use user.id
-        let rawTenantId = supabaseUser.id;
-              
-        // Create userData first to have access to it
-        const userData: User = {
-          id: supabaseUser.id,
-          name: supabaseUser.user_metadata?.name || supabaseUser.email,
-          email: supabaseUser.email,
-          tenantId: rawTenantId
-        };
-                  
-        // Validate user metadata tenant_id
-        const metadataTenantId = supabaseUser.user_metadata?.tenant_id;
-        if (metadataTenantId && typeof metadataTenantId === 'string' && metadataTenantId.length > 0) {
-          // Validate UUID format
-          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-          if (uuidRegex.test(metadataTenantId) && !metadataTenantId.includes('ENANT_ID')) {
-            rawTenantId = metadataTenantId;
-            // Update userData with the correct tenantId
-            userData.tenantId = rawTenantId;
-          } else {
-            console.warn('⚠️  Invalid tenant_id in metadata, using user.id instead:', metadataTenantId);
-          }
-        };
-              
-        setUser(prevUser => {
-          // Only update if the user data actually changed
-          if (prevUser?.id !== userData.id || prevUser?.tenantId !== userData.tenantId) {
-            return userData;
-          }
-          return prevUser;
-        });
-            
-        setTenantId(prevTenantId => {
-          if (prevTenantId !== userData.tenantId) {
-            return userData.tenantId || null;
-          }
-          return prevTenantId;
-        });
-            
-        // Update tenant store only if needed
-        const currentTenantId = useTenantStore.getState().tenantId;
-        if (currentTenantId !== userData.tenantId) {
-          useTenantStore.getState().setTenantId(userData.tenantId || null);
-        }
-            
-        // Handle redirect after sign-in (only when coming from auth pages)
+
+      if (session) {
+        const userData = buildUser(session);
+
+        setUser(userData);
+        setTenantId(userData.tenantId);
+        useTenantStore.getState().setTenantId(userData.tenantId);
+
         if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
-          // Redirect to home after successful sign-in
-          setTimeout(() => {
-            if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
-              router.push("/");
-            }
-          }, 100);
+          router.replace('/');
         }
       }
+
       setIsLoading(false);
     });
-  
-    return () => {
-      subscription.unsubscribe();
-    };
+
+    return () => subscription.unsubscribe();
   }, [router]);
 
   const logout = async () => {
     // Clear tenant ID from the tenant store
     useTenantStore.getState().setTenantId(null);
     
-    // Clear problematic localStorage entries on logout
+    // Clear localStorage entries on logout
     if (typeof window !== 'undefined') {
-      console.log('🧹 Clearing localStorage entries on logout...');
-      
       // Clear all tenant-related storage
       const keysToRemove = [
         'tenant-storage',
@@ -225,7 +96,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       keysToRemove.forEach(key => {
         if (localStorage.getItem(key)) {
-          console.log(`🗑️  Removing localStorage key: ${key}`);
           localStorage.removeItem(key);
         }
       });
@@ -233,12 +103,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Also clear all Supabase-related items
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith('sb-')) {
-          console.log(`🗑️  Removing Supabase key: ${key}`);
           localStorage.removeItem(key);
         }
       });
-      
-      console.log('✅ localStorage cleanup completed on logout!');
     }
     
     // Sign out from Supabase
