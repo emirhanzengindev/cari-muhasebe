@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, redirect } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import TenantSwitcher from "@/components/TenantSwitcher";
