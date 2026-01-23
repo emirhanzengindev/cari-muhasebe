@@ -28,10 +28,7 @@ export default function SignIn() {
       return;
     }
 
-    // 🔥 İşim bitti, sayfadan çık
-    router.replace("/");
-    
-    // 🔥 Middleware'in kesin çalışması için
+    // 🔥 Middleware'in çalışması için
     router.refresh();
   };
 
