@@ -31,9 +31,13 @@ export default function SignIn() {
         setError("Geçersiz e-posta veya şifre");
       } else if (data.session) {
         console.log('DEBUG: Auth successful, session created');
-        // Session will be handled by AuthContext which will redirect automatically
-        // Just show success feedback and let AuthContext handle the redirect
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Wait a bit for AuthContext to process the session
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // If we're still on the signin page, redirect manually
+        if (typeof window !== 'undefined' && window.location.pathname === '/auth/signin') {
+          console.log('DEBUG: Manual redirect to home');
+          router.push('/');
+        }
       } else {
         console.log('DEBUG: No session in response');
         setError("Oturum oluşturulamadı");
