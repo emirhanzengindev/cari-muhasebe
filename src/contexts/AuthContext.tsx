@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('DEBUG: AuthContext received event:', event, 'session:', !!session);
       
       if (event === 'INITIAL_SESSION') {
-        console.log('DEBUG: INITIAL_SESSION event received');
+        console.log('DEBUG: INITIAL_SESSION event received, current user:', !!user, 'current tenantId:', tenantId);
         setIsLoading(false);
         return;
       }
@@ -82,9 +82,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         lastHandledSessionId.current = sessionId;
         const userData = buildUser(session);
 
+        console.log('DEBUG: Setting user data in AuthContext:', userData);
         setUser(userData);
         setTenantId(userData.tenantId);
         useTenantStore.getState().setTenantId(userData.tenantId);
+        console.log('DEBUG: User and tenantId set in AuthContext, user:', !!userData, 'tenantId:', userData.tenantId);
 
         if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
           console.log('DEBUG: Redirecting from auth page to home');
