@@ -42,18 +42,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log('AUTH CONTEXT: Initializing with isLoading:', isLoading);
+    
     const { data: { subscription } } =
       supabase.auth.onAuthStateChange((event, session) => {
         console.log("AUTH EVENT:", event, !!session);
+        console.log('AUTH CONTEXT: Event received, current isLoading:', isLoading, 'current user:', !!user);
 
         if (event === "INITIAL_SESSION") {
           // INITIAL_SESSION is fired during initialization and should not affect user state
           // Only update loading state, don't change user/session data
+          console.log('AUTH CONTEXT: Handling INITIAL_SESSION, setting isLoading to false');
           setIsLoading(false);
           return;
         }
 
         if (!session) {
+          console.log('AUTH CONTEXT: No session, resetting state');
           setUser(null);
           setTenantId(null);
           useTenantStore.getState().setTenantId(null);
@@ -62,14 +67,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         const userData = buildUser(session);
+        console.log('AUTH CONTEXT: Setting user data:', userData);
         setUser(userData);
         setTenantId(userData.tenantId);
         useTenantStore.getState().setTenantId(userData.tenantId);
+        console.log('AUTH CONTEXT: Setting isLoading to false after setting user');
         setIsLoading(false);
       });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      console.log('AUTH CONTEXT: Unsubscribing from auth state change');
+      subscription.unsubscribe();
+    };
+  }, [isLoading, user]);
 
   const logout = async () => {
     useTenantStore.getState().setTenantId(null);
