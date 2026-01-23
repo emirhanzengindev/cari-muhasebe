@@ -10,16 +10,19 @@ export default function SignIn() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // If already loading, don't process again
-    if (loading) {
+    // If already submitting, don't process again
+    if (isSubmitting) {
+      console.log('DEBUG: Submit already in progress, ignoring duplicate submit');
       return;
     }
     
+    setIsSubmitting(true);
     setLoading(true);
     setError("");
 
@@ -52,8 +55,9 @@ export default function SignIn() {
       console.log('DEBUG: Unexpected error:', err);
       setError("Beklenmeyen bir hata oluştu");
     } finally {
-      // Only set loading to false if we're still on the signin page
+      // Only set states to false if we're still on the signin page
       if (typeof window !== 'undefined' && window.location.pathname === '/auth/signin') {
+        setIsSubmitting(false);
         setLoading(false);
       }
     }
@@ -126,7 +130,7 @@ export default function SignIn() {
           <div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || isSubmitting}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
               {loading ? (

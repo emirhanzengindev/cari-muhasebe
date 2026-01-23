@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useTenantStore } from "@/lib/tenantStore";
 import { supabase } from "@/lib/supabase";
@@ -45,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const lastHandledSessionId = useRef<string | null>(null);
 
   useEffect(() => {
     console.log('DEBUG: Setting up auth state change listener');
@@ -67,7 +68,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (session) {
-        console.log('DEBUG: Session received in AuthContext:', session.user.id);
+        const sessionId = session.user.id;
+        console.log('DEBUG: Session received in AuthContext:', sessionId);
+        
+        // Prevent processing the same session multiple times
+        if (lastHandledSessionId.current === sessionId) {
+          console.log('DEBUG: SIGNED_IN already handled for session', sessionId);
+          setIsLoading(false);
+          return;
+        }
+        
+        lastHandledSessionId.current = sessionId;
         const userData = buildUser(session);
 
         setUser(userData);
