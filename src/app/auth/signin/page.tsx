@@ -28,8 +28,8 @@ export default function SignIn() {
       return;
     }
 
-    // 🔥 Gerçek HTTP request ile middleware tetikle
-    window.location.href = '/';
+    // 🔥 Middleware tetiklemek için refresh
+    router.refresh();
   };
 
   return (
