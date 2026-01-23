@@ -100,11 +100,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             /* ignore sessionStorage errors */
           }
           // Add small delay to ensure signin page has time to finish its process
+          // and to allow middleware to recognize the authenticated user
           setTimeout(() => {
             if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
               router.push('/');
             }
-          }, 100);
+          }, 300);
         }
         
         // Make sure to set loading to false after processing
