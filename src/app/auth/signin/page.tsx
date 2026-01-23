@@ -29,9 +29,7 @@ export default function SignIn() {
     }
 
     // 🔥 /auth/signin'den çıkmak için push
-    router.push('/')
-    // 🔥 Middleware tetiklemek için refresh
-    router.refresh();
+    router.push('/');
   };
 
   return (
