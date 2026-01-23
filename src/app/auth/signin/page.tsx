@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -14,6 +14,12 @@ export default function SignIn() {
   const [hasRedirected, setHasRedirected] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const router = useRouter();
+  
+  // Reset redirect states when component mounts or when returning to signin page
+  useEffect(() => {
+    setHasRedirected(false);
+    setIsRedirecting(false);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
