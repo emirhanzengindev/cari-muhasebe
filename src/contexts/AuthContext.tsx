@@ -47,13 +47,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log('DEBUG: Setting up auth state change listener');
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('DEBUG: AuthContext received event:', event, 'session:', !!session);
+      
       if (event === 'INITIAL_SESSION') {
+        console.log('DEBUG: INITIAL_SESSION event received');
         setIsLoading(false);
         return;
       }
 
       if (event === 'SIGNED_OUT') {
+        console.log('DEBUG: SIGNED_OUT event received');
         setUser(null);
         setTenantId(null);
         useTenantStore.getState().setTenantId(null);
@@ -62,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (session) {
+        console.log('DEBUG: Session received in AuthContext:', session.user.id);
         const userData = buildUser(session);
 
         setUser(userData);
@@ -69,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         useTenantStore.getState().setTenantId(userData.tenantId);
 
         if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
+          console.log('DEBUG: Redirecting from auth page to home');
           router.replace('/');
         }
       }
@@ -76,7 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('DEBUG: Cleaning up auth state change listener');
+      subscription.unsubscribe();
+    };
   }, [router]);
 
   const logout = async () => {
