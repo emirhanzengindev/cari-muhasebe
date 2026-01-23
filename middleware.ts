@@ -34,6 +34,11 @@ export async function middleware(request: NextRequest) {
   const publicPaths = ['/privacy', '/terms']
   const isAuthPage = request.nextUrl.pathname.startsWith('/auth')
 
+  // Debug logs
+  console.log('MW PATH:', request.nextUrl.pathname)
+  console.log('MW SESSION:', !!session)
+  console.log('MW isAuthPage:', isAuthPage)
+
   // 🔒 Protect routes
   if (!session && !isAuthPage && !publicPaths.some(path =>
     request.nextUrl.pathname.startsWith(path)
