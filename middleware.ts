@@ -31,14 +31,13 @@ export async function middleware(request: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession()
 
-  const publicPaths = ['/auth', '/privacy', '/terms']
-  const isPublic = publicPaths.some(path =>
-    request.nextUrl.pathname.startsWith(path)
-  )
+  const publicPaths = ['/privacy', '/terms']
   const isAuthPage = request.nextUrl.pathname.startsWith('/auth')
 
   // 🔒 Protect routes
-  if (!session && !isPublic) {
+  if (!session && !isAuthPage && !publicPaths.some(path =>
+    request.nextUrl.pathname.startsWith(path)
+  )) {
     return NextResponse.redirect(new URL('/auth/signin', request.url))
   }
 
