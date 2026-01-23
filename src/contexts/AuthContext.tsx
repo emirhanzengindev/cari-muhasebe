@@ -87,7 +87,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
           console.log('DEBUG: Redirecting from auth page to home');
-          router.replace('/');
+          // Add small delay to ensure signin page has time to finish its process
+          setTimeout(() => {
+            if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
+              router.replace('/');
+            }
+          }, 100);
         }
       }
 

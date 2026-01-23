@@ -16,9 +16,9 @@ export default function SignIn() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // If already submitting, don't process again
-    if (isSubmitting) {
-      console.log('DEBUG: Submit already in progress, ignoring duplicate submit');
+    // If already submitting or if we're no longer on the signin page, don't process
+    if (isSubmitting || (typeof window !== 'undefined' && window.location.pathname !== '/auth/signin')) {
+      console.log('DEBUG: Submit already in progress or page changed, ignoring submit');
       return;
     }
     
@@ -40,12 +40,14 @@ export default function SignIn() {
         setError("Geçersiz e-posta veya şifre");
       } else if (data.session) {
         console.log('DEBUG: Auth successful, session created');
-        // Wait for AuthContext to process the session and redirect
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Wait longer for AuthContext to process the session and redirect
+        await new Promise(resolve => setTimeout(resolve, 1500));
         // Check if we're still on the signin page (shouldn't be if AuthContext worked)
         if (typeof window !== 'undefined' && window.location.pathname === '/auth/signin') {
-          console.log('DEBUG: AuthContext did not redirect, doing manual redirect');
+          console.log('DEBUG: AuthContext did not redirect within timeout, doing manual redirect');
           router.push('/');
+        } else {
+          console.log('DEBUG: Already redirected by AuthContext, skipping manual redirect');
         }
       } else {
         console.log('DEBUG: No session in response');
