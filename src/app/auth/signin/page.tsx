@@ -28,8 +28,10 @@ export default function SignIn() {
       return;
     }
 
+    console.log('SIGNIN PAGE: About to redirect to /');
     // 🔥 /auth/signin'den çıkmak için push
     router.push('/');
+    console.log('SIGNIN PAGE: Redirect initiated');
   };
 
   return (
