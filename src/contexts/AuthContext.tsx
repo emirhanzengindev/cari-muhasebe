@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('AUTH CONTEXT: Unsubscribing from auth state change');
       subscription.unsubscribe();
     };
-  }, [isLoading, user]);
+  }, []);
 
   const logout = async () => {
     useTenantStore.getState().setTenantId(null);
