@@ -18,19 +18,28 @@ export default function SignIn() {
     setError("");
 
     try {
+      console.log('DEBUG: Attempting sign in with email:', email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
+      console.log('DEBUG: Supabase auth response:', { data: !!data, error: !!error });
+      
       if (error) {
+        console.log('DEBUG: Auth error:', error.message);
         setError("Geçersiz e-posta veya şifre");
       } else if (data.session) {
+        console.log('DEBUG: Auth successful, session created');
         // Session will be handled by AuthContext which will redirect automatically
         // Just show success feedback and let AuthContext handle the redirect
         await new Promise(resolve => setTimeout(resolve, 300));
+      } else {
+        console.log('DEBUG: No session in response');
+        setError("Oturum oluşturulamadı");
       }
     } catch (err) {
+      console.log('DEBUG: Unexpected error:', err);
       setError("Beklenmeyen bir hata oluştu");
     } finally {
       setLoading(false);
