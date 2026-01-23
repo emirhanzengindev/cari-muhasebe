@@ -29,8 +29,8 @@ export default function SignIn() {
     }
 
     console.log('SIGNIN PAGE: About to redirect to /');
-    // 🔥 /auth/signin'den çıkmak için push
-    router.push('/');
+    // 🔥 Hard navigation to bypass all client-side guards
+    window.location.assign('/');
     console.log('SIGNIN PAGE: Redirect initiated');
   };
 
