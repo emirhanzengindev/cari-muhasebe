@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
 export default function SignIn() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -26,8 +28,8 @@ export default function SignIn() {
       return;
     }
 
-    // 🚀 Redirect YOK
-    // AuthContext SIGNED_IN yakalayacak ve yönlendirecek
+    // 🔥 Middleware'i tetiklemek için refresh
+    router.refresh();
   };
 
   return (
