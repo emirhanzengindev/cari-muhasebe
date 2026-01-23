@@ -54,7 +54,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (event === 'INITIAL_SESSION') {
         console.log('DEBUG: INITIAL_SESSION event received, current user:', !!user, 'current tenantId:', tenantId);
-        setIsLoading(false);
+        // Only set loading to false if it's currently true
+        if (isLoading) {
+          setIsLoading(false);
+        }
         return;
       }
 
@@ -103,6 +106,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           }, 100);
         }
+        
+        // Make sure to set loading to false after processing
+        setIsLoading(false);
       }
 
       setIsLoading(false);
