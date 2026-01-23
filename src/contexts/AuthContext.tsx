@@ -52,6 +52,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (event === "INITIAL_SESSION") {
           // INITIAL_SESSION is fired during initialization and should not affect user state
           // Only update loading state, don't change user/session data
+          // 🔐 If user is already set by SIGNED_IN, don't touch the state
+          if (user) {
+            console.log('AUTH CONTEXT: INITIAL_SESSION ignored, user already set by SIGNED_IN');
+            setIsLoading(false);
+            return;
+          }
           console.log('AUTH CONTEXT: Handling INITIAL_SESSION, setting isLoading to false');
           setIsLoading(false);
           return;
