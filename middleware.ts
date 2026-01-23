@@ -3,6 +3,11 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  // Skip API routes
+  if (request.nextUrl.pathname.startsWith('/api')) {
+    return NextResponse.next()
+  }
+
   let response = NextResponse.next()
 
   const supabase = createServerClient(
@@ -26,10 +31,14 @@ export async function middleware(request: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession()
 
+  const publicPaths = ['/auth', '/privacy', '/terms']
+  const isPublic = publicPaths.some(path =>
+    request.nextUrl.pathname.startsWith(path)
+  )
   const isAuthPage = request.nextUrl.pathname.startsWith('/auth')
 
   // 🔒 Protect routes
-  if (!session && !isAuthPage) {
+  if (!session && !isPublic) {
     return NextResponse.redirect(new URL('/auth/signin', request.url))
   }
 
