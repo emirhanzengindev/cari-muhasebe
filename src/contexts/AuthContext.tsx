@@ -63,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setTenantId(null);
         useTenantStore.getState().setTenantId(null);
+        lastHandledSessionId.current = null; // Clear the last handled session ID
         setIsLoading(false);
         return;
       }
@@ -87,6 +88,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
           console.log('DEBUG: Redirecting from auth page to home');
+          // Mark that AuthContext handled this session so signin page can skip manual redirect
+          try {
+            sessionStorage.setItem(`sessionHandled:${sessionId}`, '1');
+          } catch (e) {
+            /* ignore sessionStorage errors */
+          }
           // Add small delay to ensure signin page has time to finish its process
           setTimeout(() => {
             if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {

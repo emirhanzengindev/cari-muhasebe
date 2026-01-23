@@ -42,10 +42,27 @@ export default function SignIn() {
         console.log('DEBUG: Auth successful, session created');
         // Wait longer for AuthContext to process the session and redirect
         await new Promise(resolve => setTimeout(resolve, 1500));
+        
         // Check if we're still on the signin page (shouldn't be if AuthContext worked)
         if (typeof window !== 'undefined' && window.location.pathname === '/auth/signin') {
-          console.log('DEBUG: AuthContext did not redirect within timeout, doing manual redirect');
-          router.push('/');
+          // Check if AuthContext has already handled the redirect
+          let handled = false;
+          const sessionId = data.session.user.id;
+          try {
+            if (sessionId && sessionStorage.getItem(`sessionHandled:${sessionId}`) === '1') {
+              handled = true;
+              sessionStorage.removeItem(`sessionHandled:${sessionId}`);
+            }
+          } catch (e) {
+            /* ignore sessionStorage access errors */
+          }
+          
+          if (!handled) {
+            console.log('DEBUG: AuthContext did not redirect within timeout, doing manual redirect');
+            router.push('/');
+          } else {
+            console.log('DEBUG: Already redirected by AuthContext, skipping manual redirect');
+          }
         } else {
           console.log('DEBUG: Already redirected by AuthContext, skipping manual redirect');
         }
