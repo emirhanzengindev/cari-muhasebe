@@ -28,6 +28,8 @@ export default function SignIn() {
       return;
     }
 
+    // 🔥 /auth/signin'den çıkmak için push
+    router.push('/')
     // 🔥 Middleware tetiklemek için refresh
     router.refresh();
   };
