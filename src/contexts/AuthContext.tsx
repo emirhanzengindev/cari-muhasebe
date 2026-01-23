@@ -46,6 +46,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase.auth.onAuthStateChange((event, session) => {
         console.log("AUTH EVENT:", event, !!session);
 
+        if (event === "INITIAL_SESSION") {
+          // INITIAL_SESSION is fired during initialization and should not affect user state
+          // Only update loading state, don't change user/session data
+          setIsLoading(false);
+          return;
+        }
+
         if (!session) {
           setUser(null);
           setTenantId(null);
