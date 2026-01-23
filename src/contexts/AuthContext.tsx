@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Add small delay to ensure signin page has time to finish its process
           setTimeout(() => {
             if (typeof window !== 'undefined' && window.location.pathname.startsWith('/auth')) {
-              router.replace('/');
+              router.push('/');
             }
           }, 100);
         }

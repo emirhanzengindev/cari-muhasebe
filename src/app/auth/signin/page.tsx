@@ -61,7 +61,7 @@ export default function SignIn() {
           if (!handled) {
             console.log('DEBUG: AuthContext did not redirect within timeout, doing manual redirect');
             setHasRedirected(true);
-            router.push('/');
+            router.replace('/');
           } else {
             console.log('DEBUG: Already redirected by AuthContext, skipping manual redirect');
             setHasRedirected(true);
