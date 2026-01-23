@@ -1,55 +1,48 @@
 import { createServerClient } from '@supabase/ssr'
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next();
+  let response = NextResponse.next()
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: (name: string) => request.cookies.get(name)?.value,
-        set: (name: string, value: string, options: any) => {
-          response.cookies.set({ name, value, ...options });
+        getAll() {
+          return request.cookies.getAll()
         },
-        remove: (name: string, options: any) => {
-          response.cookies.set({ name, value: '', ...options });
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options)
+          })
         },
       },
     }
-  );
+  )
 
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
 
-  const isAuthPage = request.nextUrl.pathname.startsWith('/auth');
+  const isAuthPage = request.nextUrl.pathname.startsWith('/auth')
 
-  if (!user && !isAuthPage) {
-    // Redirect to login page
-    const url = request.nextUrl.clone();
-    url.pathname = '/auth/signin';
-    return NextResponse.redirect(url);
+  // 🔒 Protect routes
+  if (!session && !isAuthPage) {
+    return NextResponse.redirect(new URL('/auth/signin', request.url))
   }
 
-  if (user && isAuthPage) {
-    // Redirect to home page
-    const url = request.nextUrl.clone();
-    url.pathname = '/';
-    return NextResponse.redirect(url);
+  // 🚫 Block auth pages if logged in
+  if (session && isAuthPage) {
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
-  return response;
+  return response
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }
