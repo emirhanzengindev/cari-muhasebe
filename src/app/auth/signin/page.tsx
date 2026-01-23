@@ -14,6 +14,12 @@ export default function SignIn() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // If already loading, don't process again
+    if (loading) {
+      return;
+    }
+    
     setLoading(true);
     setError("");
 
@@ -31,11 +37,11 @@ export default function SignIn() {
         setError("Geçersiz e-posta veya şifre");
       } else if (data.session) {
         console.log('DEBUG: Auth successful, session created');
-        // Wait a bit for AuthContext to process the session
-        await new Promise(resolve => setTimeout(resolve, 500));
-        // If we're still on the signin page, redirect manually
+        // Wait for AuthContext to process the session and redirect
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Check if we're still on the signin page (shouldn't be if AuthContext worked)
         if (typeof window !== 'undefined' && window.location.pathname === '/auth/signin') {
-          console.log('DEBUG: Manual redirect to home');
+          console.log('DEBUG: AuthContext did not redirect, doing manual redirect');
           router.push('/');
         }
       } else {
@@ -46,7 +52,10 @@ export default function SignIn() {
       console.log('DEBUG: Unexpected error:', err);
       setError("Beklenmeyen bir hata oluştu");
     } finally {
-      setLoading(false);
+      // Only set loading to false if we're still on the signin page
+      if (typeof window !== 'undefined' && window.location.pathname === '/auth/signin') {
+        setLoading(false);
+      }
     }
   };
 
