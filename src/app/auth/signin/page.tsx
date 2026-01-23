@@ -11,14 +11,15 @@ export default function SignIn() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasRedirected, setHasRedirected] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // If already submitting or if we're no longer on the signin page, don't process
-    if (isSubmitting || (typeof window !== 'undefined' && window.location.pathname !== '/auth/signin')) {
-      console.log('DEBUG: Submit already in progress or page changed, ignoring submit');
+    // If already submitting, redirected, or if we're no longer on the signin page, don't process
+    if (isSubmitting || hasRedirected || (typeof window !== 'undefined' && window.location.pathname !== '/auth/signin')) {
+      console.log('DEBUG: Submit already in progress, redirected, or page changed, ignoring submit');
       return;
     }
     
@@ -59,12 +60,15 @@ export default function SignIn() {
           
           if (!handled) {
             console.log('DEBUG: AuthContext did not redirect within timeout, doing manual redirect');
+            setHasRedirected(true);
             router.push('/');
           } else {
             console.log('DEBUG: Already redirected by AuthContext, skipping manual redirect');
+            setHasRedirected(true);
           }
         } else {
           console.log('DEBUG: Already redirected by AuthContext, skipping manual redirect');
+          setHasRedirected(true);
         }
       } else {
         console.log('DEBUG: No session in response');
