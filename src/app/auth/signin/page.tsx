@@ -29,8 +29,10 @@ export default function SignIn() {
     }
 
     console.log('SIGNIN PAGE: About to redirect to /');
-    // 🔥 Hard navigation to bypass all client-side guards
-    window.location.assign('/');
+    // 🔥 Delay to ensure cookies are written before redirect
+    setTimeout(() => {
+      window.location.assign('/');
+    }, 75);
     console.log('SIGNIN PAGE: Redirect initiated');
   };
 
