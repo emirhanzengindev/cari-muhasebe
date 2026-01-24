@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import { useTenantStore } from "@/lib/tenantStore";
 import { Session } from "@supabase/supabase-js";
@@ -40,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const userRef = useRef<User | null>(null);
 
   useEffect(() => {
     console.log('AUTH CONTEXT: Initializing with isLoading:', isLoading);
@@ -47,13 +48,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } =
       supabase.auth.onAuthStateChange((event, session) => {
         console.log("AUTH EVENT:", event, !!session);
-        console.log('AUTH CONTEXT: Event received, current isLoading:', isLoading, 'current user:', !!user);
+        console.log('AUTH CONTEXT: Event received, current isLoading:', isLoading, 'current user:', !!userRef.current);
 
         if (event === "INITIAL_SESSION") {
           // INITIAL_SESSION is fired during initialization and should not affect user state
           // Only update loading state, don't change user/session data
           // 🔐 If user is already set by SIGNED_IN, don't touch the state
-          if (user) {
+          if (userRef.current) {
             console.log('AUTH CONTEXT: INITIAL_SESSION ignored, user already set by SIGNED_IN');
             setIsLoading(false);
             return;
@@ -65,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (!session) {
           console.log('AUTH CONTEXT: No session, resetting state');
+          userRef.current = null;
           setUser(null);
           setTenantId(null);
           useTenantStore.getState().setTenantId(null);
@@ -74,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const userData = buildUser(session);
         console.log('AUTH CONTEXT: Setting user data:', userData);
+        userRef.current = userData;
         setUser(userData);
         setTenantId(userData.tenantId);
         useTenantStore.getState().setTenantId(userData.tenantId);
@@ -85,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('AUTH CONTEXT: Unsubscribing from auth state change');
       subscription.unsubscribe();
     };
-  }, [user]);
+  }, []);
 
   const logout = async () => {
     useTenantStore.getState().setTenantId(null);
