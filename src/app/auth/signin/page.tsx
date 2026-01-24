@@ -30,10 +30,10 @@ export default function SignIn() {
       return;
     }
 
-    console.log('SIGNIN PAGE: About to redirect to /');
-    // 🔥 Direct navigation after successful login
-    window.location.href = '/';
-    console.log('SIGNIN PAGE: Redirect initiated');
+    console.log('SIGNIN PAGE: Attempting to redirect to / via form submit');
+    // 🔥 Note: useEffect handles actual redirect after auth state updates
+    // window.location.href = '/'; // Removed in favor of useEffect redirect
+    console.log('SIGNIN PAGE: Redirect will be handled by useEffect');
   };
 
   useEffect(() => {
