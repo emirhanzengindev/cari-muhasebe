@@ -89,7 +89,11 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const invoices = await makeApiRequest('/invoices');
-      set({ invoices, loading: false });
+      if (invoices !== null) {
+        set({ invoices, loading: false });
+      } else {
+        set({ loading: false });
+      }
     } catch (error) {
       set({ error: 'Failed to fetch invoices', loading: false });
     }
@@ -102,12 +106,14 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
         body: JSON.stringify(invoiceData),
       });
       
-      set((state) => {
-        const updatedInvoices = [...state.invoices, newInvoice];
-        return { invoices: updatedInvoices };
-      });
-      
-      return newInvoice;
+      if (newInvoice !== null) {
+        set((state) => {
+          const updatedInvoices = [...state.invoices, newInvoice];
+          return { invoices: updatedInvoices };
+        });
+        
+        return newInvoice;
+      }
     } catch (error) {
       set({ error: 'Failed to add invoice' });
       throw error;
@@ -121,12 +127,14 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
         body: JSON.stringify(invoiceData),
       });
       
-      set((state) => {
-        const updatedInvoices = state.invoices.map((invoice) =>
-          invoice.id === id ? updatedInvoice : invoice
-        );
-        return { invoices: updatedInvoices };
-      });
+      if (updatedInvoice !== null) {
+        set((state) => {
+          const updatedInvoices = state.invoices.map((invoice) =>
+            invoice.id === id ? updatedInvoice : invoice
+          );
+          return { invoices: updatedInvoices };
+        });
+      }
     } catch (error) {
       set({ error: 'Failed to update invoice' });
     }
@@ -134,14 +142,16 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
 
   deleteInvoice: async (id) => {
     try {
-      await makeApiRequest(`/invoices/${id}`, {
+      const result = await makeApiRequest(`/invoices/${id}`, {
         method: 'DELETE',
       });
       
-      set((state) => {
-        const updatedInvoices = state.invoices.filter((invoice) => invoice.id !== id);
-        return { invoices: updatedInvoices };
-      });
+      if (result !== null) {
+        set((state) => {
+          const updatedInvoices = state.invoices.filter((invoice) => invoice.id !== id);
+          return { invoices: updatedInvoices };
+        });
+      }
     } catch (error) {
       set({ error: 'Failed to delete invoice' });
     }

@@ -116,19 +116,23 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
       set({ loading: true, error: null });
       try {
         const products = await makeApiRequest('/products');
-        // Transform snake_case fields to camelCase to match Product interface
-        const transformedProducts = products.map((product: any) => ({
-          ...product,
-          buyPrice: product.buy_price,
-          sellPrice: product.sell_price,
-          vatRate: product.vat_rate,
-          stockQuantity: product.stock_quantity,
-          criticalLevel: product.critical_level,
-          minStockLevel: product.min_stock_level,
-          categoryId: product.category_id,
-          warehouseId: product.warehouse_id,
-        }));
-        set({ products: transformedProducts, loading: false });
+        if (products !== null) {
+          // Transform snake_case fields to camelCase to match Product interface
+          const transformedProducts = products.map((product: any) => ({
+            ...product,
+            buyPrice: product.buy_price,
+            sellPrice: product.sell_price,
+            vatRate: product.vat_rate,
+            stockQuantity: product.stock_quantity,
+            criticalLevel: product.critical_level,
+            minStockLevel: product.min_stock_level,
+            categoryId: product.category_id,
+            warehouseId: product.warehouse_id,
+          }));
+          set({ products: transformedProducts, loading: false });
+        } else {
+          set({ loading: false });
+        }
       } catch (error: any) {
         set({ error: error.message || 'Failed to fetch products', loading: false });
       }
@@ -141,22 +145,24 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
           body: JSON.stringify(productData),
         });
         
-        // Transform snake_case fields to camelCase to match Product interface
-        const transformedProduct = {
-          ...newProduct,
-          buyPrice: newProduct.buy_price,
-          sellPrice: newProduct.sell_price,
-          vatRate: newProduct.vat_rate,
-          stockQuantity: newProduct.stock_quantity,
-          criticalLevel: newProduct.critical_level,
-          minStockLevel: newProduct.min_stock_level,
-          categoryId: newProduct.category_id,
-          warehouseId: newProduct.warehouse_id,
-        };
-        
-        set((state) => ({
-          products: [...state.products, transformedProduct]
-        }));
+        if (newProduct !== null) {
+          // Transform snake_case fields to camelCase to match Product interface
+          const transformedProduct = {
+            ...newProduct,
+            buyPrice: newProduct.buy_price,
+            sellPrice: newProduct.sell_price,
+            vatRate: newProduct.vat_rate,
+            stockQuantity: newProduct.stock_quantity,
+            criticalLevel: newProduct.critical_level,
+            minStockLevel: newProduct.min_stock_level,
+            categoryId: newProduct.category_id,
+            warehouseId: newProduct.warehouse_id,
+          };
+          
+          set((state) => ({
+            products: [...state.products, transformedProduct]
+          }));
+        }
       } catch (error: any) {
         set({ error: error.message || 'Failed to add product' });
       }
@@ -169,24 +175,26 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
           body: JSON.stringify(productData),
         });
         
-        // Transform snake_case fields to camelCase to match Product interface
-        const transformedProduct = {
-          ...updatedProduct,
-          buyPrice: updatedProduct.buy_price,
-          sellPrice: updatedProduct.sell_price,
-          vatRate: updatedProduct.vat_rate,
-          stockQuantity: updatedProduct.stock_quantity,
-          criticalLevel: updatedProduct.critical_level,
-          minStockLevel: updatedProduct.min_stock_level,
-          categoryId: updatedProduct.category_id,
-          warehouseId: updatedProduct.warehouse_id,
-        };
-        
-        set((state) => ({
-          products: state.products.map((product) =>
-            product.id === id ? transformedProduct : product
-          ),
-        }));
+        if (updatedProduct !== null) {
+          // Transform snake_case fields to camelCase to match Product interface
+          const transformedProduct = {
+            ...updatedProduct,
+            buyPrice: updatedProduct.buy_price,
+            sellPrice: updatedProduct.sell_price,
+            vatRate: updatedProduct.vat_rate,
+            stockQuantity: updatedProduct.stock_quantity,
+            criticalLevel: updatedProduct.critical_level,
+            minStockLevel: updatedProduct.min_stock_level,
+            categoryId: updatedProduct.category_id,
+            warehouseId: updatedProduct.warehouse_id,
+          };
+          
+          set((state) => ({
+            products: state.products.map((product) =>
+              product.id === id ? transformedProduct : product
+            ),
+          }));
+        }
       } catch (error: any) {
         set({ error: error.message || 'Failed to update product' });
       }
@@ -194,13 +202,15 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
 
     deleteProduct: async (id) => {
       try {
-        await makeApiRequest(`/products/${id}`, {
+        const result = await makeApiRequest(`/products/${id}`, {
           method: 'DELETE',
         });
         
-        set((state) => ({
-          products: state.products.filter((product) => product.id !== id),
-        }));
+        if (result !== null) {
+          set((state) => ({
+            products: state.products.filter((product) => product.id !== id),
+          }));
+        }
       } catch (error: any) {
         set({ error: error.message || 'Failed to delete product' });
       }
@@ -211,7 +221,11 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
       set({ loading: true, error: null });
       try {
         const categories = await makeApiRequest('/categories');
-        set({ categories, loading: false });
+        if (categories !== null) {
+          set({ categories, loading: false });
+        } else {
+          set({ loading: false });
+        }
       } catch (error: any) {
         set({ error: error.message || 'Failed to fetch categories', loading: false });
       }
@@ -224,9 +238,11 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
           body: JSON.stringify(categoryData),
         });
         
-        set((state) => ({
-          categories: [...state.categories, newCategory]
-        }));
+        if (newCategory !== null) {
+          set((state) => ({
+            categories: [...state.categories, newCategory]
+          }));
+        }
       } catch (error: any) {
         set({ error: error.message || 'Failed to add category' });
       }
@@ -239,11 +255,13 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
           body: JSON.stringify(categoryData),
         });
         
-        set((state) => ({
-          categories: state.categories.map((category) =>
-            category.id === id ? updatedCategory : category
-          ),
-        }));
+        if (updatedCategory !== null) {
+          set((state) => ({
+            categories: state.categories.map((category) =>
+              category.id === id ? updatedCategory : category
+            ),
+          }));
+        }
       } catch (error: any) {
         set({ error: error.message || 'Failed to update category' });
       }
@@ -251,13 +269,15 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
 
     deleteCategory: async (id) => {
       try {
-        await makeApiRequest(`/categories/${id}`, {
+        const result = await makeApiRequest(`/categories/${id}`, {
           method: 'DELETE',
         });
         
-        set((state) => ({
-          categories: state.categories.filter((category) => category.id !== id),
-        }));
+        if (result !== null) {
+          set((state) => ({
+            categories: state.categories.filter((category) => category.id !== id),
+          }));
+        }
       } catch (error: any) {
         set({ error: error.message || 'Failed to delete category' });
       }
@@ -268,7 +288,11 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
       set({ loading: true, error: null });
       try {
         const warehouses = await makeApiRequest('/warehouses');
-        set({ warehouses, loading: false });
+        if (warehouses !== null) {
+          set({ warehouses, loading: false });
+        } else {
+          set({ loading: false });
+        }
       } catch (error: any) {
         set({ error: error.message || 'Failed to fetch warehouses', loading: false });
       }
@@ -281,9 +305,11 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
           body: JSON.stringify(warehouseData),
         });
         
-        set((state) => ({
-          warehouses: [...state.warehouses, newWarehouse]
-        }));
+        if (newWarehouse !== null) {
+          set((state) => ({
+            warehouses: [...state.warehouses, newWarehouse]
+          }));
+        }
       } catch (error: any) {
         set({ error: error.message || 'Failed to add warehouse' });
       }
@@ -296,11 +322,13 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
           body: JSON.stringify(warehouseData),
         });
         
-        set((state) => ({
-          warehouses: state.warehouses.map((warehouse) =>
-            warehouse.id === id ? updatedWarehouse : warehouse
-          ),
-        }));
+        if (updatedWarehouse !== null) {
+          set((state) => ({
+            warehouses: state.warehouses.map((warehouse) =>
+              warehouse.id === id ? updatedWarehouse : warehouse
+            ),
+          }));
+        }
       } catch (error: any) {
         set({ error: error.message || 'Failed to update warehouse' });
       }
@@ -308,13 +336,15 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
 
     deleteWarehouse: async (id) => {
       try {
-        await makeApiRequest(`/warehouses/${id}`, {
+        const result = await makeApiRequest(`/warehouses/${id}`, {
           method: 'DELETE',
         });
         
-        set((state) => ({
-          warehouses: state.warehouses.filter((warehouse) => warehouse.id !== id),
-        }));
+        if (result !== null) {
+          set((state) => ({
+            warehouses: state.warehouses.filter((warehouse) => warehouse.id !== id),
+          }));
+        }
       } catch (error: any) {
         set({ error: error.message || 'Failed to delete warehouse' });
       }
@@ -325,7 +355,11 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
       set({ loading: true, error: null });
       try {
         const stockMovements = await makeApiRequest('/stock-movements');
-        set({ stockMovements, loading: false });
+        if (stockMovements !== null) {
+          set({ stockMovements, loading: false });
+        } else {
+          set({ loading: false });
+        }
       } catch (error: any) {
         set({ error: error.message || 'Failed to fetch stock movements', loading: false });
       }
@@ -338,14 +372,16 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
           body: JSON.stringify(movementData),
         });
         
-        set((state) => ({
-          stockMovements: [...state.stockMovements, newMovement]
-        }));
-        
-        // Update product stock quantity in the local state as well
-        if (movementData.productId) {
-          // Fetch updated products to ensure state is current
-          get().fetchProducts();
+        if (newMovement !== null) {
+          set((state) => ({
+            stockMovements: [...state.stockMovements, newMovement]
+          }));
+          
+          // Update product stock quantity in the local state as well
+          if (movementData.productId) {
+            // Fetch updated products to ensure state is current
+            get().fetchProducts();
+          }
         }
       } catch (error: any) {
         set({ error: error.message || 'Failed to add stock movement' });

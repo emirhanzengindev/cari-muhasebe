@@ -68,7 +68,11 @@ export const useInvoiceItemStore = create<InvoiceItemState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const invoiceItems = await makeApiRequest('/invoice-items');
-      set({ invoiceItems, loading: false });
+      if (invoiceItems !== null) {
+        set({ invoiceItems, loading: false });
+      } else {
+        set({ loading: false });
+      }
     } catch (error) {
       set({ error: 'Failed to fetch invoice items', loading: false });
     }
@@ -81,12 +85,14 @@ export const useInvoiceItemStore = create<InvoiceItemState>((set, get) => ({
         body: JSON.stringify(invoiceItemData),
       });
       
-      set((state) => {
-        const updatedInvoiceItems = [...state.invoiceItems, newInvoiceItem];
-        return { invoiceItems: updatedInvoiceItems };
-      });
-      
-      return newInvoiceItem;
+      if (newInvoiceItem !== null) {
+        set((state) => {
+          const updatedInvoiceItems = [...state.invoiceItems, newInvoiceItem];
+          return { invoiceItems: updatedInvoiceItems };
+        });
+        
+        return newInvoiceItem;
+      }
     } catch (error) {
       set({ error: 'Failed to add invoice item' });
       throw error;
@@ -100,12 +106,14 @@ export const useInvoiceItemStore = create<InvoiceItemState>((set, get) => ({
         body: JSON.stringify(invoiceItemData),
       });
       
-      set((state) => {
-        const updatedInvoiceItems = state.invoiceItems.map((invoiceItem) =>
-          invoiceItem.id === id ? updatedInvoiceItem : invoiceItem
-        );
-        return { invoiceItems: updatedInvoiceItems };
-      });
+      if (updatedInvoiceItem !== null) {
+        set((state) => {
+          const updatedInvoiceItems = state.invoiceItems.map((invoiceItem) =>
+            invoiceItem.id === id ? updatedInvoiceItem : invoiceItem
+          );
+          return { invoiceItems: updatedInvoiceItems };
+        });
+      }
     } catch (error) {
       set({ error: 'Failed to update invoice item' });
     }
@@ -113,14 +121,16 @@ export const useInvoiceItemStore = create<InvoiceItemState>((set, get) => ({
 
   deleteInvoiceItem: async (id) => {
     try {
-      await makeApiRequest(`/invoice-items/${id}`, {
+      const result = await makeApiRequest(`/invoice-items/${id}`, {
         method: 'DELETE',
       });
       
-      set((state) => {
-        const updatedInvoiceItems = state.invoiceItems.filter((invoiceItem) => invoiceItem.id !== id);
-        return { invoiceItems: updatedInvoiceItems };
-      });
+      if (result !== null) {
+        set((state) => {
+          const updatedInvoiceItems = state.invoiceItems.filter((invoiceItem) => invoiceItem.id !== id);
+          return { invoiceItems: updatedInvoiceItems };
+        });
+      }
     } catch (error) {
       set({ error: 'Failed to delete invoice item' });
     }

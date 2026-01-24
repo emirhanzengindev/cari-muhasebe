@@ -89,7 +89,11 @@ export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) =>
     set({ loading: true, error: null });
     try {
       const accounts = await makeApiRequest('/current-accounts');
-      set({ accounts, loading: false });
+      if (accounts !== null) {
+        set({ accounts, loading: false });
+      } else {
+        set({ loading: false });
+      }
     } catch (error) {
       set({ error: 'Failed to fetch accounts', loading: false });
     }
@@ -101,11 +105,13 @@ export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) =>
         method: 'POST',
         body: JSON.stringify(accountData),
       });
-
-      set((state) => {
-        const updatedAccounts = [...state.accounts, newAccount];
-        return { accounts: updatedAccounts };
-      });
+      
+      if (newAccount !== null) {
+        set((state) => {
+          const updatedAccounts = [...state.accounts, newAccount];
+          return { accounts: updatedAccounts };
+        });
+      }
     } catch (error) {
       set({ error: 'Failed to add account' });
     }
@@ -117,13 +123,15 @@ export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) =>
         method: 'PUT',
         body: JSON.stringify(accountData),
       });
-
-      set((state) => {
-        const updatedAccounts = state.accounts.map((account) =>
-          account.id === id ? updatedAccount : account
-        );
-        return { accounts: updatedAccounts };
-      });
+      
+      if (updatedAccount !== null) {
+        set((state) => {
+          const updatedAccounts = state.accounts.map((account) =>
+            account.id === id ? updatedAccount : account
+          );
+          return { accounts: updatedAccounts };
+        });
+      }
     } catch (error) {
       set({ error: 'Failed to update account' });
     }
@@ -131,14 +139,16 @@ export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) =>
 
   deleteAccount: async (id) => {
     try {
-      await makeApiRequest(`/current-accounts/${id}`, {
+      const result = await makeApiRequest(`/current-accounts/${id}`, {
         method: 'DELETE',
       });
-
-      set((state) => {
-        const updatedAccounts = state.accounts.filter((account) => account.id !== id);
-        return { accounts: updatedAccounts };
-      });
+      
+      if (result !== null) {
+        set((state) => {
+          const updatedAccounts = state.accounts.filter((account) => account.id !== id);
+          return { accounts: updatedAccounts };
+        });
+      }
     } catch (error) {
       set({ error: 'Failed to delete account' });
     }
@@ -153,13 +163,15 @@ export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) =>
         method: 'PUT',
         body: JSON.stringify({ isActive: !currentAccount.isActive }),
       });
-
-      set((state) => {
-        const updatedAccounts = state.accounts.map((account) =>
-          account.id === id ? updatedAccount : account
-        );
-        return { accounts: updatedAccounts };
-      });
+      
+      if (updatedAccount !== null) {
+        set((state) => {
+          const updatedAccounts = state.accounts.map((account) =>
+            account.id === id ? updatedAccount : account
+          );
+          return { accounts: updatedAccounts };
+        });
+      }
     } catch (error) {
       set({ error: 'Failed to toggle account status' });
     }
@@ -176,13 +188,15 @@ export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) =>
         method: 'PUT',
         body: JSON.stringify({ balance: newBalance }),
       });
-
-      set((state) => {
-        const updatedAccounts = state.accounts.map((account) =>
-          account.id === id ? updatedAccount : account
-        );
-        return { accounts: updatedAccounts };
-      });
+      
+      if (updatedAccount !== null) {
+        set((state) => {
+          const updatedAccounts = state.accounts.map((account) =>
+            account.id === id ? updatedAccount : account
+          );
+          return { accounts: updatedAccounts };
+        });
+      }
     } catch (error) {
       set({ error: 'Failed to update account balance' });
     }

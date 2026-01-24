@@ -92,7 +92,11 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     try {
       const safes = await makeApiRequest('/safes');
       
-      set({ safes, loading: false });
+      if (safes !== null) {
+        set({ safes, loading: false });
+      } else {
+        set({ loading: false });
+      }
     } catch (error) {
       set({ error: 'Failed to fetch safes', loading: false });
     }
@@ -105,9 +109,11 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         body: JSON.stringify(safeData),
       });
       
-      set((state) => ({
-        safes: [...state.safes, newSafe],
-      }));
+      if (newSafe !== null) {
+        set((state) => ({
+          safes: [...state.safes, newSafe],
+        }));
+      }
     } catch (error) {
       set({ error: 'Failed to add safe' });
     }
@@ -120,11 +126,13 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         body: JSON.stringify(safeData),
       });
       
-      set((state) => ({
-        safes: state.safes.map((safe) =>
-          safe.id === id ? updatedSafe : safe
-        ),
-      }));
+      if (updatedSafe !== null) {
+        set((state) => ({
+          safes: state.safes.map((safe) =>
+            safe.id === id ? updatedSafe : safe
+          ),
+        }));
+      }
     } catch (error) {
       set({ error: 'Failed to update safe' });
     }
@@ -132,13 +140,15 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   deleteSafe: async (id) => {
     try {
-      await makeApiRequest(`/safes/${id}`, {
+      const result = await makeApiRequest(`/safes/${id}`, {
         method: 'DELETE',
       });
       
-      set((state) => ({
-        safes: state.safes.filter((safe) => safe.id !== id),
-      }));
+      if (result !== null) {
+        set((state) => ({
+          safes: state.safes.filter((safe) => safe.id !== id),
+        }));
+      }
     } catch (error) {
       set({ error: 'Failed to delete safe' });
     }
@@ -150,7 +160,11 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     try {
       const banks = await makeApiRequest('/banks');
       
-      set({ banks, loading: false });
+      if (banks !== null) {
+        set({ banks, loading: false });
+      } else {
+        set({ loading: false });
+      }
     } catch (error) {
       set({ error: 'Failed to fetch banks', loading: false });
     }
@@ -163,9 +177,11 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         body: JSON.stringify(bankData),
       });
       
-      set((state) => ({
-        banks: [...state.banks, newBank],
-      }));
+      if (newBank !== null) {
+        set((state) => ({
+          banks: [...state.banks, newBank],
+        }));
+      }
     } catch (error) {
       set({ error: 'Failed to add bank' });
     }
@@ -178,11 +194,13 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         body: JSON.stringify(bankData),
       });
       
-      set((state) => ({
-        banks: state.banks.map((bank) =>
-          bank.id === id ? updatedBank : bank
-        ),
-      }));
+      if (updatedBank !== null) {
+        set((state) => ({
+          banks: state.banks.map((bank) =>
+            bank.id === id ? updatedBank : bank
+          ),
+        }));
+      }
     } catch (error) {
       set({ error: 'Failed to update bank' });
     }
@@ -190,13 +208,15 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   deleteBank: async (id) => {
     try {
-      await makeApiRequest(`/banks/${id}`, {
+      const result = await makeApiRequest(`/banks/${id}`, {
         method: 'DELETE',
       });
       
-      set((state) => ({
-        banks: state.banks.filter((bank) => bank.id !== id),
-      }));
+      if (result !== null) {
+        set((state) => ({
+          banks: state.banks.filter((bank) => bank.id !== id),
+        }));
+      }
     } catch (error) {
       set({ error: 'Failed to delete bank' });
     }
@@ -208,7 +228,11 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     try {
       const transactions = await makeApiRequest('/transactions');
       
-      set({ transactions, loading: false });
+      if (transactions !== null) {
+        set({ transactions, loading: false });
+      } else {
+        set({ loading: false });
+      }
     } catch (error) {
       set({ error: 'Failed to fetch transactions', loading: false });
     }
@@ -221,42 +245,44 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         body: JSON.stringify(transactionData),
       });
       
-      set((state) => ({
-        transactions: [...state.transactions, newTransaction],
-      }));
-      
-      // Update safe or bank balance
-      if (transactionData.safeId) {
-        const safe = get().safes.find(s => s.id === transactionData.safeId);
-        if (safe) {
-          const newBalance = transactionData.transactionType === 'COLLECTION' 
-            ? safe.balance + transactionData.amount 
-            : safe.balance - transactionData.amount;
-          
-          set((state) => ({
-            safes: state.safes.map(s => 
-              s.id === transactionData.safeId 
-                ? { ...s, balance: newBalance, updatedAt: new Date() } 
-                : s
-            ),
-          }));
+      if (newTransaction !== null) {
+        set((state) => ({
+          transactions: [...state.transactions, newTransaction],
+        }));
+        
+        // Update safe or bank balance
+        if (transactionData.safeId) {
+          const safe = get().safes.find(s => s.id === transactionData.safeId);
+          if (safe) {
+            const newBalance = transactionData.transactionType === 'COLLECTION' 
+              ? safe.balance + transactionData.amount 
+              : safe.balance - transactionData.amount;
+            
+            set((state) => ({
+              safes: state.safes.map(s => 
+                s.id === transactionData.safeId 
+                  ? { ...s, balance: newBalance, updatedAt: new Date() } 
+                  : s
+              ),
+            }));
+          }
         }
-      }
-      
-      if (transactionData.bankId) {
-        const bank = get().banks.find(b => b.id === transactionData.bankId);
-        if (bank) {
-          const newBalance = transactionData.transactionType === 'COLLECTION' 
-            ? bank.balance + transactionData.amount 
-            : bank.balance - transactionData.amount;
-          
-          set((state) => ({
-            banks: state.banks.map(b => 
-              b.id === transactionData.bankId 
-                ? { ...b, balance: newBalance, updatedAt: new Date() } 
-                : b
-            ),
-          }));
+        
+        if (transactionData.bankId) {
+          const bank = get().banks.find(b => b.id === transactionData.bankId);
+          if (bank) {
+            const newBalance = transactionData.transactionType === 'COLLECTION' 
+              ? bank.balance + transactionData.amount 
+              : bank.balance - transactionData.amount;
+            
+            set((state) => ({
+              banks: state.banks.map(b => 
+                b.id === transactionData.bankId 
+                  ? { ...b, balance: newBalance, updatedAt: new Date() } 
+                  : b
+              ),
+            }));
+          }
         }
       }
     } catch (error) {
@@ -271,11 +297,13 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         body: JSON.stringify(transactionData),
       });
       
-      set((state) => ({
-        transactions: state.transactions.map((transaction) =>
-          transaction.id === id ? updatedTransaction : transaction
-        ),
-      }));
+      if (updatedTransaction !== null) {
+        set((state) => ({
+          transactions: state.transactions.map((transaction) =>
+            transaction.id === id ? updatedTransaction : transaction
+          ),
+        }));
+      }
     } catch (error) {
       set({ error: 'Failed to update transaction' });
     }
@@ -283,13 +311,15 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   deleteTransaction: async (id) => {
     try {
-      await makeApiRequest(`/transactions/${id}`, {
+      const result = await makeApiRequest(`/transactions/${id}`, {
         method: 'DELETE',
       });
       
-      set((state) => ({
-        transactions: state.transactions.filter((transaction) => transaction.id !== id),
-      }));
+      if (result !== null) {
+        set((state) => ({
+          transactions: state.transactions.filter((transaction) => transaction.id !== id),
+        }));
+      }
     } catch (error) {
       set({ error: 'Failed to delete transaction' });
     }
@@ -301,7 +331,11 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     try {
       const cheques = await makeApiRequest('/cheques');
       
-      set({ cheques, loading: false });
+      if (cheques !== null) {
+        set({ cheques, loading: false });
+      } else {
+        set({ loading: false });
+      }
     } catch (error) {
       set({ error: 'Failed to fetch cheques', loading: false });
     }
@@ -314,9 +348,11 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         body: JSON.stringify(chequeData),
       });
       
-      set((state) => ({
-        cheques: [...state.cheques, newCheque],
-      }));
+      if (newCheque !== null) {
+        set((state) => ({
+          cheques: [...state.cheques, newCheque],
+        }));
+      }
     } catch (error) {
       set({ error: 'Failed to add cheque' });
     }
@@ -329,11 +365,13 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         body: JSON.stringify(chequeData),
       });
       
-      set((state) => ({
-        cheques: state.cheques.map((cheque) =>
-          cheque.id === id ? updatedCheque : cheque
-        ),
-      }));
+      if (updatedCheque !== null) {
+        set((state) => ({
+          cheques: state.cheques.map((cheque) =>
+            cheque.id === id ? updatedCheque : cheque
+          ),
+        }));
+      }
     } catch (error) {
       set({ error: 'Failed to update cheque' });
     }
@@ -341,13 +379,15 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   deleteCheque: async (id) => {
     try {
-      await makeApiRequest(`/cheques/${id}`, {
+      const result = await makeApiRequest(`/cheques/${id}`, {
         method: 'DELETE',
       });
       
-      set((state) => ({
-        cheques: state.cheques.filter((cheque) => cheque.id !== id),
-      }));
+      if (result !== null) {
+        set((state) => ({
+          cheques: state.cheques.filter((cheque) => cheque.id !== id),
+        }));
+      }
     } catch (error) {
       set({ error: 'Failed to delete cheque' });
     }
