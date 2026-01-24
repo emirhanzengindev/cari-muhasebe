@@ -29,10 +29,8 @@ export default function SignIn() {
     }
 
     console.log('SIGNIN PAGE: About to redirect to /');
-    // 🔥 Delay to ensure cookies are written before redirect
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 75);
+    // 🔥 Direct navigation after successful login
+    window.location.href = '/';
     console.log('SIGNIN PAGE: Redirect initiated');
   };
 
