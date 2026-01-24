@@ -31,7 +31,7 @@ export default function SignIn() {
     console.log('SIGNIN PAGE: About to redirect to /');
     // 🔥 Delay to ensure cookies are written before redirect
     setTimeout(() => {
-      window.location.assign('/');
+      window.location.href = '/';
     }, 75);
     console.log('SIGNIN PAGE: Redirect initiated');
   };
