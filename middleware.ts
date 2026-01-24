@@ -3,11 +3,16 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  // TEMPORARILY DISABLED FOR DEBUGGING
   // Skip API routes
   if (request.nextUrl.pathname.startsWith('/api')) {
     return NextResponse.next()
   }
 
+  // Return NextResponse.next() to disable auth protection temporarily
+  return NextResponse.next()
+
+  /* ORIGINAL CODE:
   let response = NextResponse.next()
 
   const supabase = createServerClient(
@@ -56,6 +61,7 @@ export async function middleware(request: NextRequest) {
   }
 
   return response
+  */
 }
 
 export const config = {
