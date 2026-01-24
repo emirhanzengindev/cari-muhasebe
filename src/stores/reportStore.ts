@@ -48,7 +48,9 @@ export const useReportStore = create<ReportState>((set, get) => ({
     try {
       const tenantId = useTenantStore.getState().tenantId;
       if (!tenantId) {
-        throw new Error('Tenant ID not available');
+        console.warn('WARNING: Tenant ID not available, skipping request for report');
+        set({ loading: false });
+        return;
       }
       
       const response = await fetch('/api/reports/sales-by-product', {
@@ -72,7 +74,9 @@ export const useReportStore = create<ReportState>((set, get) => ({
     try {
       const tenantId = useTenantStore.getState().tenantId;
       if (!tenantId) {
-        throw new Error('Tenant ID not available');
+        console.warn('WARNING: Tenant ID not available, skipping request for report');
+        set({ loading: false });
+        return;
       }
       
       const response = await fetch('/api/reports/monthly-profit-loss', {
@@ -96,7 +100,9 @@ export const useReportStore = create<ReportState>((set, get) => ({
     try {
       const tenantId = useTenantStore.getState().tenantId;
       if (!tenantId) {
-        throw new Error('Tenant ID not available');
+        console.warn('WARNING: Tenant ID not available, skipping request for report');
+        set({ loading: false });
+        return;
       }
       
       const response = await fetch('/api/reports/account-balances', {

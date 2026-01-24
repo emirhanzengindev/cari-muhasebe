@@ -8,7 +8,8 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const tenantId = useTenantStore.getState().tenantId;
   
   if (!tenantId) {
-    throw new Error('Tenant ID not available');
+    console.warn('WARNING: Tenant ID not available, skipping request for endpoint:', endpoint);
+    return null;
   }
   
   // Get Supabase session token
