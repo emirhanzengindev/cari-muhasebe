@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function SignIn() {
   const router = useRouter();
+  const { user, isLoading: authIsLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -33,6 +35,13 @@ export default function SignIn() {
     window.location.href = '/';
     console.log('SIGNIN PAGE: Redirect initiated');
   };
+
+  useEffect(() => {
+    // Redirect to homepage when user is authenticated and auth is loaded
+    if (!authIsLoading && user) {
+      router.replace('/');
+    }
+  }, [authIsLoading, user, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
