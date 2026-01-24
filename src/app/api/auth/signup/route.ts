@@ -22,7 +22,6 @@ export async function POST(req: NextRequest) {
         data: {
           name: name || email,
           companyName: companyName || '',
-          tenant_id: uuidv4(),
         }
       }
     });
