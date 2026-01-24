@@ -43,12 +43,16 @@ export async function middleware(request: NextRequest) {
   if (!session && !isAuthPage && !publicPaths.some(path =>
     request.nextUrl.pathname.startsWith(path)
   )) {
-    return NextResponse.redirect(new URL('/auth/signin', request.url))
+    const redirectUrl = new URL('/auth/signin', request.url)
+    response = NextResponse.redirect(redirectUrl)
+    return response
   }
 
   // 🚫 Block auth pages if logged in
   if (session && isAuthPage) {
-    return NextResponse.redirect(new URL('/', request.url))
+    const redirectUrl = new URL('/', request.url)
+    response = NextResponse.redirect(redirectUrl)
+    return response
   }
 
   return response
