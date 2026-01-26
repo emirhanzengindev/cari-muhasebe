@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -13,6 +13,7 @@ export default function SignIn() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const hasRedirected = useRef(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,8 +40,9 @@ export default function SignIn() {
     console.log('SIGNIN PAGE EFFECT TRIGGERED', { authIsLoading, user: !!user });
     // Redirect to homepage when user is authenticated
     // According to auth redirect discipline: if (!isLoading && user) { router.replace('/') }
-    if (!authIsLoading && user) {
+    if (!authIsLoading && user && !hasRedirected.current) {
       console.log('SIGNIN PAGE: User authenticated, executing redirect to /');
+      hasRedirected.current = true;
       // Use window.location directly as the most reliable redirect method
       if (typeof window !== 'undefined') {
         window.location.href = '/';
