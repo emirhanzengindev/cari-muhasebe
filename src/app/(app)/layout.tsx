@@ -1,5 +1,5 @@
 import MainLayout from "@/components/MainLayout";
-import Providers from "@/components/Providers";
+import ProtectedPage from "@/components/ProtectedPage";
 
 export default function AppLayout({
   children,
@@ -7,8 +7,8 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <Providers>
+    <ProtectedPage>
       <MainLayout>{children}</MainLayout>
-    </Providers>
+    </ProtectedPage>
   );
 }
