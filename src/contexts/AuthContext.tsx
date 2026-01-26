@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               return;
             }
             console.log('AUTH CONTEXT: Handling INITIAL_SESSION', { hasSession: !!session });
-            // If there's a session, process it. If not, set isLoading to false
+            // Always set isLoading to false after processing INITIAL_SESSION
             if (session) {
               // Process the session from INITIAL_SESSION
               const userData = buildUser(session);
@@ -74,11 +74,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setUser(userData);
               setTenantId(userData.tenantId);
               useTenantStore.getState().setTenantId(userData.tenantId);
-              setIsLoading(false);
             } else {
               // No session, user is not logged in
-              setIsLoading(false);
+              console.log('AUTH CONTEXT: No session found, user not logged in');
             }
+            // Always set isLoading to false to prevent infinite loop
+            setIsLoading(false);
             return;
           }
 
