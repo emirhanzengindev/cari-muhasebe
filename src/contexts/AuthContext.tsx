@@ -45,6 +45,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const listenerRegisteredRef = useRef(false);
   
   console.log('AuthProvider mounted, isLoading:', isLoading);
+  
+  // Debug: Log when user state changes
+  useEffect(() => {
+    console.log('AUTH CONTEXT: User state changed to:', user);
+  }, [user]);
 
   useEffect(() => {
     console.log('AUTH CONTEXT: Initializing with isLoading:', isLoading);
@@ -66,16 +71,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setIsLoading(false);
               return;
             }
-            console.log('AUTH CONTEXT: Handling INITIAL_SESSION', { hasSession: !!session });
+            console.log('AUTH CONTEXT: Handling INITIAL_SESSION', { hasSession: !!session, session: session ? 'exists' : 'null' });
             // Always set isLoading to false after processing INITIAL_SESSION
             if (session) {
               // Process the session from INITIAL_SESSION
+              console.log('AUTH CONTEXT: Building user from session:', session.user);
               const userData = buildUser(session);
               console.log('AUTH CONTEXT: Setting user data from INITIAL_SESSION:', userData);
               userRef.current = userData;
               setUser(userData);
               setTenantId(userData.tenantId);
               useTenantStore.getState().setTenantId(userData.tenantId);
+              console.log('AUTH CONTEXT: User set successfully, userRef:', !!userRef.current);
             } else {
               // No session, user is not logged in
               console.log('AUTH CONTEXT: No session found, user not logged in');
