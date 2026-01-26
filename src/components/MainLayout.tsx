@@ -54,10 +54,7 @@ export default function MainLayout({
     return null;
   }
 
-  // Giriş veya kayıt sayfasındaysa sadece içeriği göster - artık bu layout auth sayfalarında kullanılmayacak
-  if (pathname.startsWith("/auth")) {
-    return <>{children}</>;
-  }
+
 
   const navigation = [
     { name: "Ana Sayfa", href: "/", icon: "📊" },
