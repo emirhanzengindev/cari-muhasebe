@@ -95,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               userRef.current = userData;
               setUser(userData);
               setTenantId(userData.tenantId);
+              console.log('AUTH CONTEXT: Setting tenantId in context:', userData.tenantId);
               useTenantStore.getState().setTenantId(userData.tenantId);
               console.log('AUTH CONTEXT: User set successfully, userRef:', !!userRef.current);
             } else {
