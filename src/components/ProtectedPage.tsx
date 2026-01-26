@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 interface ProtectedPageProps {
   children: React.ReactNode;
@@ -11,11 +11,14 @@ interface ProtectedPageProps {
 export default function ProtectedPage({ children }: ProtectedPageProps) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
     // Only redirect when we're sure there's no user and loading is complete
-    if (!isLoading && !user) {
+    // And prevent multiple redirects
+    if (!isLoading && !user && !hasRedirected.current) {
       console.log('PROTECTED PAGE: No user found, redirecting to signin');
+      hasRedirected.current = true;
       router.replace('/auth/signin');
     }
   }, [isLoading, user, router]);

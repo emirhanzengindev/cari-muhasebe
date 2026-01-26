@@ -16,9 +16,13 @@ import {
   TrendingUp
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEffect, useRef } from "react";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  
+  // Memoize the component to prevent unnecessary re-renders
+  console.log('DASHBOARD: Rendering with user:', !!user);
   
   // If user is not authenticated, show landing page
   if (!user) {
