@@ -41,15 +41,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const userRef = useRef<User | null>(null);
+  // Track if listener is already registered to prevent duplicates
+  const listenerRegisteredRef = useRef(false);
 
   useEffect(() => {
     console.log('AUTH CONTEXT: Initializing with isLoading:', isLoading);
     
-    // Track if listener is already registered to prevent duplicates
-    const listenerRegistered = useRef(false);
-    
-    if (!listenerRegistered.current) {
-      listenerRegistered.current = true;
+    if (!listenerRegisteredRef.current) {
+      listenerRegisteredRef.current = true;
       
       const { data: { subscription } } =
         supabase.auth.onAuthStateChange((event, session) => {
@@ -99,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return () => {
         console.log('AUTH CONTEXT: Unsubscribing from auth state change');
-        listenerRegistered.current = false;
+        listenerRegisteredRef.current = false;
         subscription.unsubscribe();
       };
     }
