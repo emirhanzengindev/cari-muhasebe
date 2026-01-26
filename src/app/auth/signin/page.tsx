@@ -38,17 +38,11 @@ export default function SignIn() {
   useEffect(() => {
     console.log('SIGNIN PAGE EFFECT TRIGGERED', { authIsLoading, user: !!user });
     // Redirect to homepage when user is authenticated
-    // Even if authIsLoading is true, if we have a user, redirect immediately
     // Use router.push instead of replace for better UX
-    if (user) {
+    if (user && !authIsLoading) {
       console.log('SIGNIN PAGE: User authenticated, executing redirect to /');
-      // Small delay to ensure state is fully settled
-      // Use setTimeout to avoid multiple redirects
-      if (!window.location.pathname.startsWith('/')) {
-        setTimeout(() => {
-          router.push('/');
-        }, 100);
-      }
+      // Remove the pathname check and timeout for more reliable redirect
+      router.push('/');
     } else if (!authIsLoading && !user) {
       console.log('SIGNIN PAGE: Auth loaded but no user, staying on signin page');
     } else {
