@@ -43,6 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const userRef = useRef<User | null>(null);
   // Track if listener is already registered to prevent duplicates
   const listenerRegisteredRef = useRef(false);
+  
+  console.log('AuthProvider mounted, isLoading:', isLoading);
 
   useEffect(() => {
     console.log('AUTH CONTEXT: Initializing with isLoading:', isLoading);
@@ -79,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               console.log('AUTH CONTEXT: No session found, user not logged in');
             }
             // Always set isLoading to false to prevent infinite loop
+            console.log('AUTH CONTEXT: Setting isLoading to false');
             setIsLoading(false);
             return;
           }
@@ -116,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         subscription.unsubscribe();
       };
     }
-  }, []);
+  }, []); // Empty dependency array - should run only once
 
   const logout = async () => {
     useTenantStore.getState().setTenantId(null);
