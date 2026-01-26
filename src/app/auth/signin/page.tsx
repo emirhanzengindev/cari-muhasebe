@@ -34,6 +34,12 @@ export default function SignIn() {
     console.log('SIGNIN PAGE: Authentication completed, useEffect will handle redirect');
     // 🔥 Note: useEffect handles redirect after auth state updates
     // All navigation logic is in useEffect to prevent redirect race conditions
+    // As a fallback, we'll redirect manually after a short delay
+    setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
+    }, 1000);
   };
 
   useEffect(() => {
