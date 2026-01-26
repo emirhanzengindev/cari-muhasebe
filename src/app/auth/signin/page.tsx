@@ -41,15 +41,10 @@ export default function SignIn() {
     // According to auth redirect discipline: if (!isLoading && user) { router.replace('/') }
     if (!authIsLoading && user) {
       console.log('SIGNIN PAGE: User authenticated, executing redirect to /');
-      // Try both router.replace and window.location to ensure redirect works
-      router.replace('/');
-      // As a last resort, use window.location if router fails
-      // This is acceptable in edge cases where router doesn't work as expected
-      setTimeout(() => {
-        if (typeof window !== 'undefined') {
-          window.location.href = '/';
-        }
-      }, 100);
+      // Use window.location directly as the most reliable redirect method
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
     } else if (!authIsLoading && !user) {
       console.log('SIGNIN PAGE: Auth loaded but no user, staying on signin page');
     } else {
