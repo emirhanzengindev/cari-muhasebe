@@ -44,14 +44,16 @@ export default function MainLayout({
     );
   }
 
-  // TEMPORARY: Disabled auth guard to stop infinite refresh
-  // if (!user) {
-  //   if (typeof window !== 'undefined') {
-  //     window.location.href = '/auth/signin';
-  //     return null;
-  //   }
-  //   return null;
-  // }
+  // Re-enabled auth guard with proper session checking
+  if (!user && !isLoading) {
+    // Only redirect if we're sure there's no user and loading is complete
+    console.log('MAIN LAYOUT: No user found, redirecting to signin');
+    if (typeof window !== 'undefined') {
+      window.location.href = '/auth/signin';
+      return null;
+    }
+    return null;
+  }
 
 
 
