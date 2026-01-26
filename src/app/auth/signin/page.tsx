@@ -20,26 +20,28 @@ export default function SignIn() {
     setError("");
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    console.log('LOGIN ATTEMPT:', { email });
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
+    console.log("LOGIN RESULT:", data);
+    console.log("LOGIN ERROR:", error);
+
     if (error) {
+      console.error("LOGIN ERROR DETAILS:", error);
+      alert(`Login Error: ${error.message}`);
       setError("Geçersiz e-posta veya şifre");
       setLoading(false);
       return;
     }
 
+    console.log('LOGIN SUCCESS, SESSION:', data.session);
     console.log('SIGNIN PAGE: Authentication completed, useEffect will handle redirect');
-    // 🔥 Note: useEffect handles redirect after auth state updates
-    // All navigation logic is in useEffect to prevent redirect race conditions
-    // As a fallback, we'll redirect manually after a short delay
-    setTimeout(() => {
-      if (typeof window !== 'undefined') {
-        window.location.href = '/';
-      }
-    }, 1000);
+    
+    setLoading(false);
   };
 
   useEffect(() => {
