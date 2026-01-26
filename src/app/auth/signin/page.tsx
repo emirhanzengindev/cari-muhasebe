@@ -41,7 +41,10 @@ export default function SignIn() {
     // Even if authIsLoading is true, if we have a user, redirect immediately
     if (user) {
       console.log('SIGNIN PAGE: User authenticated, executing redirect to /');
-      router.replace('/');
+      // Small delay to ensure state is fully settled
+      setTimeout(() => {
+        router.replace('/');
+      }, 100);
     } else if (!authIsLoading && !user) {
       console.log('SIGNIN PAGE: Auth loaded but no user, staying on signin page');
     } else {
