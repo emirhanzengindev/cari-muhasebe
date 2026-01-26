@@ -45,49 +45,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     console.log('AUTH CONTEXT: Initializing with isLoading:', isLoading);
     
-    const { data: { subscription } } =
-      supabase.auth.onAuthStateChange((event, session) => {
-        console.log("AUTH EVENT:", event, !!session);
-        console.log('AUTH CONTEXT: Event received, current isLoading:', isLoading, 'current user:', !!userRef.current);
+    // Track if listener is already registered to prevent duplicates
+    const listenerRegistered = useRef(false);
+    
+    if (!listenerRegistered.current) {
+      listenerRegistered.current = true;
+      
+      const { data: { subscription } } =
+        supabase.auth.onAuthStateChange((event, session) => {
+          console.log("AUTH EVENT:", event, !!session);
+          console.log('AUTH CONTEXT: Event received, current isLoading:', isLoading, 'current user:', !!userRef.current);
 
-        if (event === "INITIAL_SESSION") {
-          // INITIAL_SESSION is fired during initialization and should not affect user state
-          // Only update loading state, don't change user/session data
-          // 🔐 If user is already set by SIGNED_IN, don't touch the state
-          if (userRef.current) {
-            console.log('AUTH CONTEXT: INITIAL_SESSION ignored, user already set by SIGNED_IN');
+          if (event === "INITIAL_SESSION") {
+            // INITIAL_SESSION is fired during initialization and should not affect user state
+            // Only update loading state, don't change user/session data
+            // 🔐 If user is already set by SIGNED_IN, don't touch the state
+            if (userRef.current) {
+              console.log('AUTH CONTEXT: INITIAL_SESSION ignored, user already set by SIGNED_IN');
+              setIsLoading(false);
+              return;
+            }
+            console.log('AUTH CONTEXT: Handling INITIAL_SESSION, setting isLoading to false');
             setIsLoading(false);
             return;
           }
-          console.log('AUTH CONTEXT: Handling INITIAL_SESSION, setting isLoading to false');
+
+          if (event === "SIGNED_IN" && userRef.current) {
+            // Prevent duplicate SIGNED_IN events when user is already set
+            console.log('AUTH CONTEXT: SIGNED_IN ignored, user already set');
+            setIsLoading(false);
+            return;
+          }
+
+          if (!session) {
+            console.log('AUTH CONTEXT: No session, resetting state');
+            userRef.current = null;
+            setUser(null);
+            setTenantId(null);
+            useTenantStore.getState().setTenantId(null);
+            setIsLoading(false);
+            return;
+          }
+
+          const userData = buildUser(session);
+          console.log('AUTH CONTEXT: Setting user data:', userData);
+          userRef.current = userData;
+          setUser(userData);
+          setTenantId(userData.tenantId);
+          useTenantStore.getState().setTenantId(userData.tenantId);
+          console.log('AUTH CONTEXT: Setting isLoading to false after setting user');
           setIsLoading(false);
-          return;
-        }
+        });
 
-        if (!session) {
-          console.log('AUTH CONTEXT: No session, resetting state');
-          userRef.current = null;
-          setUser(null);
-          setTenantId(null);
-          useTenantStore.getState().setTenantId(null);
-          setIsLoading(false);
-          return;
-        }
-
-        const userData = buildUser(session);
-        console.log('AUTH CONTEXT: Setting user data:', userData);
-        userRef.current = userData;
-        setUser(userData);
-        setTenantId(userData.tenantId);
-        useTenantStore.getState().setTenantId(userData.tenantId);
-        console.log('AUTH CONTEXT: Setting isLoading to false after setting user');
-        setIsLoading(false);
-      });
-
-    return () => {
-      console.log('AUTH CONTEXT: Unsubscribing from auth state change');
-      subscription.unsubscribe();
-    };
+      return () => {
+        console.log('AUTH CONTEXT: Unsubscribing from auth state change');
+        listenerRegistered.current = false;
+        subscription.unsubscribe();
+      };
+    }
   }, []);
 
   const logout = async () => {
