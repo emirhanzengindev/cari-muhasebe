@@ -68,6 +68,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     console.log('AUTH CONTEXT: Initializing with isLoading:', isLoading);
     
+    // Failsafe: Ensure isLoading becomes false after 3 seconds
+    const failsafeTimer = setTimeout(() => {
+      if (isLoading) {
+        console.log('AUTH CONTEXT: Failsafe - forcing isLoading to false');
+        setIsLoading(false);
+      }
+    }, 3000);
+    
     if (!listenerRegisteredRef.current) {
       listenerRegisteredRef.current = true;
       
@@ -137,10 +145,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return () => {
         console.log('AUTH CONTEXT: Unsubscribing from auth state change');
+        clearTimeout(failsafeTimer);
         listenerRegisteredRef.current = false;
         subscription.unsubscribe();
       };
     }
+    // Cleanup failsafe timer if component unmounts
+    return () => {
+      clearTimeout(failsafeTimer);
+    };
   }, []); // Empty dependency array - should run only once
 
   const logout = async () => {
