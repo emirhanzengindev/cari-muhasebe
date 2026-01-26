@@ -22,18 +22,32 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function buildUser(session: Session): User {
+  console.log('BUILD USER: Processing session user:', session.user);
+  
   const u = session.user;
+  
+  // Validate required fields
+  if (!u.id || !u.email) {
+    console.error('BUILD USER: Missing required fields:', { id: u.id, email: u.email });
+    throw new Error('Invalid user data in session');
+  }
+  
   const tenantId =
     u.user_metadata?.tenant_id && /^[0-9a-f-]{36}$/i.test(u.user_metadata.tenant_id)
       ? u.user_metadata.tenant_id
       : u.id;
+      
+  console.log('BUILD USER: tenantId determined:', tenantId);
 
-  return {
+  const userData = {
     id: u.id,
     email: u.email,
     name: u.user_metadata?.name ?? u.email,
     tenantId,
   };
+  
+  console.log('BUILD USER: Final user data:', userData);
+  return userData;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

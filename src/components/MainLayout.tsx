@@ -44,15 +44,14 @@ export default function MainLayout({
     );
   }
 
-  // Kullanıcı yoksa auth sayfasına yönlendir
-  if (!user) {
-    // Client-side redirect
-    if (typeof window !== 'undefined') {
-      window.location.href = '/auth/signin';
-      return null; // Render edilmeden çık
-    }
-    return null;
-  }
+  // TEMPORARY: Disabled auth guard to stop infinite refresh
+  // if (!user) {
+  //   if (typeof window !== 'undefined') {
+  //     window.location.href = '/auth/signin';
+  //     return null;
+  //   }
+  //   return null;
+  // }
 
 
 
