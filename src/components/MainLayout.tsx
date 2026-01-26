@@ -44,12 +44,6 @@ export default function MainLayout({
     );
   }
 
-  // Giriş veya kayıt sayfasındaysa sadece içeriği göster
-  if (pathname.startsWith("/auth")) {
-    // Burada auth guard eklemek gerekebilir
-    return <>{children}</>;
-  }
-
   // Kullanıcı yoksa ve yüklenmiyorsa auth sayfasına yönlendir
   if (!user && !isLoading) {
     // Client-side redirect
@@ -58,6 +52,11 @@ export default function MainLayout({
       return null; // Render edilmeden çık
     }
     return null;
+  }
+
+  // Giriş veya kayıt sayfasındaysa sadece içeriği göster - artık bu layout auth sayfalarında kullanılmayacak
+  if (pathname.startsWith("/auth")) {
+    return <>{children}</>;
   }
 
   const navigation = [
