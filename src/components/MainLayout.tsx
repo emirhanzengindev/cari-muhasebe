@@ -44,8 +44,8 @@ export default function MainLayout({
     );
   }
 
-  // Kullanıcı yoksa ve yüklenmiyorsa auth sayfasına yönlendir
-  if (!user && !isLoading) {
+  // Kullanıcı yoksa auth sayfasına yönlendir
+  if (!user) {
     // Client-side redirect
     if (typeof window !== 'undefined') {
       window.location.href = '/auth/signin';
