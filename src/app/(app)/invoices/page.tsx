@@ -228,7 +228,7 @@ export default function Invoices() {
           </table>
         </div>
         
-        {invoices.length === 0 && (
+        {invoices?.length || 0 === 0 && (
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -248,11 +248,11 @@ export default function Invoices() {
       </div>
 
       {/* Pagination */}
-      {invoices.length > 0 && (
+      {invoices?.length || 0 > 0 && (
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-sm text-gray-700 text-center sm:text-left">
-            <span className="font-medium">1</span> - <span className="font-medium">{Math.min(10, invoices.length)}</span> arası gösteriliyor, Toplam: {' '}
-            <span className="font-medium">{invoices.length}</span> fatura
+            <span className="font-medium">1</span> - <span className="font-medium">{Math.min(10, invoices?.length || 0)}</span> arası gösteriliyor, Toplam: {' '}
+            <span className="font-medium">{invoices?.length || 0}</span> fatura
           </div>
           <div className="flex space-x-2">
             <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">

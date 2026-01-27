@@ -404,7 +404,7 @@ export default function Inventory() {
           </tbody>
         </table>
         
-        {products.length === 0 && (
+        {products?.length || 0 === 0 && (
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -427,11 +427,11 @@ export default function Inventory() {
       </div>
 
       {/* Pagination */}
-      {products.length > 0 && (
+      {products?.length || 0 > 0 && (
         <div className="mt-6 flex items-center justify-between">
           <div className="text-sm text-gray-700">
-            <span className="font-medium">1</span> - <span className="font-medium">{Math.min(10, products.length)}</span> arası gösteriliyor, Toplam: {' '}
-            <span className="font-medium">{products.length}</span> ürün
+            <span className="font-medium">1</span> - <span className="font-medium">{Math.min(10, products?.length || 0)}</span> arası gösteriliyor, Toplam: {' '}
+            <span className="font-medium">{products?.length || 0}</span> ürün
           </div>
           <div className="flex space-x-2">
             <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">

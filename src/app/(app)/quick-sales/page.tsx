@@ -69,7 +69,7 @@ export default function QuickSales() {
   };
 
   const handleCompleteSale = async () => {
-    if (cartItems.length === 0) {
+    if (cartItems?.length || 0 === 0) {
       alert("Sepet boş!");
       return;
     }
@@ -277,7 +277,7 @@ export default function QuickSales() {
           {/* Product Grid */}
           <div className="bg-white shadow rounded-lg p-6">
             <h2 className="text-lg font-medium text-gray-900 mb-4">Ürünler</h2>
-            {filteredProducts.length === 0 ? (
+            {filteredProducts?.length || 0 === 0 ? (
               <p className="text-gray-500">Ürün bulunamadı.</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -304,7 +304,7 @@ export default function QuickSales() {
           <div className="bg-white shadow rounded-lg p-6 sticky top-6">
             <h2 className="text-lg font-medium text-gray-900 mb-4">Alışveriş Sepeti</h2>
             
-            {cartItems.length === 0 ? (
+            {cartItems?.length || 0 === 0 ? (
               <p className="text-gray-500">Sepetiniz boş.</p>
             ) : (
               <>
