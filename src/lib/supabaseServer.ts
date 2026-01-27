@@ -67,28 +67,65 @@ export function createServerSupabaseClient() {
 
 // Function to create a Supabase client for API routes with request context
 export function createServerSupabaseClientWithRequest(request: NextRequest) {
-  const headers = new Map(Object.entries(request.headers));
-  
-  return createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      global: {
-        headers: {
-          Authorization: headers.get('authorization') || '',
-        },
-      },
-      cookies: {
-        get(name: string) {
-          const cookieStore = cookies();
-          const syncCookieStore = cookieStore as any;
-          return syncCookieStore.get(name)?.value;
-        },
-        set() {},
-        remove() {},
-      },
+  try {
+    console.log('DEBUG: createServerSupabaseClientWithRequest called')
+    
+    // Extract Authorization header if present
+    const authorizationHeader = request.headers.get('authorization')
+    console.log('DEBUG: Authorization header from request:', authorizationHeader ? 'Present' : 'Absent')
+    if (authorizationHeader) {
+      console.log('DEBUG: Authorization header first 20 chars:', authorizationHeader.substring(0, 20) + '...')
     }
-  );
+    
+    // Extract other important headers
+    console.log('DEBUG: Request headers:', Object.fromEntries(request.headers))
+    
+    // Create header map for the client
+    const headers = new Map(Object.entries(request.headers))
+    
+    const supabaseClient = createServerClient(
+      supabaseUrl,
+      supabaseAnonKey,
+      {
+        global: {
+          headers: {
+            Authorization: headers.get('authorization') || '',
+          },
+        },
+        cookies: {
+          get(name: string) {
+            try {
+              console.log('DEBUG: cookieStore getter called with:', name)
+              const cookieStore = cookies();
+              console.log('DEBUG: cookieStore object keys:', Object.keys(cookieStore))
+              
+              // Check if cookie store is available
+              if (!cookieStore || typeof cookieStore !== 'object') {
+                console.error('ERROR: No cookie store available')
+                return undefined;
+              }
+              
+              const syncCookieStore = cookieStore as any;
+              const result = syncCookieStore.get(name)?.value;
+              console.log('DEBUG: cookieStore getter result for', name, ':', result)
+              return result;
+            } catch (error) {
+              console.error('ERROR in cookieStore getter:', error)
+              return undefined;
+            }
+          },
+          set() {},
+          remove() {},
+        },
+      }
+    );
+    
+    console.log('DEBUG: Supabase client created successfully')
+    return supabaseClient;
+  } catch (error) {
+    console.error('ERROR creating Supabase client:', error)
+    throw error;
+  }
 }
 
 // Function to extract tenant ID from Supabase auth

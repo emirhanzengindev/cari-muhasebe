@@ -7,8 +7,12 @@ import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
 export async function GET(request: NextRequest) {
   try {
     console.log('DEBUG: GET /api/current-accounts called')
-
+    console.log('DEBUG: Request method:', request.method)
+    console.log('DEBUG: Request URL:', request.url)
+    
+    console.log('DEBUG: Creating Supabase client...')
     const supabase = createServerSupabaseClientWithRequest(request)
+    console.log('DEBUG: Supabase client created successfully')
     
     // Debug request
     console.log('DEBUG: API request received');
