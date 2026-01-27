@@ -54,9 +54,27 @@ export async function GET(request: NextRequest) {
     }
     
     if (error) {
-      console.error('SUPABASE ERROR (GET current_accounts):', error);
+      console.error('SUPABASE ERROR (GET current_accounts):', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        status: status
+      });
+      
+      // Handle specific error cases
+      if (error.code === '42P01' || error.message.toLowerCase().includes('does not exist')) {
+        // Table does not exist - return empty array instead of error
+        console.warn('Table current_accounts does not exist, returning empty array');
+        return Response.json([]);
+      }
+      
       // For other errors, return the error message
-      return Response.json({ error: error.message }, { status: 500 });
+      return Response.json({ 
+        error: error.message,
+        code: error.code,
+        details: error.details
+      }, { status: 500 });
     }
 
     console.log('DEBUG: Successfully fetched', data?.length || 0, 'current accounts for tenant', user.id);

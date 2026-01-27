@@ -33,9 +33,23 @@ export async function GET(request: NextRequest) {
         message: error.message,
         code: error.code,
         details: error.details,
-        hint: error.hint
+        hint: error.hint,
+        status: null // status might not be available in this context
       });
-      return Response.json({ error: error.message, details: error }, { status: 500 });
+      
+      // Handle specific error cases
+      if (error.code === '42P01' || error.message.toLowerCase().includes('does not exist')) {
+        // Table does not exist - return empty array instead of error
+        console.warn('Table warehouses does not exist, returning empty array');
+        return Response.json([]);
+      }
+      
+      // For other errors, return the error message
+      return Response.json({ 
+        error: error.message,
+        code: error.code,
+        details: error.details
+      }, { status: 500 });
     }
 
     console.log('DEBUG: Successfully fetched', data?.length || 0, 'warehouses');

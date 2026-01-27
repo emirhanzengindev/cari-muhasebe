@@ -29,8 +29,27 @@ export async function GET(request: NextRequest) {
       .eq('tenant_id', user.id)  // Filter by authenticated user's tenant ID
 
     if (error) {
-      console.error('SUPABASE ERROR:', error);
-      return Response.json({ error: error.message }, { status: 500 });
+      console.error('SUPABASE ERROR:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        status: null // status might not be available in this context
+      });
+      
+      // Handle specific error cases
+      if (error.code === '42P01' || error.message.toLowerCase().includes('does not exist')) {
+        // Table does not exist - return empty array instead of error
+        console.warn('Table stock_movements does not exist, returning empty array');
+        return Response.json([]);
+      }
+      
+      // For other errors, return the error message
+      return Response.json({ 
+        error: error.message,
+        code: error.code,
+        details: error.details
+      }, { status: 500 });
     }
 
     return Response.json(data);
