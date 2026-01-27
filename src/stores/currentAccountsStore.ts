@@ -19,6 +19,10 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   // Get Supabase session token
   const supabase = createBrowserClient();
   const { data: { session } } = await supabase.auth.getSession();
+  console.log('DEBUG: Session retrieved:', session ? 'exists' : 'null');
+  if (session) {
+    console.log('DEBUG: Session user:', session.user?.email);
+  }
     
   // Conditionally add Content-Type header only for requests that have a body
   const headers: any = {
