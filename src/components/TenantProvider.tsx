@@ -7,10 +7,9 @@ export default function TenantProvider({ children }: { children: React.ReactNode
   const setTenantId = useTenantStore(state => state.setTenantId);
 
   useEffect(() => {
-    // Initialize tenant ID
-    // Actual user's tenant ID will be set by AuthProvider when it detects login
-    setTenantId('demo-tenant-id');
-  }, [setTenantId]);
+    // Don't initialize tenant ID here - AuthProvider will set it when user authenticates
+    // This prevents demo-tenant-id from overriding real user's tenant ID
+  }, []); // Empty dependency array since we only need this to run once
 
   return <>{children}</>;
 }
