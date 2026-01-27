@@ -44,13 +44,8 @@ export default function SignIn() {
     console.log('LOGIN SUCCESS, SESSION:', data.session);
     console.log('SIGNIN PAGE: Authentication completed, redirecting to /');
     
-    // Set mock user state
-    setUser({ email } as any);
-    
     // Redirect to homepage
-    if (typeof window !== 'undefined') {
-      window.location.href = '/';
-    }
+    router.push('/');
     
     setLoading(false);
   };
