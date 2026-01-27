@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Product, Category, Warehouse, StockMovement } from '@/types';
 import { useTenantStore } from '@/lib/tenantStore';
-import { createBrowserClient } from '@/lib/supabase';
+import { getBrowserClient } from '@/lib/supabase';
 
 // Helper function to get tenant ID
 const getTenantId = () => {
@@ -23,7 +23,7 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   }
   
   // Get Supabase session token
-  const supabase = createBrowserClient();
+  const supabase = getBrowserClient();
   const { data: { session } } = await supabase.auth.getSession();
     
   // Conditionally add Content-Type header only for requests that have a body

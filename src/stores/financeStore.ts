@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Safe, Bank, Transaction, Cheque } from '@/types';
 import { useTenantStore } from '@/lib/tenantStore';
-import { createBrowserClient } from '@/lib/supabase';
+import { getBrowserClient } from '@/lib/supabase';
 
 // Helper function to make API requests
 const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
@@ -13,7 +13,7 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   }
   
   // Get Supabase session token
-  const supabase = createBrowserClient();
+  const supabase = getBrowserClient();
   const { data: { session } } = await supabase.auth.getSession();
     
   // Conditionally add Content-Type header only for requests that have a body
