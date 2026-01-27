@@ -15,12 +15,6 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const tenantId = getTenantId();
   
   console.log('DEBUG: makeApiRequest called for endpoint:', endpoint);
-  // Manually set session cookie for server-side authentication
-  if (session?.access_token) {
-    document.cookie = `sb-access-token=` + session.access_token + `; path=/; SameSite=Lax; Secure`;
-    document.cookie = `sb-refresh-token=` + session.refresh_token + `; path=/; SameSite=Lax; Secure`;
-    console.log('DEBUG: Session cookies manually set');
-  }
   console.log('DEBUG: Retrieved tenantId:', tenantId);
   
   if (!tenantId) {
@@ -31,6 +25,13 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   // Get Supabase session token
   const supabase = createBrowserClient();
   const { data: { session } } = await supabase.auth.getSession();
+  
+  // Manually set session cookie for server-side authentication
+  if (session?.access_token) {
+    document.cookie = `sb-access-token=` + session.access_token + `; path=/; SameSite=Lax; Secure`;
+    document.cookie = `sb-refresh-token=` + session.refresh_token + `; path=/; SameSite=Lax; Secure`;
+    console.log('DEBUG: Session cookies manually set');
+  }
     
   // Conditionally add Content-Type header only for requests that have a body
   const headers: any = {
