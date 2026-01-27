@@ -63,12 +63,13 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    console.log('DEBUG: About to execute query for tenant:', user.id);
     // Execute the actual query
     const { data, error, status } = await supabase
       .from('current_accounts')
       .select('*')
-      .eq('tenant_id', user.id)  // Filter by authenticated user's tenant ID
-      .returns<any[]>(); // Ensure proper typing
+      .eq('tenant_id', user.id);  // Filter by authenticated user's tenant ID
+    console.log('DEBUG: Query executed, error:', !!error, 'status:', status);
     
     if (error) {
       console.error('SUPABASE ERROR (GET current_accounts):', {
@@ -102,9 +103,17 @@ export async function GET(request: NextRequest) {
 
     console.log('DEBUG: Successfully fetched', data?.length || 0, 'current accounts for tenant', user.id);
     return Response.json(data);
-  } catch (error) {
-    console.error('Error fetching current accounts:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Error fetching current accounts:', {
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name,
+      cause: error?.cause
+    });
+    return Response.json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error?.message : undefined
+    }, { status: 500 });
   }
 }
 
