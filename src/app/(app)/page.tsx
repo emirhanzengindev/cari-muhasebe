@@ -15,11 +15,8 @@ import {
   Plus,
   TrendingUp
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useEffect, useRef } from "react";
-
 export default function Dashboard() {
-  const { user } = useAuth();
+  const user = { name: "Demo User" }; // Mock user
   
   // Memoize the component to prevent unnecessary re-renders
   console.log('DASHBOARD: Rendering with user:', !!user);

@@ -1,4 +1,3 @@
-import { useAuth } from "@/contexts/AuthContext";
 import { useTenantStore } from "@/lib/tenantStore";
 
 // Utility function to filter data by tenant ID
@@ -24,7 +23,7 @@ export function withTenantId<T>(item: T, tenantId: string): T & { tenantId: stri
 
 // Hook to get tenant-specific data
 export function useTenantData() {
-  const { tenantId } = useAuth();
+  const tenantId = useTenantStore.getState().tenantId;
   
   const filterData = <T extends { tenantId: string }>(data: T[]): T[] => {
     if (!tenantId) return [];

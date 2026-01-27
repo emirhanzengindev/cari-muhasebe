@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+
 import TenantSwitcher from "@/components/TenantSwitcher";
 
 export default function MainLayout({
@@ -14,7 +14,9 @@ export default function MainLayout({
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false); // Mobilde kapalı başlasın
   const [isMobile, setIsMobile] = useState(false);
-  const { user, logout, isLoading } = useAuth();
+  const user = { name: "Demo User" }; // Mock user
+  const logout = () => console.log("Logout disabled"); // Mock logout
+  const isLoading = false; // Mock loading
 
   // Mobil cihaz kontrolü
   useEffect(() => {
