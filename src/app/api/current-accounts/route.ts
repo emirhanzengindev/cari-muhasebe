@@ -42,16 +42,33 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Check if table exists first by attempting a simple query
+    try {
+      const { error: tableCheckError } = await supabase
+        .from('current_accounts')
+        .select('id')
+        .eq('tenant_id', user.id)
+        .limit(1);
+      
+      if (tableCheckError && (tableCheckError.code === '42P01' || tableCheckError.message.toLowerCase().includes('does not exist'))) {
+        console.warn('Table current_accounts does not exist, returning empty array');
+        return Response.json([]);
+      }
+    } catch (tableCheckError) {
+      // If there's an error just checking if table exists, it might not exist
+      const errorObj = tableCheckError as any;
+      if (errorObj?.code === '42P01' || errorObj?.message?.toLowerCase().includes('does not exist')) {
+        console.warn('Table current_accounts does not exist, returning empty array');
+        return Response.json([]);
+      }
+    }
+    
+    // Execute the actual query
     const { data, error, status } = await supabase
       .from('current_accounts')
       .select('*')
       .eq('tenant_id', user.id)  // Filter by authenticated user's tenant ID
-
-    // If table doesn't exist, return empty array
-    if (error && status === 404) {
-      console.warn('Table current_accounts does not exist, returning empty array');
-      return Response.json([]);
-    }
+      .returns<any[]>(); // Ensure proper typing
     
     if (error) {
       console.error('SUPABASE ERROR (GET current_accounts):', {
@@ -66,6 +83,12 @@ export async function GET(request: NextRequest) {
       if (error.code === '42P01' || error.message.toLowerCase().includes('does not exist')) {
         // Table does not exist - return empty array instead of error
         console.warn('Table current_accounts does not exist, returning empty array');
+        return Response.json([]);
+      }
+      
+      // For RLS (Row Level Security) violations
+      if (error.code === '42501' || error.message.toLowerCase().includes('permission denied')) {
+        console.warn('Permission denied accessing current_accounts, returning empty array');
         return Response.json([]);
       }
       
@@ -123,14 +146,34 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    if (error && status === 404) {
-      console.error('Table current_accounts does not exist for insert operation');
-      return Response.json({ error: 'Accounts table does not exist' }, { status: 500 });
-    }
-    
     if (error) {
-      console.error('SUPABASE ERROR (POST current_accounts):', error);
-      return Response.json({ error: error.message }, { status: 500 });
+      console.error('SUPABASE ERROR (POST current_accounts):', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        status: status
+      });
+      
+      // Handle specific error cases
+      if (error.code === '42P01' || error.message.toLowerCase().includes('does not exist')) {
+        // Table does not exist
+        console.error('Table current_accounts does not exist for insert operation');
+        return Response.json({ error: 'Accounts table does not exist' }, { status: 500 });
+      }
+      
+      // For RLS (Row Level Security) violations
+      if (error.code === '42501' || error.message.toLowerCase().includes('permission denied')) {
+        console.error('Permission denied inserting into current_accounts');
+        return Response.json({ error: 'Permission denied' }, { status: 403 });
+      }
+      
+      // For other errors, return the error message
+      return Response.json({ 
+        error: error.message,
+        code: error.code,
+        details: error.details
+      }, { status: 500 });
     }
 
     return Response.json(data);
