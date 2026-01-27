@@ -12,18 +12,30 @@ if (!supabaseAnonKey) {
   throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not defined');
 }
 
-// SINGLE EXPORTED BROWSER CLIENT - Created once, used everywhere
-// This eliminates React Strict Mode double-mounting issues
+// LAZY SINGLETON BROWSER CLIENT - Created on first access
+// This works in both browser and server environments
 
 let browserClient: ReturnType<typeof createSupabaseBrowserClient> | null = null;
 
-// Create the client immediately when module is imported (but only in browser)
-if (typeof window !== 'undefined' && !browserClient) {
-  browserClient = createSupabaseBrowserClient(supabaseUrl, supabaseAnonKey);
-}
+// Lazy getter that creates client only when accessed in browser
+const getOrCreateBrowserClient = (): ReturnType<typeof createSupabaseBrowserClient> => {
+  if (typeof window === 'undefined') {
+    throw new Error('Browser client can only be used in browser environment');
+  }
+  
+  if (!browserClient) {
+    browserClient = createSupabaseBrowserClient(supabaseUrl, supabaseAnonKey);
+  }
+  
+  return browserClient;
+};
 
-// Export the single client instance
-export const supabaseBrowser = browserClient;
+// Export a getter function instead of direct value
+export const getSupabaseBrowser = getOrCreateBrowserClient;
+
+// For backward compatibility - throws helpful error if used incorrectly
+export const supabaseBrowser: ReturnType<typeof createSupabaseBrowserClient> | null = 
+  typeof window !== 'undefined' ? getOrCreateBrowserClient() : null;
 
 // Helper function for backward compatibility (throws if used incorrectly)
 export const getBrowserClient = () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
-import { supabaseBrowser } from "@/lib/supabase";
+import { getSupabaseBrowser } from "@/lib/supabase";
 import { useTenantStore } from "@/lib/tenantStore";
 import { Session } from "@supabase/supabase-js";
 
@@ -71,13 +71,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!listenerRegisteredRef.current) {
       listenerRegisteredRef.current = true;
       
-      if (!supabaseBrowser) {
-        console.error('Supabase browser client not available');
-        return;
-      }
-      
-      const { data: { subscription } } =
-        supabaseBrowser.auth.onAuthStateChange((event: any, session: any) => {
+      try {
+        const supabase = getSupabaseBrowser();
+        const { data: { subscription } } =
+          supabase.auth.onAuthStateChange((event: any, session: any) => {
           console.log("AUTH EVENT:", event, !!session);
           console.log('AUTH CONTEXT: Event received, current isLoading:', isLoading, 'current user:', !!userRef.current);
 
@@ -139,19 +136,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('AUTH CONTEXT: Setting isLoading to false after setting user');
           setIsLoading(false);
         });
-
-      return () => {
-        console.log('AUTH CONTEXT: Unsubscribing from auth state change');
-        listenerRegisteredRef.current = false;
-        subscription.unsubscribe();
-      };
+        return () => {
+          console.log('AUTH CONTEXT: Unsubscribing from auth state change');
+          listenerRegisteredRef.current = false;
+          subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.error('AUTH CONTEXT: Error in auth setup:', error);
+        setIsLoading(false);
+      }
     }
   }, []); // Empty dependency array - should run only once
 
   const logout = async () => {
     useTenantStore.getState().setTenantId(null);
-    if (supabaseBrowser) {
-      await supabaseBrowser.auth.signOut();
+    try {
+      const supabase = getSupabaseBrowser();
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error during logout:', error);
     }
   };
 
