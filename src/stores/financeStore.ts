@@ -95,10 +95,11 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
       if (safes !== null) {
         set({ safes, loading: false });
       } else {
-        set({ loading: false });
+        // API call failed, keep safes as empty array
+        set({ safes: [], loading: false });
       }
     } catch (error) {
-      set({ error: 'Failed to fetch safes', loading: false });
+      set({ error: 'Failed to fetch safes', loading: false, safes: [] });
     }
   },
 

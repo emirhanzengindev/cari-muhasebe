@@ -131,10 +131,11 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
           }));
           set({ products: transformedProducts, loading: false });
         } else {
-          set({ loading: false });
+          // API call failed, keep products as empty array
+          set({ products: [], loading: false });
         }
       } catch (error: any) {
-        set({ error: error.message || 'Failed to fetch products', loading: false });
+        set({ error: error.message || 'Failed to fetch products', loading: false, products: [] });
       }
     },
 

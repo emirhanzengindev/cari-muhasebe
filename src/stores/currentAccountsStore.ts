@@ -92,10 +92,11 @@ export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) =>
       if (accounts !== null) {
         set({ accounts, loading: false });
       } else {
-        set({ loading: false });
+        // API call failed, keep accounts as empty array
+        set({ accounts: [], loading: false });
       }
     } catch (error) {
-      set({ error: 'Failed to fetch accounts', loading: false });
+      set({ error: 'Failed to fetch accounts', loading: false, accounts: [] });
     }
   },
 

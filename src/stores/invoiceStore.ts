@@ -92,10 +92,11 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
       if (invoices !== null) {
         set({ invoices, loading: false });
       } else {
-        set({ loading: false });
+        // API call failed, keep invoices as empty array
+        set({ invoices: [], loading: false });
       }
     } catch (error) {
-      set({ error: 'Failed to fetch invoices', loading: false });
+      set({ error: 'Failed to fetch invoices', loading: false, invoices: [] });
     }
   },
 
