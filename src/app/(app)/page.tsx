@@ -15,11 +15,25 @@ import {
   Plus,
   TrendingUp
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+
 export default function Dashboard() {
-  const user = { name: "Demo User" }; // Mock user
+  const { user, isLoading } = useAuth();
   
   // Memoize the component to prevent unnecessary re-renders
   console.log('DASHBOARD: Rendering with user:', !!user);
+  
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Giriş durumu kontrol ediliyor...</p>
+        </div>
+      </div>
+    );
+  }
   
   // If user is not authenticated, show landing page
   if (!user) {
@@ -336,9 +350,9 @@ export default function Dashboard() {
               <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-600">Hoş geldiniz, {user?.name || 'Kullanıcı'}!</span>
+              <span className="text-gray-600">Hoş geldiniz, {user?.email || user?.name || 'Kullanıcı'}!</span>
               <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium">
-                {user?.name?.charAt(0) || 'U'}
+                {(user?.name?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()}
               </div>
             </div>
           </div>
