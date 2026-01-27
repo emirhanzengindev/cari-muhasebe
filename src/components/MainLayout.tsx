@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 import TenantSwitcher from "@/components/TenantSwitcher";
 
@@ -14,9 +15,21 @@ export default function MainLayout({
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false); // Mobilde kapalı başlasın
   const [isMobile, setIsMobile] = useState(false);
-  const user = { name: "Demo User" }; // Mock user
-  const logout = () => console.log("Logout disabled"); // Mock logout
-  const isLoading = false; // Mock loading
+  const { user, isLoading, logout } = useAuth(); // Get real user from auth context
+  
+  // If user is not authenticated, don't render the layout
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    // Redirect to sign in - in practice this would be handled by a higher-level auth guard
+    return null;
+  }
 
   // Mobil cihaz kontrolü
   useEffect(() => {
@@ -114,8 +127,8 @@ export default function MainLayout({
                 </div>
                 {sidebarOpen && (
                   <div className="ml-3">
-                    <p className="text-sm font-medium">{user?.name || "Kullanıcı"}</p>
-                    <p className="text-xs text-gray-500">İşletme Adı</p>
+                    <p className="text-sm font-medium">{user?.email || user?.name || "Kullanıcı"}</p>
+                    <p className="text-xs text-gray-500">Hesabınız</p>
                   </div>
                 )}
               </div>
@@ -172,7 +185,7 @@ export default function MainLayout({
               <div className="relative">
                 <button className="flex items-center text-sm rounded-full focus:outline-none">
                   <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
-                    {user?.name?.charAt(0) || "U"}
+                    {(user?.name?.charAt(0) || user?.email?.charAt(0) || "U").toUpperCase()}
                   </div>
                 </button>
               </div>
