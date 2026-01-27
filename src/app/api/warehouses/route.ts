@@ -2,13 +2,13 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest } from 'next/server';
 import { headers, cookies } from 'next/headers';
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
     console.log('DEBUG: GET /api/warehouses called')
 
-    const supabase = createServerSupabaseClient()
+    const supabase = createServerSupabaseClientWithRequest(request)
 
     const {
       data: { user },
@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase
       .from('warehouses')
       .select('*')
+      .eq('tenant_id', user.id)  // Filter by authenticated user's tenant ID
 
     if (error) {
       console.error('SUPABASE ERROR DETAILS (GET):', {
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
   try {
     const warehouseData = await request.json();
     
-    const supabase = createServerSupabaseClient();
+    const supabase = createServerSupabaseClientWithRequest(request);
     
     const {
       data: { user }

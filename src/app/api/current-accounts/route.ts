@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
     const { data, error, status } = await supabase
       .from('current_accounts')
       .select('*')
+      .eq('tenant_id', user.id)  // Filter by authenticated user's tenant ID
 
     // If table doesn't exist, return empty array
     if (error && status === 404) {
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    console.log('DEBUG: Successfully fetched', data?.length || 0, 'current accounts');
+    console.log('DEBUG: Successfully fetched', data?.length || 0, 'current accounts for tenant', user.id);
     return Response.json(data);
   } catch (error) {
     console.error('Error fetching current accounts:', error);

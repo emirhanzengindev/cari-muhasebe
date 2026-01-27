@@ -2,11 +2,11 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest } from 'next/server';
 import { headers, cookies } from 'next/headers';
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient()
+    const supabase = createServerSupabaseClientWithRequest(request)
 
     const {
       data: { user },
@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
     const { data, error, status } = await supabase
       .from('invoice_items')
       .select('*')
+      .eq('tenant_id', user.id)  // Filter by authenticated user's tenant ID
 
     // If table doesn't exist, return empty array
     if (error && status === 404) {
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
   try {
     const invoiceItemData = await request.json();
     
-    const supabase = createServerSupabaseClient();
+    const supabase = createServerSupabaseClientWithRequest(request);
     
     const {
       data: { user }
