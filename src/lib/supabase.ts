@@ -12,13 +12,23 @@ if (!supabaseAnonKey) {
   throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not defined');
 }
 
-// Create browser client for Next.js App Router
-export const createBrowserClient = () => {
+// SINGLETON BROWSER CLIENT - Used everywhere in frontend
+let browserClient: ReturnType<typeof createSupabaseBrowserClient> | null = null;
+
+export const getBrowserClient = () => {
   if (typeof window === 'undefined') {
-    throw new Error('createBrowserClient can only be called in the browser');
+    throw new Error('getBrowserClient can only be called in the browser');
   }
-  return createSupabaseBrowserClient(supabaseUrl, supabaseAnonKey);
+  
+  if (!browserClient) {
+    browserClient = createSupabaseBrowserClient(supabaseUrl, supabaseAnonKey);
+  }
+  
+  return browserClient;
 };
+
+// Legacy alias for backward compatibility
+export const createBrowserClient = getBrowserClient;
 
 // Default client for server-side operations
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
