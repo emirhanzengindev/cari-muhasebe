@@ -36,14 +36,7 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   }
     
   console.log('DEBUG: Headers being sent:', headers);
-  
-  // Manually set session cookie for server-side authentication
-  if (session?.access_token) {
-    document.cookie = `sb-access-token=${session.access_token}; path=/; SameSite=Lax; Secure`;
-    document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; SameSite=Lax; Secure`;
-    console.log('DEBUG: Session cookies manually set');
-  }
-  
+    
   // Add Content-Type for methods that typically have a body
   const method = options.method?.toUpperCase();
   if (method === 'POST' || method === 'PUT' || method === 'PATCH' || (method === undefined && options.body !== undefined)) {
