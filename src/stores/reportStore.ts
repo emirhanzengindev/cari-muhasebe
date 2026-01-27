@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Product, CurrentAccount } from '@/types';
 import { useTenantStore } from '@/lib/tenantStore';
+import { createBrowserClient } from '@/lib/supabase';
 
 interface SalesByProduct {
   product: Product;
@@ -53,6 +54,16 @@ export const useReportStore = create<ReportState>((set, get) => ({
         return;
       }
       
+      // Get Supabase session and set cookies
+      const supabase = createBrowserClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.access_token) {
+        document.cookie = `sb-access-token=${session.access_token}; path=/; SameSite=Lax; Secure`;
+        document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; SameSite=Lax; Secure`;
+        console.log('DEBUG: Session cookies manually set for report API');
+      }
+      
       const response = await fetch('/api/reports/sales-by-product', {
         credentials: 'include',
       });
@@ -79,6 +90,16 @@ export const useReportStore = create<ReportState>((set, get) => ({
         return;
       }
       
+      // Get Supabase session and set cookies
+      const supabase = createBrowserClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.access_token) {
+        document.cookie = `sb-access-token=${session.access_token}; path=/; SameSite=Lax; Secure`;
+        document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; SameSite=Lax; Secure`;
+        console.log('DEBUG: Session cookies manually set for report API');
+      }
+      
       const response = await fetch('/api/reports/monthly-profit-loss', {
         credentials: 'include',
       });
@@ -103,6 +124,16 @@ export const useReportStore = create<ReportState>((set, get) => ({
         console.warn('WARNING: Tenant ID not available, skipping request for report');
         set({ loading: false });
         return;
+      }
+      
+      // Get Supabase session and set cookies
+      const supabase = createBrowserClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.access_token) {
+        document.cookie = `sb-access-token=${session.access_token}; path=/; SameSite=Lax; Secure`;
+        document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; SameSite=Lax; Secure`;
+        console.log('DEBUG: Session cookies manually set for report API');
       }
       
       const response = await fetch('/api/reports/account-balances', {
