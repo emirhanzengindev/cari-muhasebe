@@ -31,8 +31,8 @@ export default function NewInvoice() {
     fetchProducts();
   }, [fetchAccounts, fetchProducts]);
 
-  const customerAccounts = accounts.filter(account => account.accountType === "CUSTOMER" && account.isActive);
-  const supplierAccounts = accounts.filter(account => account.accountType === "SUPPLIER" && account.isActive);
+  const customerAccounts = accounts?.filter(account => account.accountType === "CUSTOMER" && account.isActive) || [];
+  const supplierAccounts = accounts?.filter(account => account.accountType === "SUPPLIER" && account.isActive) || [];
 
   const handleAddItem = () => {
     setItems([...items, { productId: "", quantity: 1, unitPrice: 0 }]);

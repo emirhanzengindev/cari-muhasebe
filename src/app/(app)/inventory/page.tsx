@@ -50,7 +50,7 @@ export default function Inventory() {
     }
   }, [tenantId, fetchProducts, fetchCategories, fetchWarehouses]);
 
-  const filteredProducts = products.filter(product => {
+  const filteredProducts = products?.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (product.barcode && product.barcode.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -58,7 +58,7 @@ export default function Inventory() {
     if (filter === "ALL") return matchesSearch;
     if (filter === "LOW_STOCK") return matchesSearch && Number(product.stockQuantity || product.stock_quantity || 0) <= Number(product.criticalLevel || product.critical_level || 0);
     return matchesSearch;
-  });
+  }) || [];
 
   const getCategoryName = (categoryId: string | undefined) => {
     if (!categoryId) return "Uncategorized";

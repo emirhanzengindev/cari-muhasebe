@@ -16,8 +16,8 @@ export default function Invoices() {
     fetchAccounts();
   }, [fetchInvoices, fetchAccounts]);
 
-  const filteredInvoices = invoices.filter(invoice => {
-    const account = accounts.find(acc => acc.id === invoice.accountId);
+  const filteredInvoices = invoices?.filter(invoice => {
+    const account = accounts?.find(acc => acc.id === invoice.accountId);
     const matchesSearch = invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (account && account.name.toLowerCase().includes(searchTerm.toLowerCase()));
     
@@ -26,7 +26,8 @@ export default function Invoices() {
     if (filter === "PURCHASE") return matchesSearch && invoice.invoiceType === "PURCHASE";
     if (filter === "DRAFT") return matchesSearch && invoice.isDraft;
     return matchesSearch;
-  });
+  }) || [];
+
 
   const getAccountName = (accountId: string) => {
     const account = accounts.find(acc => acc.id === accountId);

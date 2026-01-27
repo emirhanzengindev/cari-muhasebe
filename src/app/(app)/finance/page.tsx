@@ -189,8 +189,8 @@ export default function Finance() {
                 <div className="ml-4">
                   <h3 className="text-sm font-medium text-gray-500">Toplam Alacaklar</h3>
                   <p className="text-2xl font-semibold text-gray-900">
-                    {formatCurrency(accounts.filter(a => a.accountType === 'CUSTOMER')
-                      .reduce((sum, account) => sum + (account.balance > 0 ? account.balance : 0), 0))}
+                    {formatCurrency(accounts?.filter(a => a.accountType === 'CUSTOMER')
+                      .reduce((sum, account) => sum + (account.balance > 0 ? account.balance : 0), 0) || 0)}
                   </p>
                 </div>
               </div>
@@ -207,8 +207,8 @@ export default function Finance() {
                 <div className="ml-4">
                   <h3 className="text-sm font-medium text-gray-500">Toplam Borçlar</h3>
                   <p className="text-2xl font-semibold text-gray-900">
-                    {formatCurrency(Math.abs(accounts.filter(a => a.accountType === 'SUPPLIER')
-                      .reduce((sum, account) => sum + (account.balance < 0 ? account.balance : 0), 0)))}
+                    {formatCurrency(Math.abs(accounts?.filter(a => a.accountType === 'SUPPLIER')
+                      .reduce((sum, account) => sum + (account.balance < 0 ? account.balance : 0), 0) || 0))}
                   </p>
                 </div>
               </div>

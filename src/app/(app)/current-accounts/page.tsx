@@ -12,14 +12,14 @@ export default function CurrentAccounts() {
     fetchAccounts();
   }, [fetchAccounts]);
 
-  const filteredAccounts = accounts.filter(account => {
+  const filteredAccounts = accounts?.filter(account => {
     if (filter === "ALL") return true;
     if (filter === "ACTIVE") return account.isActive;
     if (filter === "PASSIVE") return !account.isActive;
     if (filter === "CUSTOMERS") return account.accountType === "CUSTOMER";
     if (filter === "SUPPLIERS") return account.accountType === "SUPPLIER";
     return true;
-  });
+  }) || [];
 
   if (loading) {
     return (
