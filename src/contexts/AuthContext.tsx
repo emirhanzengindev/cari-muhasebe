@@ -50,8 +50,6 @@ function buildUser(session: Session): User {
   return userData;
 }
 
-let mountCounter = 0;
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [tenantId, setTenantId] = useState<string | null>(null);
@@ -60,8 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Track if listener is already registered to prevent duplicates
   const listenerRegisteredRef = useRef(false);
   
-  mountCounter++;
-  console.log('AuthProvider mounted, isLoading:', isLoading, 'mount count:', mountCounter, 'stack:', new Error().stack);
+  console.log('AuthProvider mounted, isLoading:', isLoading);
   
   // Debug: Log when user state changes
   useEffect(() => {

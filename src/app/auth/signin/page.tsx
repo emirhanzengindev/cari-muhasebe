@@ -4,12 +4,12 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createBrowserClient } from "@/lib/supabase";
-import { useAuth } from "@/contexts/AuthContext";
 
 export default function SignIn() {
   console.log('SIGNIN PAGE: Component mounted');
   const router = useRouter();
-  const { user, isLoading: authIsLoading } = useAuth();
+  const [user, setUser] = useState(null); // Mock user state
+  const [authIsLoading, setAuthIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -42,28 +42,20 @@ export default function SignIn() {
     }
 
     console.log('LOGIN SUCCESS, SESSION:', data.session);
-    console.log('SIGNIN PAGE: Authentication completed, useEffect will handle redirect');
+    console.log('SIGNIN PAGE: Authentication completed, redirecting to /');
+    
+    // Set mock user state
+    setUser({ email } as any);
+    
+    // Redirect to homepage
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
     
     setLoading(false);
   };
 
-  useEffect(() => {
-    console.log('SIGNIN PAGE EFFECT TRIGGERED', { authIsLoading, user: !!user });
-    // Redirect to homepage when user is authenticated
-    // According to auth redirect discipline: if (!isLoading && user) { router.replace('/') }
-    if (!authIsLoading && user && !hasRedirected.current) {
-      console.log('SIGNIN PAGE: User authenticated, executing redirect to /');
-      hasRedirected.current = true;
-      // Use window.location directly as the most reliable redirect method
-      if (typeof window !== 'undefined') {
-        window.location.href = '/';
-      }
-    } else if (!authIsLoading && !user) {
-      console.log('SIGNIN PAGE: Auth loaded but no user, staying on signin page');
-    } else {
-      console.log('SIGNIN PAGE: Waiting for auth state', { authIsLoading, user: !!user });
-    }
-  }, [authIsLoading, user, router]);
+  // AuthProvider disabled - no auth state to monitor
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
