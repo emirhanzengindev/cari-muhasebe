@@ -7,6 +7,7 @@ import { createBrowserClient } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function SignIn() {
+  console.log('SIGNIN PAGE: Component mounted');
   const router = useRouter();
   const { user, isLoading: authIsLoading } = useAuth();
   const [email, setEmail] = useState("");
@@ -29,7 +30,8 @@ export default function SignIn() {
     });
 
     console.log("LOGIN RESULT:", data);
-    console.log("LOGIN ERROR:", error);
+    console.log("LOGIN ERROR:", error);+
+    
 
     if (error) {
       console.error("LOGIN ERROR DETAILS:", error);

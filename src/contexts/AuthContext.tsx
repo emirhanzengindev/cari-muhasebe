@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const listenerRegisteredRef = useRef(false);
   
   mountCounter++;
-  console.log('AuthProvider mounted, isLoading:', isLoading, 'mount count:', mountCounter);
+  console.log('AuthProvider mounted, isLoading:', isLoading, 'mount count:', mountCounter, 'stack:', new Error().stack);
   
   // Debug: Log when user state changes
   useEffect(() => {

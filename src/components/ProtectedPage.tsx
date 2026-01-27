@@ -17,7 +17,7 @@ export default function ProtectedPage({ children }: ProtectedPageProps) {
     // Only redirect when we're sure there's no user and loading is complete
     // And prevent multiple redirects
     if (!isLoading && !user && !hasRedirected.current) {
-      console.log('PROTECTED PAGE: No user found, redirecting to signin');
+      console.log('PROTECTED PAGE: No user found, redirecting to signin', { isLoading, user, hasRedirected: hasRedirected.current });
       hasRedirected.current = true;
       router.replace('/auth/signin');
     }
