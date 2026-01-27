@@ -12,31 +12,28 @@ if (!supabaseAnonKey) {
   throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not defined');
 }
 
-// TRULY GLOBAL SINGLETON BROWSER CLIENT - Used everywhere in frontend
-// Using globalThis to ensure true singleton across module reloads
-const GLOBAL_KEY = '__SUPABASE_BROWSER_CLIENT__';
+// SINGLE EXPORTED BROWSER CLIENT - Created once, used everywhere
+// This eliminates React Strict Mode double-mounting issues
 
-type BrowserClientType = ReturnType<typeof createSupabaseBrowserClient>;
+let browserClient: ReturnType<typeof createSupabaseBrowserClient> | null = null;
 
-declare global {
-  var __SUPABASE_BROWSER_CLIENT__: BrowserClientType | undefined;
+// Create the client immediately when module is imported (but only in browser)
+if (typeof window !== 'undefined' && !browserClient) {
+  browserClient = createSupabaseBrowserClient(supabaseUrl, supabaseAnonKey);
 }
 
-export const getBrowserClient = (): BrowserClientType => {
+// Export the single client instance
+export const supabaseBrowser = browserClient;
+
+// Helper function for backward compatibility (throws if used incorrectly)
+export const getBrowserClient = () => {
   if (typeof window === 'undefined') {
     throw new Error('getBrowserClient can only be called in the browser');
   }
-  
-  // Check if we already have a client in global scope
-  if (globalThis.__SUPABASE_BROWSER_CLIENT__) {
-    return globalThis.__SUPABASE_BROWSER_CLIENT__;
+  if (!browserClient) {
+    throw new Error('Browser client not initialized');
   }
-  
-  // Create new client and store in global scope
-  const client = createSupabaseBrowserClient(supabaseUrl, supabaseAnonKey);
-  globalThis.__SUPABASE_BROWSER_CLIENT__ = client;
-  
-  return client;
+  return browserClient;
 };
 
 // Legacy alias for backward compatibility

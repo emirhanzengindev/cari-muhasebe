@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
-import { getBrowserClient } from "@/lib/supabase";
+import { supabaseBrowser } from "@/lib/supabase";
 import { useTenantStore } from "@/lib/tenantStore";
 import { Session } from "@supabase/supabase-js";
 
@@ -71,9 +71,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!listenerRegisteredRef.current) {
       listenerRegisteredRef.current = true;
       
-      const supabase = getBrowserClient();
+      if (!supabaseBrowser) {
+        console.error('Supabase browser client not available');
+        return;
+      }
+      
       const { data: { subscription } } =
-        supabase.auth.onAuthStateChange((event: any, session: any) => {
+        supabaseBrowser.auth.onAuthStateChange((event: any, session: any) => {
           console.log("AUTH EVENT:", event, !!session);
           console.log('AUTH CONTEXT: Event received, current isLoading:', isLoading, 'current user:', !!userRef.current);
 
@@ -146,8 +150,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     useTenantStore.getState().setTenantId(null);
-    const supabase = getBrowserClient();
-    await supabase.auth.signOut();
+    if (supabaseBrowser) {
+      await supabaseBrowser.auth.signOut();
+    }
   };
 
   return (

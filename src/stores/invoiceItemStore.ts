@@ -13,7 +13,7 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   }
   
   // Get Supabase session token
-  const supabase = getBrowserClient();
+  const supabase = supabaseBrowser;
   const { data: { session } } = await supabase.auth.getSession();
     
   // Conditionally add Content-Type header only for requests that have a body

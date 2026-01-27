@@ -17,7 +17,7 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   }
   
   // Get Supabase session token
-  const supabase = getBrowserClient();
+  const supabase = supabaseBrowser;
   const { data: { session } } = await supabase.auth.getSession();
   console.log('DEBUG: Session retrieved:', session ? 'exists' : 'null');
   if (session) {

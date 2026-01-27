@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getBrowserClient } from "@/lib/supabase";
+import { supabaseBrowser } from "@/lib/supabase";
 
 export default function SignIn() {
   console.log('SIGNIN PAGE: Component mounted');
@@ -23,7 +23,7 @@ export default function SignIn() {
 
     console.log('LOGIN ATTEMPT:', { email });
     
-    const supabase = getBrowserClient();
+    const supabase = supabaseBrowser;
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
