@@ -9,6 +9,12 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
     console.log('DEBUG: Raw tenantId from store in invoiceStore:', tenantId);
   
   console.log('DEBUG: makeApiRequest called for endpoint:', endpoint);
+  // Manually set session cookie for server-side authentication
+  if (session?.access_token) {
+    document.cookie = `sb-access-token=` + session.access_token + `; path=/; SameSite=Lax; Secure`;
+    document.cookie = `sb-refresh-token=` + session.refresh_token + `; path=/; SameSite=Lax; Secure`;
+    console.log('DEBUG: Session cookies manually set');
+  }
   console.log('DEBUG: Retrieved tenantId:', tenantId);
   
   if (!tenantId) {

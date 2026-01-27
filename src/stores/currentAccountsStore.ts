@@ -22,6 +22,7 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   console.log('DEBUG: Session retrieved:', session ? 'exists' : 'null');
   if (session) {
     console.log('DEBUG: Session user:', session.user?.email);
+    console.log('DEBUG: Session access_token exists:', !!session.access_token);
   }
     
   // Conditionally add Content-Type header only for requests that have a body
@@ -35,6 +36,13 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   }
     
   console.log('DEBUG: Headers being sent:', headers);
+  
+  // Manually set session cookie for server-side authentication
+  if (session?.access_token) {
+    document.cookie = `sb-access-token=${session.access_token}; path=/; SameSite=Lax; Secure`;
+    document.cookie = `sb-refresh-token=${session.refresh_token}; path=/; SameSite=Lax; Secure`;
+    console.log('DEBUG: Session cookies manually set');
+  }
   
   // Add Content-Type for methods that typically have a body
   const method = options.method?.toUpperCase();
