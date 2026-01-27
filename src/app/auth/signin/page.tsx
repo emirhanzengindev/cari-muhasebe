@@ -30,7 +30,7 @@ export default function SignIn() {
     });
 
     console.log("LOGIN RESULT:", data);
-    console.log("LOGIN ERROR:", error);+
+    console.log("LOGIN ERROR:", error);
     
 
     if (error) {
