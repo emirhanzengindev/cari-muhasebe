@@ -2,13 +2,13 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest } from 'next/server';
 import { headers, cookies } from 'next/headers';
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
     console.log('DEBUG: GET /api/current-accounts called')
 
-    const supabase = createServerSupabaseClient()
+    const supabase = createServerSupabaseClientWithRequest(request)
     
     // Debug request
     console.log('DEBUG: API request received');
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
   try {
     const accountData = await request.json();
     
-    const supabase = createServerSupabaseClient();
+    const supabase = createServerSupabaseClientWithRequest(request);
     
     const {
       data: { user }

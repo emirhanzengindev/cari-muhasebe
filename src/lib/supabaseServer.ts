@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { NextRequest } from 'next/server'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
@@ -64,9 +65,53 @@ export function createServerSupabaseClient() {
   );
 }
 
+// Function to create a Supabase client for API routes with request context
+export function createServerSupabaseClientWithRequest(request: NextRequest) {
+  const headers = new Map(Object.entries(request.headers));
+  
+  return createServerClient(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
+      global: {
+        headers: {
+          Authorization: headers.get('authorization') || '',
+        },
+      },
+      cookies: {
+        get(name: string) {
+          const cookieStore = cookies();
+          const syncCookieStore = cookieStore as any;
+          return syncCookieStore.get(name)?.value;
+        },
+        set() {},
+        remove() {},
+      },
+    }
+  );
+}
+
 // Function to extract tenant ID from Supabase auth
 export async function getTenantIdFromJWT() {
   const supabase = createServerSupabaseClient();
+
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    console.error('SUPABASE AUTH ERROR:', error);
+    return null;
+  }
+
+  // Always use user.id as tenantId since it's the correct UUID
+  return user.id;
+}
+
+// Function to extract tenant ID from Supabase auth with request context
+export async function getTenantIdFromJWTWithRequest(request: NextRequest) {
+  const supabase = createServerSupabaseClientWithRequest(request);
 
   const {
     data: { user },

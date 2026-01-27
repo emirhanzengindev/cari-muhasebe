@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer'
+import { createServerSupabaseClientWithRequest, getTenantIdFromJWTWithRequest } from '@/lib/supabaseServer'
 
 type Params = {
   id: string
@@ -10,13 +10,13 @@ export async function GET(
   context: { params: Promise<Params> }
 ) {
   const { id } = await context.params
-  const tenantId = await getTenantIdFromJWT()
+  const tenantId = await getTenantIdFromJWTWithRequest(request)
 
   if (!tenantId) {
     return NextResponse.json({ error: 'Tenant ID missing' }, { status: 401 })
   }
 
-  const supabase = createServerSupabaseClient()
+  const supabase = createServerSupabaseClientWithRequest(request)
 
   const { data, error } = await supabase
     .from('current_accounts')
@@ -38,13 +38,13 @@ export async function PUT(
 ) {
   const { id } = await context.params
   const body = await request.json()
-  const tenantId = await getTenantIdFromJWT()
+  const tenantId = await getTenantIdFromJWTWithRequest(request)
 
   if (!tenantId) {
     return NextResponse.json({ error: 'Tenant ID missing' }, { status: 401 })
   }
 
-  const supabase = createServerSupabaseClient()
+  const supabase = createServerSupabaseClientWithRequest(request)
 
   const { data, error } = await supabase
     .from('current_accounts')
@@ -66,13 +66,13 @@ export async function DELETE(
   context: { params: Promise<Params> }
 ) {
   const { id } = await context.params
-  const tenantId = await getTenantIdFromJWT()
+  const tenantId = await getTenantIdFromJWTWithRequest(request)
 
   if (!tenantId) {
     return NextResponse.json({ error: 'Tenant ID missing' }, { status: 401 })
   }
 
-  const supabase = createServerSupabaseClient()
+  const supabase = createServerSupabaseClientWithRequest(request)
 
   const { error } = await supabase
     .from('current_accounts')
