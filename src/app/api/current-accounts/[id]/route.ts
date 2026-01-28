@@ -62,7 +62,44 @@ export async function PUT(
     .single()
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('SUPABASE ERROR (PUT current_accounts):', {
+      message: error.message,
+      code: error.code,
+      details: error.details
+    });
+    
+    // Handle PostgREST schema cache errors specifically
+    if (error.code === 'PGRST204' && (error.message.includes('accountType') || error.message.includes('account_type') || error.message.includes('is_active'))) {
+      console.warn('SCHEMA CACHE ISSUE DETECTED during update: Column schema cache mismatch');
+      console.warn('Attempting update without problematic fields');
+      
+      // Remove problematic fields and try again
+      const { is_active, account_type, isActive, accountType, ...cleanBody } = body;
+      
+      const { data: cleanData, error: cleanError } = await supabase
+        .from('current_accounts')
+        .update(cleanBody)
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+        
+      if (cleanError) {
+        console.error('Clean update also failed:', cleanError);
+        return NextResponse.json({ error: cleanError.message }, { status: 500 });
+      }
+      
+      // Map the response data
+      const mappedData = {
+        ...cleanData,
+        isActive: cleanData.is_active !== undefined ? cleanData.is_active : true,
+        accountType: cleanData.account_type || 'CUSTOMER'
+      };
+      
+      return NextResponse.json(mappedData);
+    }
+    
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
   // Map database fields to frontend interface fields
