@@ -84,6 +84,21 @@ export async function GET(request: NextRequest) {
         status: status
       });
       
+      // Handle PostgREST schema cache errors specifically
+      if (error.code === 'PGRST204' && error.message.includes('address')) {
+        console.warn('SCHEMA CACHE ISSUE DETECTED: Address column schema cache mismatch');
+        console.warn('This is a known PostgREST cache issue that resolves automatically');
+        // Return a more user-friendly error
+        return Response.json(
+          { 
+            error: 'Temporary service issue - please try again in a moment',
+            code: 'SCHEMA_CACHE_REFRESH',
+            retryable: true
+          },
+          { status: 503 }
+        );
+      }
+      
       // Handle specific error cases
       if (error.code === '42P01' || error.message.toLowerCase().includes('does not exist')) {
         // Table does not exist - return empty array instead of error
