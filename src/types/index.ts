@@ -4,14 +4,13 @@ export interface CurrentAccount {
   email?: string;
   phone?: string;
   address?: string;
-  taxOffice?: string;
-  taxNumber?: string;
-  isActive: boolean;
-  accountType: 'CUSTOMER' | 'SUPPLIER';
+  tax_office?: string;
+  tax_number?: string;
+  company?: string;
   balance: number;
-  tenantId: string;
-  createdAt: Date;
-  updatedAt: Date;
+  tenant_id: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface Product {

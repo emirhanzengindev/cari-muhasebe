@@ -67,3 +67,18 @@ model StockMovement {
   // Relations
   product Product @relation(fields: [product_id], references: [id])
 }
+
+model CurrentAccount {
+  id          String   @id @default(uuid())
+  name        String
+  email       String?
+  phone       String?
+  address     String?
+  tax_number  String?
+  tax_office  String?
+  company     String?
+  balance     Float    @default(0)
+  tenant_id   String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+}
