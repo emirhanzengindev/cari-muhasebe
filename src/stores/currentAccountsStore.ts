@@ -76,8 +76,8 @@ interface CurrentAccountState {
   
   // Account actions
   fetchAccounts: () => Promise<void>;
-  addAccount: (account: Omit<CurrentAccount, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
-  updateAccount: (id: string, account: Partial<CurrentAccount>) => Promise<void>;
+  addAccount: (account: Omit<CurrentAccount, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  updateAccount: (id: string, account: Partial<Omit<CurrentAccount, 'created_at' | 'updated_at'>>) => Promise<void>;
   deleteAccount: (id: string) => Promise<void>;
   toggleAccountStatus: (id: string) => Promise<void>;
   updateAccountBalance: (id: string, amount: number, type: 'SALES' | 'PURCHASE') => Promise<void>;

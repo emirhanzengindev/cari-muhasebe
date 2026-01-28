@@ -56,9 +56,15 @@ export default function NewAccount() {
       }
       
       await addAccount({
-        ...formData,
-        balance: 0, // Yeni hesapların bakiyesi 0 olur
-        tenantId
+        name: formData.name,
+        email: formData.email || undefined,
+        phone: formData.phone || undefined,
+        address: formData.address || undefined,
+        tax_office: formData.taxOffice || undefined,
+        tax_number: formData.taxNumber || undefined,
+        company: undefined, // Optional field
+        balance: 0,
+        tenant_id: tenantId
       });
       
       router.push("/current-accounts");

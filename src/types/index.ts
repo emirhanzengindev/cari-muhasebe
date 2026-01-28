@@ -11,6 +11,9 @@ export interface CurrentAccount {
   tenant_id: string;
   created_at: Date;
   updated_at: Date;
+  // Optional UI fields
+  isActive?: boolean;
+  accountType?: 'CUSTOMER' | 'SUPPLIER';
 }
 
 export interface Product {
