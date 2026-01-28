@@ -88,6 +88,11 @@ export async function GET(request: NextRequest) {
       if (error.code === 'PGRST204' && (error.message.includes('address') || error.message.includes('accountType') || error.message.includes('account_type'))) {
         console.warn('SCHEMA CACHE ISSUE DETECTED: Column schema cache mismatch');
         console.warn('Attempting progressive fallback strategy');
+        
+        // Provide specific error message for address column issue
+        if (error.message.includes('address')) {
+          console.warn('ADDRESS COLUMN SCHEMA CACHE ISSUE: The address column exists in the database but PostgREST schema cache is outdated. This will be resolved by the migration.');
+        }
             
         // Progressive fallback strategy:
             
@@ -177,6 +182,9 @@ export async function GET(request: NextRequest) {
         }
                 
         // Return an empty array as the ultimate fallback
+        // This indicates that the schema cache issue is preventing access to the data
+        // The migration will resolve this issue
+        console.warn('ULTIMATE FALLBACK: Returning empty array due to schema cache issue. This will be resolved by the migration.');
         return Response.json([]);
       }
       
