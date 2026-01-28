@@ -54,6 +54,3 @@ export const getBrowserClient = () => {
 
 // Legacy alias for backward compatibility
 export const createBrowserClient = getBrowserClient;
-
-// Default client for server-side operations
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);

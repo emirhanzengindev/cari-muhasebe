@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(req: NextRequest) {
@@ -13,6 +14,18 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Create server client (auth operations don't require cookie handling)
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll: () => [],
+          setAll: () => {},
+        },
+      }
+    );
 
     // Supabase'te yeni kullanıcı oluştur
     const { data, error } = await supabase.auth.signUp({

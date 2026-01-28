@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
     // Execute the actual query
     const { data, error, status } = await supabase
       .from('current_accounts')
-      .select('*')
+      .select('id, name, email, phone, address, tax_number, tax_office, company, balance, tenant_id, created_at, updated_at')
       .eq('tenant_id', user.id);  // Filter by authenticated user's tenant ID
     console.log('DEBUG: Query executed, error:', !!error, 'status:', status);
     
