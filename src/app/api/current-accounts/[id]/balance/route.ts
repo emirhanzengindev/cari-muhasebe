@@ -46,7 +46,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data);
+    // Map database fields to frontend interface fields
+    const mappedData = {
+      ...data,
+      created_at: new Date(data.created_at),
+      updated_at: new Date(data.updated_at),
+      isActive: data.is_active !== undefined ? data.is_active : true,
+      accountType: data.account_type || 'CUSTOMER'
+    };
+
+    return NextResponse.json(mappedData);
   } catch (error) {
     console.error('Error updating account balance:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

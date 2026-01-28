@@ -92,6 +92,8 @@ export async function PUT(
       // Map the response data
       const mappedData = {
         ...cleanData,
+        created_at: new Date(cleanData.created_at),
+        updated_at: new Date(cleanData.updated_at),
         isActive: cleanData.is_active !== undefined ? cleanData.is_active : true,
         accountType: cleanData.account_type || 'CUSTOMER'
       };
@@ -105,6 +107,8 @@ export async function PUT(
   // Map database fields to frontend interface fields
   const mappedData = {
     ...data,
+    created_at: new Date(data.created_at),
+    updated_at: new Date(data.updated_at),
     isActive: data.is_active !== undefined ? data.is_active : true,
     accountType: data.account_type || 'CUSTOMER'
   };

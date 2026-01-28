@@ -108,6 +108,8 @@ export async function GET(request: NextRequest) {
           // Map database fields to frontend interface fields
           const mappedData = minimalData?.map(account => ({
             ...account,
+            created_at: (account as any).created_at ? new Date((account as any).created_at) : new Date(),
+            updated_at: (account as any).updated_at ? new Date((account as any).updated_at) : new Date(),
             isActive: account.is_active !== undefined ? account.is_active : true,
             accountType: account.account_type || 'CUSTOMER'
           })) || [];
@@ -126,6 +128,8 @@ export async function GET(request: NextRequest) {
           // Map database fields to frontend interface fields
           const mappedData = coreData?.map(account => ({
             ...account,
+            created_at: new Date(account.created_at),
+            updated_at: (account as any).updated_at ? new Date((account as any).updated_at) : new Date(),
             isActive: account.is_active !== undefined ? account.is_active : true,
             accountType: account.account_type || 'CUSTOMER'
           })) || [];
@@ -144,6 +148,8 @@ export async function GET(request: NextRequest) {
           // Map database fields to frontend interface fields
           const mappedData = fullNoAddressData?.map(account => ({
             ...account,
+            created_at: new Date(account.created_at),
+            updated_at: new Date(account.updated_at),
             isActive: account.is_active !== undefined ? account.is_active : true,
             accountType: account.account_type || 'CUSTOMER'
           })) || [];
@@ -172,6 +178,8 @@ export async function GET(request: NextRequest) {
             // Map to include default values for missing fields
             const mappedData = finalData.map(account => ({
               ...account,
+              created_at: new Date(account.created_at),
+              updated_at: new Date(account.updated_at),
               isActive: true,  // Default value
               accountType: 'CUSTOMER'  // Default value
             }));
@@ -214,6 +222,8 @@ export async function GET(request: NextRequest) {
     // Map database fields to frontend interface fields
     const mappedData = data?.map(account => ({
       ...account,
+      created_at: new Date(account.created_at),
+      updated_at: new Date(account.updated_at),
       isActive: account.is_active !== undefined ? account.is_active : true,
       accountType: account.account_type || 'CUSTOMER'
     })) || [];
@@ -339,6 +349,8 @@ export async function POST(request: NextRequest) {
     // Map database fields to frontend interface fields
     const mappedData = {
       ...data,
+      created_at: new Date(data.created_at),
+      updated_at: new Date(data.updated_at),
       isActive: data.is_active !== undefined ? data.is_active : true,
       accountType: data.account_type || 'CUSTOMER'
     };
