@@ -87,28 +87,61 @@ export async function GET(request: NextRequest) {
       // Handle PostgREST schema cache errors specifically
       if (error.code === 'PGRST204' && error.message.includes('address')) {
         console.warn('SCHEMA CACHE ISSUE DETECTED: Address column schema cache mismatch');
-        console.warn('Attempting fallback query without address column');
+        console.warn('Attempting progressive fallback strategy');
             
-        // Fallback: Try query without address column
-        const { data: fallbackData, error: fallbackError } = await supabase
+        // Progressive fallback strategy:
+            
+        // Attempt 1: Minimal fields query
+        console.debug('Trying minimal fields query...');
+        const { data: minimalData, error: minimalError } = await supabase
+          .from('current_accounts')
+          .select('id, name, tenant_id')
+          .eq('tenant_id', user.id);
+            
+        if (!minimalError && minimalData) {
+          console.info('MINIMAL FALLBACK SUCCESS: Returning essential data');
+          return Response.json(minimalData);
+        }
+            
+        // Attempt 2: Core fields without address
+        console.debug('Trying core fields query...');
+        const { data: coreData, error: coreError } = await supabase
+          .from('current_accounts')
+          .select('id, name, email, phone, balance, tenant_id, created_at')
+          .eq('tenant_id', user.id);
+            
+        if (!coreError && coreData) {
+          console.info('CORE FALLBACK SUCCESS: Returning core data');
+          return Response.json(coreData);
+        }
+            
+        // Attempt 3: Full query without address
+        console.debug('Trying full query without address...');
+        const { data: fullNoAddressData, error: fullNoAddressError } = await supabase
           .from('current_accounts')
           .select('id, name, email, phone, tax_number, tax_office, company, balance, tenant_id, created_at, updated_at')
           .eq('tenant_id', user.id);
             
-        if (fallbackError) {
-          console.error('Fallback query also failed:', fallbackError);
-          return Response.json(
-            { 
-              error: 'Service temporarily unavailable - schema cache refreshing',
-              code: 'SCHEMA_CACHE_REFRESH',
-              retryable: true
-            },
-            { status: 503 }
-          );
+        if (!fullNoAddressError && fullNoAddressData) {
+          console.info('FULL NO ADDRESS FALLBACK SUCCESS: Returning complete data minus address');
+          return Response.json(fullNoAddressData);
         }
             
-        console.info('FALLBACK SUCCESS: Returning data without address column');
-        return Response.json(fallbackData);
+        // All fallbacks failed
+        console.error('ALL FALLBACK STRATEGIES FAILED');
+        console.error('Minimal error:', minimalError?.message);
+        console.error('Core error:', coreError?.message);
+        console.error('Full no address error:', fullNoAddressError?.message);
+            
+        return Response.json(
+          { 
+            error: 'Service temporarily unavailable - PostgREST schema cache requires restart',
+            code: 'SCHEMA_CACHE_CRITICAL',
+            retryable: true,
+            suggestion: 'Please restart PostgREST service via Supabase Dashboard'
+          },
+          { status: 503 }
+        );
       }
       
       // Handle specific error cases
