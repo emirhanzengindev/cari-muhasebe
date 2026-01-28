@@ -11,7 +11,10 @@ export interface CurrentAccount {
   tenant_id: string;
   created_at: Date;
   updated_at: Date;
-  // Optional UI fields
+  // Database fields (for PostgREST compatibility)
+  is_active?: boolean;
+  account_type?: string;
+  // UI fields (mapped from database)
   isActive?: boolean;
   accountType?: 'CUSTOMER' | 'SUPPLIER';
 }

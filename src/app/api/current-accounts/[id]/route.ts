@@ -32,8 +32,8 @@ export async function GET(
   // Map database fields to frontend interface fields
   const mappedData = {
     ...data,
-    isActive: data.is_active,
-    accountType: data.account_type
+    isActive: data.is_active !== undefined ? data.is_active : true,
+    accountType: data.account_type || 'CUSTOMER'
   };
   
   return NextResponse.json(mappedData)
@@ -68,8 +68,8 @@ export async function PUT(
   // Map database fields to frontend interface fields
   const mappedData = {
     ...data,
-    isActive: data.is_active,
-    accountType: data.account_type
+    isActive: data.is_active !== undefined ? data.is_active : true,
+    accountType: data.account_type || 'CUSTOMER'
   };
   
   return NextResponse.json(mappedData)

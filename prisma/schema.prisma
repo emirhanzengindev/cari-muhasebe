@@ -81,4 +81,6 @@ model CurrentAccount {
   tenant_id   String
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
+  is_active   Boolean  @default(true)
+  account_type String  @default("CUSTOMER")
 }

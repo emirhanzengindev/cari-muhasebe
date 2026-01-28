@@ -103,8 +103,8 @@ export async function GET(request: NextRequest) {
           // Map database fields to frontend interface fields
           const mappedData = minimalData?.map(account => ({
             ...account,
-            isActive: account.is_active,
-            accountType: account.account_type
+            isActive: account.is_active !== undefined ? account.is_active : true,
+            accountType: account.account_type || 'CUSTOMER'
           })) || [];
           return Response.json(mappedData);
         }
@@ -121,8 +121,8 @@ export async function GET(request: NextRequest) {
           // Map database fields to frontend interface fields
           const mappedData = coreData?.map(account => ({
             ...account,
-            isActive: account.is_active,
-            accountType: account.account_type
+            isActive: account.is_active !== undefined ? account.is_active : true,
+            accountType: account.account_type || 'CUSTOMER'
           })) || [];
           return Response.json(mappedData);
         }
@@ -139,8 +139,8 @@ export async function GET(request: NextRequest) {
           // Map database fields to frontend interface fields
           const mappedData = fullNoAddressData?.map(account => ({
             ...account,
-            isActive: account.is_active,
-            accountType: account.account_type
+            isActive: account.is_active !== undefined ? account.is_active : true,
+            accountType: account.account_type || 'CUSTOMER'
           })) || [];
           return Response.json(mappedData);
         }
@@ -188,8 +188,8 @@ export async function GET(request: NextRequest) {
     // Map database fields to frontend interface fields
     const mappedData = data?.map(account => ({
       ...account,
-      isActive: account.is_active,
-      accountType: account.account_type
+      isActive: account.is_active !== undefined ? account.is_active : true,
+      accountType: account.account_type || 'CUSTOMER'
     })) || [];
     
     return Response.json(mappedData);
@@ -280,8 +280,8 @@ export async function POST(request: NextRequest) {
     // Map database fields to frontend interface fields
     const mappedData = {
       ...data,
-      isActive: data.is_active,
-      accountType: data.account_type
+      isActive: data.is_active !== undefined ? data.is_active : true,
+      accountType: data.account_type || 'CUSTOMER'
     };
     
     return Response.json(mappedData);
