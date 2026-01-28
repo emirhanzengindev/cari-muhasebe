@@ -87,16 +87,28 @@ export async function GET(request: NextRequest) {
       // Handle PostgREST schema cache errors specifically
       if (error.code === 'PGRST204' && error.message.includes('address')) {
         console.warn('SCHEMA CACHE ISSUE DETECTED: Address column schema cache mismatch');
-        console.warn('This is a known PostgREST cache issue that resolves automatically');
-        // Return a more user-friendly error
-        return Response.json(
-          { 
-            error: 'Temporary service issue - please try again in a moment',
-            code: 'SCHEMA_CACHE_REFRESH',
-            retryable: true
-          },
-          { status: 503 }
-        );
+        console.warn('Attempting fallback query without address column');
+            
+        // Fallback: Try query without address column
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('current_accounts')
+          .select('id, name, email, phone, tax_number, tax_office, company, balance, tenant_id, created_at, updated_at')
+          .eq('tenant_id', user.id);
+            
+        if (fallbackError) {
+          console.error('Fallback query also failed:', fallbackError);
+          return Response.json(
+            { 
+              error: 'Service temporarily unavailable - schema cache refreshing',
+              code: 'SCHEMA_CACHE_REFRESH',
+              retryable: true
+            },
+            { status: 503 }
+          );
+        }
+            
+        console.info('FALLBACK SUCCESS: Returning data without address column');
+        return Response.json(fallbackData);
       }
       
       // Handle specific error cases
