@@ -77,11 +77,9 @@ export function createServerSupabaseClientWithRequest(request: NextRequest) {
       console.log('DEBUG: Authorization header first 20 chars:', authorizationHeader.substring(0, 20) + '...')
     }
     
-    // Extract other important headers
-    console.log('DEBUG: Request headers:', Object.fromEntries(request.headers))
-    
-    // Create header map for the client
-    const headers = new Map(Object.entries(request.headers))
+    // Extract cookies from the request
+    const cookieHeader = request.headers.get('cookie');
+    console.log('DEBUG: Cookie header from request:', cookieHeader ? 'Present' : 'Absent')
     
     const supabaseClient = createServerClient(
       supabaseUrl,
@@ -89,26 +87,32 @@ export function createServerSupabaseClientWithRequest(request: NextRequest) {
       {
         global: {
           headers: {
-            Authorization: headers.get('authorization') || '',
+            Authorization: authorizationHeader || '',
           },
         },
         cookies: {
           get(name: string) {
             try {
               console.log('DEBUG: cookieStore getter called with:', name)
-              const cookieStore = cookies();
-              console.log('DEBUG: cookieStore object keys:', Object.keys(cookieStore))
               
-              // Check if cookie store is available
-              if (!cookieStore || typeof cookieStore !== 'object') {
-                console.error('ERROR: No cookie store available')
+              // Extract cookie from request headers instead of global cookies()
+              if (!cookieHeader) {
+                console.log('DEBUG: No cookie header found for', name)
                 return undefined;
               }
               
-              const syncCookieStore = cookieStore as any;
-              const result = syncCookieStore.get(name)?.value;
-              console.log('DEBUG: cookieStore getter result for', name, ':', result)
-              return result;
+              // Parse the cookie header
+              const cookiesArray = cookieHeader.split(';');
+              const cookie = cookiesArray.find(c => c.trim().startsWith(`${name}=`));
+              
+              if (cookie) {
+                const value = cookie.split('=')[1];
+                console.log('DEBUG: Found cookie', name, 'value:', value);
+                return value;
+              } else {
+                console.log('DEBUG: Cookie', name, 'not found in request');
+                return undefined;
+              }
             } catch (error) {
               console.error('ERROR in cookieStore getter:', error)
               return undefined;
