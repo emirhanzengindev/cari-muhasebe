@@ -12,40 +12,44 @@ if (!supabaseAnonKey) {
   throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not defined');
 }
 
-// LAZY SINGLETON BROWSER CLIENT - Created on first access
-// This works in both browser and server environments
+// TRULY GLOBAL SINGLETON BROWSER CLIENT - Created once globally
+// This eliminates React Strict Mode double-instantiation
 
-let browserClient: ReturnType<typeof createSupabaseBrowserClient> | null = null;
+// Define a global property to store the client
+const GLOBAL_CLIENT_KEY = '__SUPABASE_BROWSER_CLIENT_INSTANCE__';
 
-// Lazy getter that creates client only when accessed in browser
-const getOrCreateBrowserClient = (): ReturnType<typeof createSupabaseBrowserClient> => {
+declare global {
+  interface Window {
+    [GLOBAL_CLIENT_KEY]: ReturnType<typeof createSupabaseBrowserClient> | undefined;
+  }
+}
+
+// Function to get or create the client
+const getOrCreateGlobalClient = (): ReturnType<typeof createSupabaseBrowserClient> => {
   if (typeof window === 'undefined') {
     throw new Error('Browser client can only be used in browser environment');
   }
   
-  if (!browserClient) {
-    browserClient = createSupabaseBrowserClient(supabaseUrl, supabaseAnonKey);
+  // Check if client already exists in global scope
+  if (!window[GLOBAL_CLIENT_KEY]) {
+    window[GLOBAL_CLIENT_KEY] = createSupabaseBrowserClient(supabaseUrl, supabaseAnonKey);
   }
   
-  return browserClient;
+  return window[GLOBAL_CLIENT_KEY]!;
 };
 
-// Export a getter function instead of direct value
-export const getSupabaseBrowser = getOrCreateBrowserClient;
+// Export the getter function
+export const getSupabaseBrowser = getOrCreateGlobalClient;
 
-// For backward compatibility - throws helpful error if used incorrectly
-export const supabaseBrowser: ReturnType<typeof createSupabaseBrowserClient> | null = 
-  typeof window !== 'undefined' ? getOrCreateBrowserClient() : null;
+// Also export a direct access for advanced use cases
+export const supabaseBrowser = typeof window !== 'undefined' ? getOrCreateGlobalClient() : null;
 
 // Helper function for backward compatibility (throws if used incorrectly)
 export const getBrowserClient = () => {
   if (typeof window === 'undefined') {
     throw new Error('getBrowserClient can only be called in the browser');
   }
-  if (!browserClient) {
-    throw new Error('Browser client not initialized');
-  }
-  return browserClient;
+  return getOrCreateGlobalClient();
 };
 
 // Legacy alias for backward compatibility
