@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
     // Execute the actual query
     const { data, error, status } = await supabase
       .from('current_accounts')
-      .select('id, name, email, phone, address, tax_number, tax_office, company, balance, tenant_id, created_at, updated_at')
+      .select('id, name, email, phone, address, tax_number, tax_office, company, balance, tenant_id, created_at, updated_at, is_active, account_type')
       .eq('tenant_id', user.id);  // Filter by authenticated user's tenant ID
     console.log('DEBUG: Query executed, error:', !!error, 'status:', status);
     
@@ -95,36 +95,54 @@ export async function GET(request: NextRequest) {
         console.debug('Trying minimal fields query...');
         const { data: minimalData, error: minimalError } = await supabase
           .from('current_accounts')
-          .select('id, name, tenant_id')
+          .select('id, name, tenant_id, is_active, account_type')
           .eq('tenant_id', user.id);
             
         if (!minimalError && minimalData) {
           console.info('MINIMAL FALLBACK SUCCESS: Returning essential data');
-          return Response.json(minimalData);
+          // Map database fields to frontend interface fields
+          const mappedData = minimalData?.map(account => ({
+            ...account,
+            isActive: account.is_active,
+            accountType: account.account_type
+          })) || [];
+          return Response.json(mappedData);
         }
             
         // Attempt 2: Core fields without address
         console.debug('Trying core fields query...');
         const { data: coreData, error: coreError } = await supabase
           .from('current_accounts')
-          .select('id, name, email, phone, balance, tenant_id, created_at')
+          .select('id, name, email, phone, balance, tenant_id, created_at, is_active, account_type')
           .eq('tenant_id', user.id);
             
         if (!coreError && coreData) {
           console.info('CORE FALLBACK SUCCESS: Returning core data');
-          return Response.json(coreData);
+          // Map database fields to frontend interface fields
+          const mappedData = coreData?.map(account => ({
+            ...account,
+            isActive: account.is_active,
+            accountType: account.account_type
+          })) || [];
+          return Response.json(mappedData);
         }
             
         // Attempt 3: Full query without address
         console.debug('Trying full query without address...');
         const { data: fullNoAddressData, error: fullNoAddressError } = await supabase
           .from('current_accounts')
-          .select('id, name, email, phone, tax_number, tax_office, company, balance, tenant_id, created_at, updated_at')
+          .select('id, name, email, phone, tax_number, tax_office, company, balance, tenant_id, created_at, updated_at, is_active, account_type')
           .eq('tenant_id', user.id);
             
         if (!fullNoAddressError && fullNoAddressData) {
           console.info('FULL NO ADDRESS FALLBACK SUCCESS: Returning complete data minus address');
-          return Response.json(fullNoAddressData);
+          // Map database fields to frontend interface fields
+          const mappedData = fullNoAddressData?.map(account => ({
+            ...account,
+            isActive: account.is_active,
+            accountType: account.account_type
+          })) || [];
+          return Response.json(mappedData);
         }
             
         // All fallbacks failed
@@ -166,7 +184,15 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('DEBUG: Successfully fetched', data?.length || 0, 'current accounts for tenant', user.id);
-    return Response.json(data);
+    
+    // Map database fields to frontend interface fields
+    const mappedData = data?.map(account => ({
+      ...account,
+      isActive: account.is_active,
+      accountType: account.account_type
+    })) || [];
+    
+    return Response.json(mappedData);
   } catch (error: any) {
     console.error('Error fetching current accounts:', {
       message: error?.message,
@@ -202,7 +228,9 @@ export async function POST(request: NextRequest) {
       ...accountData,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      tenant_id: user.id  // Add tenant_id from authenticated user
+      tenant_id: user.id,  // Add tenant_id from authenticated user
+      is_active: accountData.isActive,  // Map camelCase to snake_case
+      account_type: accountData.accountType  // Map camelCase to snake_case
     };
     
     // Validate required fields
@@ -249,7 +277,14 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    return Response.json(data);
+    // Map database fields to frontend interface fields
+    const mappedData = {
+      ...data,
+      isActive: data.is_active,
+      accountType: data.account_type
+    };
+    
+    return Response.json(mappedData);
   } catch (error) {
     console.error('Error creating current account:', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });

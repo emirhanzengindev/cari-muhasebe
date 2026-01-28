@@ -64,7 +64,9 @@ export default function NewAccount() {
         tax_number: formData.taxNumber || undefined,
         company: undefined, // Optional field
         balance: 0,
-        tenant_id: tenantId
+        tenant_id: tenantId,
+        isActive: formData.isActive,
+        accountType: formData.accountType
       });
       
       router.push("/current-accounts");

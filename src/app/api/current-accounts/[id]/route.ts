@@ -29,7 +29,14 @@ export async function GET(
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json(data)
+  // Map database fields to frontend interface fields
+  const mappedData = {
+    ...data,
+    isActive: data.is_active,
+    accountType: data.account_type
+  };
+  
+  return NextResponse.json(mappedData)
 }
 
 export async function PUT(
@@ -58,7 +65,14 @@ export async function PUT(
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json(data)
+  // Map database fields to frontend interface fields
+  const mappedData = {
+    ...data,
+    isActive: data.is_active,
+    accountType: data.account_type
+  };
+  
+  return NextResponse.json(mappedData)
 }
 
 export async function DELETE(

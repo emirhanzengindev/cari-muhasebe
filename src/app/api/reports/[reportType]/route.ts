@@ -232,7 +232,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             balance: account.balance || 0,
             phone: account.phone,
             email: account.email,
-            isActive: account.is_active
+            isActive: account.is_active ?? true
           }));
         }
         break;

@@ -14,8 +14,8 @@ export default function CurrentAccounts() {
 
   const filteredAccounts = accounts?.filter(account => {
     if (filter === "ALL") return true;
-    if (filter === "ACTIVE") return account.isActive;
-    if (filter === "PASSIVE") return !account.isActive;
+    if (filter === "ACTIVE") return account.isActive ?? true;
+    if (filter === "PASSIVE") return !(account.isActive ?? true);
     if (filter === "CUSTOMERS") return account.accountType === "CUSTOMER";
     if (filter === "SUPPLIERS") return account.accountType === "SUPPLIER";
     return true;
