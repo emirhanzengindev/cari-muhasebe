@@ -94,10 +94,17 @@ export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) =>
     set({ loading: true, error: null });
     try {
       const accounts = await makeApiRequest('/current-accounts');
-      if (accounts !== null) {
-        set({ accounts, loading: false });
+      if (accounts !== null && Array.isArray(accounts)) {
+        // Filter out any invalid account entries that don't have required properties
+        const validAccounts = accounts.filter(account => 
+          account && 
+          typeof account === 'object' && 
+          account.id && 
+          typeof account.id === 'string'
+        );
+        set({ accounts: validAccounts, loading: false });
       } else {
-        // API call failed, keep accounts as empty array
+        // API call failed or returned invalid data, keep accounts as empty array
         set({ accounts: [], loading: false });
       }
     } catch (error) {

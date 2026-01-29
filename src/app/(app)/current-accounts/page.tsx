@@ -12,14 +12,18 @@ export default function CurrentAccounts() {
     fetchAccounts();
   }, [fetchAccounts]);
 
-  const filteredAccounts = accounts?.filter(account => {
+  // Filter accounts safely, ensuring all required properties exist
+  const filteredAccounts = (accounts || []).filter(account => {
+    // Skip accounts that don't have required properties
+    if (!account || !account.id) return false;
+    
     if (filter === "ALL") return true;
     if (filter === "ACTIVE") return account.isActive ?? true;
     if (filter === "PASSIVE") return !(account.isActive ?? true);
     if (filter === "CUSTOMERS") return account.accountType === "CUSTOMER";
     if (filter === "SUPPLIERS") return account.accountType === "SUPPLIER";
     return true;
-  }) || [];
+  });
 
   if (loading) {
     return (
@@ -148,14 +152,18 @@ export default function CurrentAccounts() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredAccounts.map((account) => (
+              {filteredAccounts.map((account) => {
+                // Ensure account has all required properties
+                if (!account || !account.id) return null;
+                
+                return (
                 <tr key={account.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{account.name}</div>
+                    <div className="text-sm font-medium text-gray-900">{account.name || ''}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{account.email}</div>
-                    <div className="text-sm text-gray-500">{account.phone}</div>
+                    <div className="text-sm text-gray-900">{account.email || ''}</div>
+                    <div className="text-sm text-gray-500">{account.phone || ''}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -167,8 +175,8 @@ export default function CurrentAccounts() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <span className={account.balance >= 0 ? "text-green-600" : "text-red-600"}>
-                      {account.balance >= 0 ? "₺" : "-₺"}{Math.abs(account.balance).toFixed(2)}
+                    <span className={(account.balance || 0) >= 0 ? "text-green-600" : "text-red-600"}>
+                      {(account.balance || 0) >= 0 ? "₺" : "-₺"}{Math.abs(account.balance || 0).toFixed(2)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -201,12 +209,13 @@ export default function CurrentAccounts() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
         
-        {accounts?.length === 0 && (
+        {accounts && accounts.length === 0 && (
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -226,11 +235,11 @@ export default function CurrentAccounts() {
       </div>
 
       {/* Pagination */}
-      {accounts?.length > 0 && (
+      {accounts && accounts.length > 0 && (
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-sm text-gray-700 text-center sm:text-left">
-            Gösterilen <span className="font-medium">1</span> - <span className="font-medium">{Math.min(10, accounts?.length || 0)}</span> / toplam{' '}
-            <span className="font-medium">{accounts?.length || 0}</span> sonuç
+            Gösterilen <span className="font-medium">1</span> - <span className="font-medium">{Math.min(10, accounts.length)}</span> / toplam{' '}
+            <span className="font-medium">{accounts.length}</span> sonuç
           </div>
           <div className="flex space-x-2">
             <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
