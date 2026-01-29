@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
     // Execute the actual query
     const { data, error, status } = await supabase
       .from('current_accounts')
-      .select('id, name, email, phone, address, tax_number, tax_office, company, balance, tenant_id, created_at, updated_at, is_active, account_type')
+      .select('id, name, phone, address, tax_number, tax_office, company, balance, tenant_id, created_at, updated_at, is_active, account_type')
       .eq('tenant_id', user.id);  // Filter by authenticated user's tenant ID
     console.log('DEBUG: Query executed, error:', !!error, 'status:', status);
     
@@ -116,11 +116,11 @@ export async function GET(request: NextRequest) {
           return Response.json(mappedData);
         }
             
-        // Attempt 2: Core fields without address
+        // Attempt 2: Core fields without email
         console.debug('Trying core fields query...');
         const { data: coreData, error: coreError } = await supabase
           .from('current_accounts')
-          .select('id, name, email, phone, balance, tenant_id, created_at, is_active, account_type')
+          .select('id, name, phone, balance, tenant_id, created_at, is_active, account_type')
           .eq('tenant_id', user.id);
             
         if (!coreError && coreData) {
@@ -136,17 +136,17 @@ export async function GET(request: NextRequest) {
           return Response.json(mappedData);
         }
             
-        // Attempt 3: Full query without address
-        console.debug('Trying full query without address...');
-        const { data: fullNoAddressData, error: fullNoAddressError } = await supabase
+        // Attempt 3: Full query without email
+        console.debug('Trying full query without email...');
+        const { data: fullNoEmailData, error: fullNoEmailError } = await supabase
           .from('current_accounts')
-          .select('id, name, email, phone, tax_number, tax_office, company, balance, tenant_id, created_at, updated_at, is_active, account_type')
+          .select('id, name, phone, tax_number, tax_office, company, balance, tenant_id, created_at, updated_at, is_active, account_type')
           .eq('tenant_id', user.id);
             
-        if (!fullNoAddressError && fullNoAddressData) {
-          console.info('FULL NO ADDRESS FALLBACK SUCCESS: Returning complete data minus address');
+        if (!fullNoEmailError && fullNoEmailData) {
+          console.info('FULL NO EMAIL FALLBACK SUCCESS: Returning complete data minus email');
           // Map database fields to frontend interface fields
-          const mappedData = fullNoAddressData?.map(account => ({
+          const mappedData = fullNoEmailData?.map(account => ({
             ...account,
             created_at: new Date(account.created_at),
             updated_at: new Date(account.updated_at),
@@ -160,7 +160,7 @@ export async function GET(request: NextRequest) {
         console.error('ALL FALLBACK STRATEGIES FAILED');
         console.error('Minimal error:', minimalError?.message);
         console.error('Core error:', coreError?.message);
-        console.error('Full no address error:', fullNoAddressError?.message);
+        console.error('Full no email error:', fullNoEmailError?.message);
                 
         // Try one final fallback without the problematic columns
         console.debug('Trying final fallback without accountType column...');
@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
           const { data: finalData, error: finalError } = await supabase
             .from('current_accounts')
             .select(`
-              id, name, email, phone, address, tax_number, tax_office, company, 
+              id, name, phone, address, tax_number, tax_office, company, 
               balance, tenant_id, created_at, updated_at
             `)
             .eq('tenant_id', user.id);
@@ -331,6 +331,8 @@ export async function POST(request: NextRequest) {
         // Map the response data
         const mappedData = {
           ...cleanData,
+          created_at: new Date(cleanData.created_at),
+          updated_at: new Date(cleanData.updated_at),
           isActive: cleanData.is_active !== undefined ? cleanData.is_active : true,
           accountType: cleanData.account_type || 'CUSTOMER'
         };
