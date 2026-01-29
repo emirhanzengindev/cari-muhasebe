@@ -325,34 +325,34 @@ export async function POST(request: NextRequest) {
         console.error('Tenant ID being used:', tenantId);
         console.error('User ID:', user.id);
         
-        // Try alternative approach: use service role to bypass RLS temporarily
+        // Try alternative approach: use dedicated server-side insert endpoint
         try {
-          console.log('Attempting fallback insert with service role...');
+          console.log('Attempting fallback insert via server-side endpoint...');
           
-          // Create a service role client
-          const { createClient } = require('@supabase/supabase-js');
-          const serviceSupabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL,
-            process.env.SUPABASE_SERVICE_ROLE_KEY
+          // Call the server-side insert endpoint
+          const serverInsertResponse = await fetch(
+            `${request.url.split('/api/')[0]}/api/current-accounts-server-insert`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(accountWithTenant)
+            }
           );
           
-          // Insert with service role (bypasses RLS)
-          const { data: serviceData, error: serviceError } = await serviceSupabase
-            .from('current_accounts')
-            .insert([accountWithTenant])
-            .select()
-            .single();
-          
-          if (serviceError) {
-            console.error('Service role insert also failed:', serviceError);
-            throw serviceError;
+          if (!serverInsertResponse.ok) {
+            const errorText = await serverInsertResponse.text();
+            console.error('Server-side insert failed:', errorText);
+            throw new Error(`Server insert failed: ${errorText}`);
           }
           
-          console.log('SUCCESS: Record inserted using service role');
-          return Response.json(serviceData);
+          const serverData = await serverInsertResponse.json();
+          console.log('SUCCESS: Record inserted using server-side endpoint');
+          return Response.json(serverData.data);
           
-        } catch (serviceError) {
-          console.error('Service role approach failed:', serviceError);
+        } catch (serverError) {
+          console.error('Server-side approach failed:', serverError);
           return Response.json({ 
             error: 'Failed to insert account due to security policy violation',
             details: process.env.NODE_ENV === 'development' ? error.message : undefined
