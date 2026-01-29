@@ -135,7 +135,7 @@ export default function CurrentAccounts() {
                   İsim
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  İletişim
+                  Telefon
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Tip
@@ -162,8 +162,7 @@ export default function CurrentAccounts() {
                     <div className="text-sm font-medium text-gray-900">{account.name || ''}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{account.email || ''}</div>
-                    <div className="text-sm text-gray-500">{account.phone || ''}</div>
+                                        <div className="text-sm text-gray-500">{account.phone || ''}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
