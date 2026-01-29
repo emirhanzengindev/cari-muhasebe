@@ -3,15 +3,25 @@ import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
 
 // Helper function to get tenant context
 async function getTenantContext(supabase: any) {
+  console.log('DEBUG: getTenantContext called');
+  
   // Get current user
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   
+  console.log('DEBUG: getUser result:', { user: !!user, error: userError });
+  if (user) {
+    console.log('DEBUG: User ID:', user.id);
+    console.log('DEBUG: User metadata:', user.user_metadata);
+  }
+  
   if (userError || !user) {
+    console.error('DEBUG: Authentication failed:', userError);
     throw new Error('No authenticated user');
   }
   
   // Get tenant_id from user metadata
   const tenantId = user?.user_metadata?.tenant_id || user?.id;
+  console.log('DEBUG: Determined tenantId:', tenantId);
   
   return {
     userId: user.id,
@@ -21,6 +31,20 @@ async function getTenantContext(supabase: any) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('DEBUG: Test route POST called');
+    
+    // Log request headers for debugging
+    console.log('DEBUG: Request headers:');
+    for (const [key, value] of request.headers.entries()) {
+      if (key === 'authorization') {
+        console.log(`  ${key}: ${value.substring(0, 50)}...`);
+      } else if (key === 'cookie') {
+        console.log(`  ${key}: ${value.substring(0, 100)}...`);
+      } else {
+        console.log(`  ${key}: ${value}`);
+      }
+    }
+    
     const supabase = createServerSupabaseClientWithRequest(request);
     
     // Get tenant context

@@ -2,6 +2,21 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextRequest } from 'next/server'
 
+// Helper function to parse cookies from header string
+function parseCookies(cookieHeader: string | null): Map<string, string> {
+  const cookiesMap = new Map<string, string>();
+  if (!cookieHeader) return cookiesMap;
+  
+  cookieHeader.split(';').forEach(cookie => {
+    const [name, value] = cookie.trim().split('=');
+    if (name && value) {
+      cookiesMap.set(name, value);
+    }
+  });
+  
+  return cookiesMap;
+}
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 
@@ -81,6 +96,9 @@ export function createServerSupabaseClientWithRequest(request: NextRequest) {
     const cookieHeader = request.headers.get('cookie');
     console.log('DEBUG: Cookie header from request:', cookieHeader ? 'Present' : 'Absent')
     
+    // Parse cookies into a map for easier access
+    const cookiesMap = parseCookies(cookieHeader);
+    
     const supabaseClient = createServerClient(
       supabaseUrl,
       supabaseAnonKey,
@@ -95,18 +113,9 @@ export function createServerSupabaseClientWithRequest(request: NextRequest) {
             try {
               console.log('DEBUG: cookieStore getter called with:', name)
               
-              // Extract cookie from request headers instead of global cookies()
-              if (!cookieHeader) {
-                console.log('DEBUG: No cookie header found for', name)
-                return undefined;
-              }
-              
-              // Parse the cookie header
-              const cookiesArray = cookieHeader.split(';');
-              const cookie = cookiesArray.find(c => c.trim().startsWith(`${name}=`));
-              
-              if (cookie) {
-                const value = cookie.split('=')[1];
+              // Check if we have the cookie in our parsed map
+              const value = cookiesMap.get(name);
+              if (value) {
                 console.log('DEBUG: Found cookie', name, 'value:', value);
                 return value;
               } else {
