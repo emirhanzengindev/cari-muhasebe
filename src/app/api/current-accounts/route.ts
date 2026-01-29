@@ -260,11 +260,15 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // Extract tenant_id from user's metadata
+    const userMetadata = user.user_metadata || {};
+    const tenantId = userMetadata.tenant_id || user.id; // Fallback to user.id if tenant_id not in metadata
+    
     const accountWithTenant = {
       ...accountData,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      tenant_id: user.id,  // Add tenant_id from authenticated user
+      tenant_id: tenantId,  // Add tenant_id from user's metadata
       is_active: accountData.isActive,  // Map camelCase to snake_case
       account_type: accountData.accountType  // Map camelCase to snake_case
     };
