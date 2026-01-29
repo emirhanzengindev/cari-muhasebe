@@ -1,7 +1,6 @@
 export interface CurrentAccount {
   id: string;
   name: string;
-  email?: string;
   phone?: string;
   address?: string;
   tax_office?: string;
