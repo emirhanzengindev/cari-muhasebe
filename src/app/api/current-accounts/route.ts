@@ -245,20 +245,36 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('DEBUG: POST /api/current-accounts called');
     const accountData = await request.json();
+    
+    // Log authorization header
+    const authHeader = request.headers.get('authorization');
+    console.log('DEBUG: Authorization header present:', !!authHeader);
+    if (authHeader) {
+      console.log('DEBUG: Authorization header length:', authHeader.length);
+    }
     
     const supabase = createServerSupabaseClientWithRequest(request);
     
+    console.log('DEBUG: Getting user from Supabase...');
     const {
-      data: { user }
+      data: { user },
+      error: userError
     } = await supabase.auth.getUser();
     
+    console.log('DEBUG: User result:', { user: !!user, error: userError });
+    
     if (!user) {
+      console.log('DEBUG: No user found, returning 401');
       return Response.json(
         { error: 'Auth session missing' },
         { status: 401 }
       );
     }
+    
+    console.log('DEBUG: User ID:', user.id);
+    console.log('DEBUG: User metadata:', user.user_metadata);
     
     // Extract tenant_id from user's metadata
     const userMetadata = user.user_metadata || {};

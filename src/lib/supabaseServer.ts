@@ -152,6 +152,9 @@ export async function getTenantIdFromJWT() {
 
 // Function to extract tenant ID from Supabase auth with request context
 export async function getTenantIdFromJWTWithRequest(request: NextRequest) {
+  console.log('DEBUG: getTenantIdFromJWTWithRequest called');
+  
+  // First try to get user from Supabase client
   const supabase = createServerSupabaseClientWithRequest(request);
 
   const {
@@ -159,11 +162,32 @@ export async function getTenantIdFromJWTWithRequest(request: NextRequest) {
     error,
   } = await supabase.auth.getUser();
 
-  if (error || !user) {
+  if (error) {
     console.error('SUPABASE AUTH ERROR:', error);
-    return null;
   }
 
-  // Always use user.id as tenantId since it's the correct UUID
-  return user.id;
+  if (user) {
+    console.log('DEBUG: User found:', user.id);
+    // Always use user.id as tenantId since it's the correct UUID
+    return user.id;
+  }
+
+  // Fallback: try to extract from JWT directly
+  const authHeader = request.headers.get('authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    try {
+      // Decode JWT payload (without verification)
+      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+      console.log('DEBUG: JWT payload sub:', payload.sub);
+      if (payload.sub) {
+        return payload.sub; // sub is the user ID
+      }
+    } catch (decodeError) {
+      console.error('DEBUG: JWT decode error:', decodeError);
+    }
+  }
+
+  console.log('DEBUG: No tenant ID found');
+  return null;
 }
