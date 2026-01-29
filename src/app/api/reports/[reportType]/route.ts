@@ -197,7 +197,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           name: string;
           balance: number | null;
           phone?: string;
-          email?: string;
           tax_number?: string;
           tax_office?: string;
           address?: string;
@@ -214,7 +213,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             name,
             balance,
             phone,
-            email,
             tax_number,
             tax_office,
             address,
@@ -231,7 +229,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             accountName: account.name,
             balance: account.balance || 0,
             phone: account.phone,
-            email: account.email,
             isActive: account.is_active ?? true
           }));
         }
