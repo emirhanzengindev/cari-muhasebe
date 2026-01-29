@@ -33,9 +33,15 @@ export async function POST(request: NextRequest) {
       .from('current_accounts')
       .insert({
         name: 'Test Account',
-        email: 'test@example.com',
         tenant_id: tenantId,
-        balance: 0
+        balance: 0,
+        phone: '+901234567890',
+        address: 'Test Address',
+        tax_number: '123456789',
+        tax_office: 'Test Tax Office',
+        company: 'Test Company',
+        is_active: true,
+        account_type: 'CUSTOMER'
       })
       .select()
       .single();
