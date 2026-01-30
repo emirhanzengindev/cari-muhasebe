@@ -130,6 +130,12 @@ export function createServerSupabaseClientWithRequest(request: NextRequest) {
           set() {},
           remove() {},
         },
+        auth: {
+          // This ensures the auth context is properly maintained
+          detectSessionInUrl: false,
+          persistSession: false,
+          flowType: 'pkce',
+        }
       }
     );
     
@@ -157,6 +163,65 @@ export async function getTenantIdFromJWT() {
 
   // Always use user.id as tenantId since it's the correct UUID
   return user.id;
+}
+
+// Function to create a Supabase client with proper RLS authentication
+export function createServerSupabaseClientForRLS(request: NextRequest) {
+  try {
+    console.log('DEBUG: createServerSupabaseClientForRLS called')
+    
+    // Extract Authorization header if present
+    const authorizationHeader = request.headers.get('authorization')
+    console.log('DEBUG: Authorization header from request:', authorizationHeader ? 'Present' : 'Absent')
+    
+    // Extract cookies from the request
+    const cookieHeader = request.headers.get('cookie');
+    console.log('DEBUG: Cookie header from request:', cookieHeader ? 'Present' : 'Absent')
+    
+    // Parse cookies into a map for easier access
+    const cookiesMap = parseCookies(cookieHeader);
+    
+    const supabaseClient = createServerClient(
+      supabaseUrl,
+      supabaseAnonKey,
+      {
+        global: {
+          headers: {
+            Authorization: authorizationHeader || '',
+          },
+        },
+        cookies: {
+          get(name: string) {
+            try {
+              // Check if we have the cookie in our parsed map
+              const value = cookiesMap.get(name);
+              if (value) {
+                return value;
+              }
+              return undefined;
+            } catch (error) {
+              console.error('ERROR in cookieStore getter:', error)
+              return undefined;
+            }
+          },
+          set() {},
+          remove() {},
+        },
+        auth: {
+          // Critical for RLS - ensures proper session handling
+          detectSessionInUrl: false,
+          persistSession: true,
+          flowType: 'pkce',
+        }
+      }
+    );
+    
+    console.log('DEBUG: RLS-ready Supabase client created successfully')
+    return supabaseClient;
+  } catch (error) {
+    console.error('ERROR creating RLS Supabase client:', error)
+    throw error;
+  }
 }
 
 // Function to extract tenant ID from Supabase auth with request context

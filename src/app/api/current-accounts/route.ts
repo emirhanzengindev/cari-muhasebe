@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest } from 'next/server';
 import { headers, cookies } from 'next/headers';
-import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
+import { createServerSupabaseClientForRLS } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     console.log('DEBUG: Request URL:', request.url)
     
     console.log('DEBUG: Creating Supabase client...')
-    const supabase = createServerSupabaseClientWithRequest(request)
+    const supabase = createServerSupabaseClientForRLS(request)
     console.log('DEBUG: Supabase client created successfully')
     
     // Debug request
@@ -255,7 +255,7 @@ export async function POST(request: NextRequest) {
       console.log('DEBUG: Authorization header length:', authHeader.length);
     }
     
-    const supabase = createServerSupabaseClientWithRequest(request);
+    const supabase = createServerSupabaseClientForRLS(request);
     
     console.log('DEBUG: Getting user from Supabase...');
     const {
