@@ -14,35 +14,114 @@ export async function GET(request: NextRequest) {
     const supabase = await createServerSupabaseClientForRLS(request);
     console.log('DEBUG: Supabase client created successfully');
     
-    // CRITICAL DEBUG: Check auth context immediately
+    // EXTENDED DEBUG: Multiple layers of auth verification
+    
+    // Layer 1: Direct auth.getUser()
     const { data: { user: debugUser }, error: debugError } = await supabase.auth.getUser();
-    console.log('DEBUG: CRITICAL AUTH CHECK:');
-    console.log('  User ID from supabase.auth.getUser():', debugUser?.id || 'NULL');
+    console.log('DEBUG: LAYER 1 - supabase.auth.getUser():');
+    console.log('  User ID:', debugUser?.id || 'NULL');
+    console.log('  User email:', debugUser?.email || 'NULL');
     console.log('  Auth error:', debugError?.message || 'None');
     
-    // CRITICAL DEBUG: Check JWT context in database
+    // Layer 2: Database JWT context check
     try {
+      console.log('DEBUG: LAYER 2 - Attempting database JWT context check...');
       const { data: jwtResult, error: jwtDbError } = await supabase.rpc('debug_jwt_context');
-      console.log('DEBUG: DATABASE JWT CONTEXT:');
-      console.log('  Result:', jwtResult || 'NULL');
+      console.log('DEBUG: DATABASE JWT CONTEXT RESULT:');
+      console.log('  Full result:', JSON.stringify(jwtResult, null, 2));
       console.log('  DB Error:', jwtDbError?.message || 'None');
     } catch (rpcError) {
-      console.log('DEBUG: RPC call failed:', rpcError);
+      console.log('DEBUG: RPC call failed - trying alternative method');
+      
+      // Alternative method: Direct SQL query simulation
+      try {
+        // This simulates what the debug_jwt_context function would return
+        const simulatedResult = {
+          auth_uid: debugUser?.id || null,
+          jwt_sub: debugUser?.id || null,
+          jwt_tenant_id: debugUser?.user_metadata?.tenant_id || debugUser?.id || null,
+          jwt_email: debugUser?.email || null,
+          current_user: 'authenticated', // This would be the actual DB value
+          session_user: 'authenticated'  // This would be the actual DB value
+        };
+        console.log('DEBUG: SIMULATED JWT CONTEXT (based on auth.getUser()):');
+        console.log('  ', JSON.stringify(simulatedResult, null, 2));
+      } catch (simError) {
+        console.log('DEBUG: Even simulation failed:', simError);
+      }
     }
     
-    // Also check raw JWT claims
+    // Layer 3: Raw JWT payload decoding
     const authHeader = request.headers.get('authorization');
+    console.log('DEBUG: LAYER 3 - Raw JWT analysis:');
+    console.log('  Authorization header present:', !!authHeader);
+    
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
+      console.log('  Token length:', token.length);
+      
       try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        console.log('DEBUG: RAW JWT PAYLOAD:');
-        console.log('  sub:', payload.sub || 'missing');
-        console.log('  tenant_id:', payload.tenant_id || 'missing');
-        console.log('  email:', payload.email || 'missing');
-      } catch (e) {
-        console.log('DEBUG: Could not parse JWT payload');
+        // Decode JWT payload (second part of JWT)
+        const payloadPart = token.split('.')[1];
+        const payloadBuffer = Buffer.from(payloadPart, 'base64');
+        const payload = JSON.parse(payloadBuffer.toString('utf-8'));
+        
+        console.log('DEBUG: RAW JWT PAYLOAD DECODED:');
+        console.log('  sub:', payload.sub || 'MISSING');
+        console.log('  tenant_id:', payload.tenant_id || 'MISSING');
+        console.log('  email:', payload.email || 'MISSING');
+        console.log('  exp:', payload.exp ? new Date(payload.exp * 1000).toISOString() : 'MISSING');
+        console.log('  iat:', payload.iat ? new Date(payload.iat * 1000).toISOString() : 'MISSING');
+        
+        // Verify token is not expired
+        if (payload.exp) {
+          const now = Math.floor(Date.now() / 1000);
+          const isExpired = payload.exp < now;
+          console.log('  Token expired:', isExpired);
+          if (isExpired) {
+            console.error('CRITICAL: JWT TOKEN IS EXPIRED!');
+          }
+        }
+      } catch (decodeError) {
+        console.error('DEBUG: JWT DECODING FAILED:', decodeError);
       }
+    } else {
+      console.log('DEBUG: No valid Bearer token found in Authorization header');
+    }
+    
+    // Layer 4: Cookie analysis
+    const reqCookieHeader = request.headers.get('cookie');
+    console.log('DEBUG: LAYER 4 - Cookie analysis:');
+    console.log('  Cookie header present:', !!reqCookieHeader);
+    
+    if (reqCookieHeader) {
+      const cookies = reqCookieHeader.split(';').map(c => c.trim());
+      const supabaseCookies = cookies.filter(c => c.startsWith('sb-'));
+      console.log('  Supabase cookies found:', supabaseCookies.length);
+      supabaseCookies.forEach(cookie => {
+        console.log('    ', cookie.substring(0, 50) + (cookie.length > 50 ? '...' : ''));
+      });
+    }
+    
+    // Layer 5: Test database connectivity and basic query
+    console.log('DEBUG: LAYER 5 - Database connectivity test:');
+    try {
+      const { data: testResult, error: testError } = await supabase
+        .from('current_accounts')
+        .select('id')
+        .limit(1);
+      
+      console.log('  Basic SELECT test result:');
+      console.log('    Success:', !testError);
+      console.log('    Error:', testError?.message || 'None');
+      console.log('    Rows returned:', testResult?.length || 0);
+      
+      if (testError?.code === '42501') {
+        console.error('CRITICAL: RLS POLICY VIOLATION ON BASIC SELECT');
+        console.error('This confirms JWT context is not reaching the database');
+      }
+    } catch (testException) {
+      console.error('  Database test failed with exception:', testException);
     }
     
     // Debug request
