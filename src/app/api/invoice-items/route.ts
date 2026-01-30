@@ -6,7 +6,7 @@ import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerSupabaseClientWithRequest(request)
+    const supabase = await createServerSupabaseClientWithRequest(request)
 
     const {
       data: { user },
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
   try {
     const invoiceItemData = await request.json();
     
-    const supabase = createServerSupabaseClientWithRequest(request);
+    const supabase = await createServerSupabaseClientWithRequest(request);
     
     const {
       data: { user }

@@ -81,66 +81,91 @@ export function createServerSupabaseClient() {
 }
 
 // Function to create a Supabase client for API routes with request context
-export function createServerSupabaseClientWithRequest(request: NextRequest) {
+export async function createServerSupabaseClientWithRequest(request: NextRequest) {
   try {
     console.log('DEBUG: createServerSupabaseClientWithRequest called')
     
     // Extract Authorization header if present
-    const authorizationHeader = request.headers.get('authorization')
+    const authorizationHeader = request.headers.get('authorization') || '';
     console.log('DEBUG: Authorization header from request:', authorizationHeader ? 'Present' : 'Absent')
-    if (authorizationHeader) {
-      console.log('DEBUG: Authorization header first 20 chars:', authorizationHeader.substring(0, 20) + '...')
-    }
     
     // Extract cookies from the request
-    const cookieHeader = request.headers.get('cookie');
+    const cookieHeader = request.headers.get('cookie') || '';
     console.log('DEBUG: Cookie header from request:', cookieHeader ? 'Present' : 'Absent')
     
     // Parse cookies into a map for easier access
     const cookiesMap = parseCookies(cookieHeader);
     
-    const supabaseClient = createServerClient(
-      supabaseUrl,
-      supabaseAnonKey,
-      {
-        global: {
-          headers: {
-            Authorization: authorizationHeader || '',
-          },
-        },
-        cookies: {
-          get(name: string) {
-            try {
-              console.log('DEBUG: cookieStore getter called with:', name)
-              
-              // Check if we have the cookie in our parsed map
-              const value = cookiesMap.get(name);
-              if (value) {
-                console.log('DEBUG: Found cookie', name, 'value:', value);
-                return value;
-              } else {
-                console.log('DEBUG: Cookie', name, 'not found in request');
-                return undefined;
-              }
-            } catch (error) {
-              console.error('ERROR in cookieStore getter:', error)
-              return undefined;
-            }
-          },
-          set() {},
-          remove() {},
-        },
-        auth: {
-          // This ensures the auth context is properly maintained
-          detectSessionInUrl: false,
-          persistSession: false,
-          flowType: 'pkce',
+    // Try access token sources in order:
+    // 1. Authorization: Bearer <token>
+    // 2. cookie 'sb-access-token' or 'sb:session'
+    let accessToken: string | null = null;
+    
+    if (authorizationHeader.toLowerCase().startsWith('bearer ')) {
+      accessToken = authorizationHeader.substring(7);
+      console.log('DEBUG: Found access token in Authorization header');
+    } else {
+      // Try Supabase session cookies
+      const sbSession = cookiesMap.get('sb:session') || cookiesMap.get('sb-session') || cookiesMap.get('sb-access-token');
+      
+      if (sbSession) {
+        try {
+          // If sb:session is JSON string with access_token/refresh_token
+          const parsed = JSON.parse(decodeURIComponent(sbSession));
+          if (parsed?.access_token) {
+            accessToken = parsed.access_token;
+            console.log('DEBUG: Found access token in sb:session cookie');
+          }
+        } catch {
+          // If sb-access-token is already the token
+          if (sbSession && sbSession.split('.').length === 3) {
+            accessToken = sbSession;
+            console.log('DEBUG: Found access token in sb-access-token cookie');
+          }
         }
       }
-    );
+    }
+    
+    // Create client (anonymous key is OK - session will be set next)
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      global: { 
+        headers: { 
+          Authorization: accessToken ? `Bearer ${accessToken}` : '' 
+        } 
+      },
+      cookies: {
+        // Minimal no-op cookie store for serverless usage; we rely on setSession instead
+        get() { return undefined; },
+        set() {},
+        remove() {},
+      },
+      auth: {
+        detectSessionInUrl: false,
+        persistSession: false,
+      },
+    });
+    
+    // If we found an access token, set it explicitly on the client
+    if (accessToken) {
+      try {
+        await supabase.auth.setSession({ access_token: accessToken, refresh_token: '' });
+        
+        // Verify user
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+          console.log('DEBUG: supabase.auth.getUser() error after setSession:', error);
+        } else {
+          console.log('DEBUG: supabase user after setSession:', user?.id);
+        }
+      } catch (err) {
+        console.error('ERROR setting session on server supabase client:', err);
+      }
+    } else {
+      console.log('DEBUG: No access token found in request (Authorization or cookies).');
+    }
     
     console.log('DEBUG: Supabase client created successfully')
-    return supabaseClient;
+    return supabase;
   } catch (error) {
     console.error('ERROR creating Supabase client:', error)
     throw error;
@@ -166,58 +191,93 @@ export async function getTenantIdFromJWT() {
 }
 
 // Function to create a Supabase client with proper RLS authentication
-export function createServerSupabaseClientForRLS(request: NextRequest) {
+export async function createServerSupabaseClientForRLS(request: NextRequest) {
   try {
     console.log('DEBUG: createServerSupabaseClientForRLS called')
     
     // Extract Authorization header if present
-    const authorizationHeader = request.headers.get('authorization')
+    const authorizationHeader = request.headers.get('authorization') || '';
     console.log('DEBUG: Authorization header from request:', authorizationHeader ? 'Present' : 'Absent')
     
     // Extract cookies from the request
-    const cookieHeader = request.headers.get('cookie');
+    const cookieHeader = request.headers.get('cookie') || '';
     console.log('DEBUG: Cookie header from request:', cookieHeader ? 'Present' : 'Absent')
     
     // Parse cookies into a map for easier access
     const cookiesMap = parseCookies(cookieHeader);
     
-    const supabaseClient = createServerClient(
-      supabaseUrl,
-      supabaseAnonKey,
-      {
-        global: {
-          headers: {
-            Authorization: authorizationHeader || '',
-          },
-        },
-        cookies: {
-          get(name: string) {
-            try {
-              // Check if we have the cookie in our parsed map
-              const value = cookiesMap.get(name);
-              if (value) {
-                return value;
-              }
-              return undefined;
-            } catch (error) {
-              console.error('ERROR in cookieStore getter:', error)
-              return undefined;
-            }
-          },
-          set() {},
-          remove() {},
-        },
-        auth: {
-          // Critical for RLS - ensures proper session handling
-          detectSessionInUrl: false,
-          persistSession: true,
-          flowType: 'pkce',
+    // Try access token sources in order:
+    // 1. Authorization: Bearer <token>
+    // 2. cookie 'sb-access-token' or 'sb:session'
+    let accessToken: string | null = null;
+    
+    if (authorizationHeader.toLowerCase().startsWith('bearer ')) {
+      accessToken = authorizationHeader.substring(7);
+      console.log('DEBUG: Found access token in Authorization header');
+    } else {
+      // Try Supabase session cookies
+      const sbSession = cookiesMap.get('sb:session') || cookiesMap.get('sb-session') || cookiesMap.get('sb-access-token');
+      
+      if (sbSession) {
+        try {
+          // If sb:session is JSON string with access_token/refresh_token
+          const parsed = JSON.parse(decodeURIComponent(sbSession));
+          if (parsed?.access_token) {
+            accessToken = parsed.access_token;
+            console.log('DEBUG: Found access token in sb:session cookie');
+          }
+        } catch {
+          // If sb-access-token is already the token
+          if (sbSession && sbSession.split('.').length === 3) {
+            accessToken = sbSession;
+            console.log('DEBUG: Found access token in sb-access-token cookie');
+          }
         }
       }
-    );
+    }
+    
+    // Create client (anonymous key is OK - session will be set next)
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      global: { 
+        headers: { 
+          Authorization: accessToken ? `Bearer ${accessToken}` : '' 
+        } 
+      },
+      cookies: {
+        // Minimal no-op cookie store for serverless usage; we rely on setSession instead
+        get() { return undefined; },
+        set() {},
+        remove() {},
+      },
+      auth: {
+        // Critical for RLS - ensures proper session handling
+        detectSessionInUrl: false,
+        persistSession: true,
+        flowType: 'pkce',
+      },
+    });
+    
+    // If we found an access token, set it explicitly on the client
+    if (accessToken) {
+      try {
+        await supabase.auth.setSession({ access_token: accessToken, refresh_token: '' });
+        
+        // Verify user
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+          console.log('DEBUG: supabase.auth.getUser() error after setSession:', error);
+        } else {
+          console.log('DEBUG: supabase user after setSession:', user?.id);
+        }
+      } catch (err) {
+        console.error('ERROR setting session on server supabase client:', err);
+      }
+    } else {
+      console.log('DEBUG: No access token found in request (Authorization or cookies).');
+    }
     
     console.log('DEBUG: RLS-ready Supabase client created successfully')
-    return supabaseClient;
+    return supabase;
   } catch (error) {
     console.error('ERROR creating RLS Supabase client:', error)
     throw error;
@@ -229,7 +289,7 @@ export async function getTenantIdFromJWTWithRequest(request: NextRequest) {
   console.log('DEBUG: getTenantIdFromJWTWithRequest called');
   
   // First try to get user from Supabase client
-  const supabase = createServerSupabaseClientWithRequest(request);
+  const supabase = await createServerSupabaseClientWithRequest(request);
 
   const {
     data: { user },

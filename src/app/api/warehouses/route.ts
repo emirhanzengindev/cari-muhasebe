@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   try {
     console.log('DEBUG: GET /api/warehouses called')
 
-    const supabase = createServerSupabaseClientWithRequest(request)
+    const supabase = await createServerSupabaseClientWithRequest(request)
 
     const {
       data: { user },
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
   try {
     const warehouseData = await request.json();
     
-    const supabase = createServerSupabaseClientWithRequest(request);
+    const supabase = await createServerSupabaseClientWithRequest(request);
     
     const {
       data: { user }

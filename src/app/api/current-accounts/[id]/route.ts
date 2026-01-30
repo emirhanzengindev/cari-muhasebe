@@ -16,7 +16,7 @@ export async function GET(
     return NextResponse.json({ error: 'Tenant ID missing' }, { status: 401 })
   }
 
-  const supabase = createServerSupabaseClientWithRequest(request)
+  const supabase = await createServerSupabaseClientWithRequest(request)
 
   const { data, error } = await supabase
     .from('current_accounts')
@@ -51,7 +51,7 @@ export async function PUT(
     return NextResponse.json({ error: 'Tenant ID missing' }, { status: 401 })
   }
 
-  const supabase = createServerSupabaseClientWithRequest(request)
+  const supabase = await createServerSupabaseClientWithRequest(request)
 
   const { data, error } = await supabase
     .from('current_accounts')
@@ -127,7 +127,7 @@ export async function DELETE(
     return NextResponse.json({ error: 'Tenant ID missing' }, { status: 401 })
   }
 
-  const supabase = createServerSupabaseClientWithRequest(request)
+  const supabase = await createServerSupabaseClientWithRequest(request)
 
   const { error } = await supabase
     .from('current_accounts')

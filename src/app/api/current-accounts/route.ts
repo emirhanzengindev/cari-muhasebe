@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     console.log('DEBUG: Request URL:', request.url)
     
     console.log('DEBUG: Creating Supabase client...')
-    const supabase = createServerSupabaseClientForRLS(request)
+    const supabase = await createServerSupabaseClientForRLS(request)
     console.log('DEBUG: Supabase client created successfully')
     
     // Debug request
@@ -255,7 +255,7 @@ export async function POST(request: NextRequest) {
       console.log('DEBUG: Authorization header length:', authHeader.length);
     }
     
-    const supabase = createServerSupabaseClientForRLS(request);
+    const supabase = await createServerSupabaseClientForRLS(request);
     
     console.log('DEBUG: Getting user from Supabase...');
     const {

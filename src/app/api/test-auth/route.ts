@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     console.log('DEBUG: GET /api/test-auth called')
 
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
 
     const {
       data: { user },
