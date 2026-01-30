@@ -14,17 +14,36 @@ export async function GET(request: NextRequest) {
     const supabase = await createServerSupabaseClientForRLS(request);
     console.log('DEBUG: Supabase client created successfully');
     
-    // Debug: Check auth context immediately
+    // CRITICAL DEBUG: Check auth context immediately
     const { data: { user: debugUser }, error: debugError } = await supabase.auth.getUser();
-    console.log('DEBUG: Immediate auth check after client creation:');
-    console.log('  User:', debugUser?.id || 'NULL');
-    console.log('  Error:', debugError?.message || 'None');
+    console.log('DEBUG: CRITICAL AUTH CHECK:');
+    console.log('  User ID from supabase.auth.getUser():', debugUser?.id || 'NULL');
+    console.log('  Auth error:', debugError?.message || 'None');
     
-    // Debug: Check JWT context
-    const { data: jwtData, error: jwtError } = await supabase.rpc('debug_jwt_context');
-    console.log('DEBUG: JWT Context from DB:');
-    console.log('  Data:', jwtData || 'NULL');
-    console.log('  Error:', jwtError?.message || 'None');
+    // CRITICAL DEBUG: Check JWT context in database
+    try {
+      const { data: jwtResult, error: jwtDbError } = await supabase.rpc('debug_jwt_context');
+      console.log('DEBUG: DATABASE JWT CONTEXT:');
+      console.log('  Result:', jwtResult || 'NULL');
+      console.log('  DB Error:', jwtDbError?.message || 'None');
+    } catch (rpcError) {
+      console.log('DEBUG: RPC call failed:', rpcError);
+    }
+    
+    // Also check raw JWT claims
+    const authHeader = request.headers.get('authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log('DEBUG: RAW JWT PAYLOAD:');
+        console.log('  sub:', payload.sub || 'missing');
+        console.log('  tenant_id:', payload.tenant_id || 'missing');
+        console.log('  email:', payload.email || 'missing');
+      } catch (e) {
+        console.log('DEBUG: Could not parse JWT payload');
+      }
+    }
     
     // Debug request
     console.log('DEBUG: API request received');
