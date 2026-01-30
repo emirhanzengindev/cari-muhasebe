@@ -81,19 +81,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (!mounted) return;
         
-        if (session) {
-          const userData = buildUser(session);
-          if (mounted) {
-            userRef.current = userData;
-            setUser(userData);
-            setTenantId(userData.tenantId);
-            useTenantStore.getState().setTenantId(userData.tenantId);
+        // Use setTimeout to ensure DOM is ready for hydration
+        setTimeout(() => {
+          if (!mounted) return;
+          
+          if (session) {
+            const userData = buildUser(session);
+            if (mounted) {
+              userRef.current = userData;
+              setUser(userData);
+              setTenantId(userData.tenantId);
+              useTenantStore.getState().setTenantId(userData.tenantId);
+            }
           }
-        }
-        
-        if (mounted) {
-          setIsLoading(false);
-        }
+          
+          if (mounted) {
+            setIsLoading(false);
+          }
+        }, 0);
         
         // Set up auth state listener with proper cleanup
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
@@ -101,20 +106,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           console.log("AUTH EVENT:", event, !!session);
           
-          if (event === "SIGNED_IN" && session) {
-            const userData = buildUser(session);
-            userRef.current = userData;
-            setUser(userData);
-            setTenantId(userData.tenantId);
-            useTenantStore.getState().setTenantId(userData.tenantId);
-            setIsLoading(false);
-          } else if (event === "SIGNED_OUT" || !session) {
-            userRef.current = null;
-            setUser(null);
-            setTenantId(null);
-            useTenantStore.getState().setTenantId(null);
-            setIsLoading(false);
-          }
+          // Use setTimeout for state updates to prevent hydration issues
+          setTimeout(() => {
+            if (!mounted) return;
+            
+            if (event === "SIGNED_IN" && session) {
+              const userData = buildUser(session);
+              userRef.current = userData;
+              setUser(userData);
+              setTenantId(userData.tenantId);
+              useTenantStore.getState().setTenantId(userData.tenantId);
+              setIsLoading(false);
+            } else if (event === "SIGNED_OUT" || !session) {
+              userRef.current = null;
+              setUser(null);
+              setTenantId(null);
+              useTenantStore.getState().setTenantId(null);
+              setIsLoading(false);
+            }
+          }, 0);
         });
         
         // Store cleanup function

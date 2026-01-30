@@ -10,9 +10,21 @@ export async function GET(request: NextRequest) {
     console.log('DEBUG: Request method:', request.method)
     console.log('DEBUG: Request URL:', request.url)
     
-    console.log('DEBUG: Creating Supabase client...')
-    const supabase = await createServerSupabaseClientForRLS(request)
-    console.log('DEBUG: Supabase client created successfully')
+    console.log('DEBUG: Creating Supabase client...');
+    const supabase = await createServerSupabaseClientForRLS(request);
+    console.log('DEBUG: Supabase client created successfully');
+    
+    // Debug: Check auth context immediately
+    const { data: { user: debugUser }, error: debugError } = await supabase.auth.getUser();
+    console.log('DEBUG: Immediate auth check after client creation:');
+    console.log('  User:', debugUser?.id || 'NULL');
+    console.log('  Error:', debugError?.message || 'None');
+    
+    // Debug: Check JWT context
+    const { data: jwtData, error: jwtError } = await supabase.rpc('debug_jwt_context');
+    console.log('DEBUG: JWT Context from DB:');
+    console.log('  Data:', jwtData || 'NULL');
+    console.log('  Error:', jwtError?.message || 'None');
     
     // Debug request
     console.log('DEBUG: API request received');
