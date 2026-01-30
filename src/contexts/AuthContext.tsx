@@ -56,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const userRef = useRef<User | null>(null);
   const initializedRef = useRef(false);
+  const cleanupRef = useRef<(() => void) | null>(null);
   
   // Only log once to prevent spam
   useEffect(() => {
@@ -67,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let cleanupFunction: (() => void) | null = null;
     
     const initializeAuth = async () => {
       if (!mounted) return;
@@ -93,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsLoading(false);
         }
         
-        // Set up auth state listener
+        // Set up auth state listener with proper cleanup
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
           if (!mounted) return;
           
@@ -115,9 +117,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         });
         
-        return () => {
+        // Store cleanup function
+        cleanupFunction = () => {
           subscription.unsubscribe();
         };
+        cleanupRef.current = cleanupFunction;
+        
       } catch (error) {
         console.error('AUTH CONTEXT: Error in auth setup:', error);
         if (mounted) {
@@ -130,6 +135,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     return () => {
       mounted = false;
+      // Clean up subscription
+      if (cleanupFunction) {
+        cleanupFunction();
+      } else if (cleanupRef.current) {
+        cleanupRef.current();
+        cleanupRef.current = null;
+      }
     };
   }, []);
 
