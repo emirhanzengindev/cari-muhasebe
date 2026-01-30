@@ -55,98 +55,83 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const userRef = useRef<User | null>(null);
-  // Track if listener is already registered to prevent duplicates
-  const listenerRegisteredRef = useRef(false);
+  const initializedRef = useRef(false);
   
-  console.log('AuthProvider mounted, isLoading:', isLoading);
-  
-  // Debug: Log when user state changes
+  // Only log once to prevent spam
   useEffect(() => {
-    console.log('AUTH CONTEXT: User state changed to:', user);
-  }, [user]);
+    if (!initializedRef.current) {
+      console.log('AuthProvider initialized');
+      initializedRef.current = true;
+    }
+  }, []);
 
   useEffect(() => {
-    console.log('AUTH CONTEXT: Initializing with isLoading:', isLoading);
+    let mounted = true;
     
-    if (!listenerRegisteredRef.current) {
-      listenerRegisteredRef.current = true;
+    const initializeAuth = async () => {
+      if (!mounted) return;
       
       try {
         const supabase = getSupabaseBrowser();
-        const { data: { subscription } } =
-          supabase.auth.onAuthStateChange((event: any, session: any) => {
+        
+        // Get initial session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+        
+        if (session) {
+          const userData = buildUser(session);
+          if (mounted) {
+            userRef.current = userData;
+            setUser(userData);
+            setTenantId(userData.tenantId);
+            useTenantStore.getState().setTenantId(userData.tenantId);
+          }
+        }
+        
+        if (mounted) {
+          setIsLoading(false);
+        }
+        
+        // Set up auth state listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
+          if (!mounted) return;
+          
           console.log("AUTH EVENT:", event, !!session);
-          console.log('AUTH CONTEXT: Event received, current isLoading:', isLoading, 'current user:', !!userRef.current);
-
-          if (event === "INITIAL_SESSION") {
-            // INITIAL_SESSION is fired during initialization and should not affect user state
-            // Only update loading state, don't change user/session data
-            // 🔐 If user is already set by SIGNED_IN, don't touch the state
-            if (userRef.current) {
-              console.log('AUTH CONTEXT: INITIAL_SESSION ignored, user already set by SIGNED_IN');
-              setIsLoading(false);
-              return;
-            }
-            console.log('AUTH CONTEXT: Handling INITIAL_SESSION', { hasSession: !!session, session: session ? 'exists' : 'null' });
-            // Always set isLoading to false after processing INITIAL_SESSION
-            if (session) {
-              // Process the session from INITIAL_SESSION
-              console.log('AUTH CONTEXT: Building user from session:', session.user);
-              const userData = buildUser(session);
-              console.log('AUTH CONTEXT: Setting user data from INITIAL_SESSION:', userData);
-              userRef.current = userData;
-              setUser(userData);
-              setTenantId(userData.tenantId);
-              console.log('AUTH CONTEXT: Setting tenantId in context:', userData.tenantId);
-              useTenantStore.getState().setTenantId(userData.tenantId);
-              console.log('AUTH CONTEXT: User set successfully, userRef:', !!userRef.current);
-            } else {
-              // No session, user is not logged in
-              console.log('AUTH CONTEXT: No session found, user not logged in');
-            }
-            // Always set isLoading to false to prevent infinite loop
-            console.log('AUTH CONTEXT: Setting isLoading to false');
+          
+          if (event === "SIGNED_IN" && session) {
+            const userData = buildUser(session);
+            userRef.current = userData;
+            setUser(userData);
+            setTenantId(userData.tenantId);
+            useTenantStore.getState().setTenantId(userData.tenantId);
             setIsLoading(false);
-            return;
-          }
-
-          if (event === "SIGNED_IN" && userRef.current) {
-            // Prevent duplicate SIGNED_IN events when user is already set
-            console.log('AUTH CONTEXT: SIGNED_IN ignored, user already set');
-            setIsLoading(false);
-            return;
-          }
-
-          if (!session) {
-            console.log('AUTH CONTEXT: No session, resetting state');
+          } else if (event === "SIGNED_OUT" || !session) {
             userRef.current = null;
             setUser(null);
             setTenantId(null);
             useTenantStore.getState().setTenantId(null);
             setIsLoading(false);
-            return;
           }
-
-          const userData = buildUser(session);
-          console.log('AUTH CONTEXT: Setting user data:', userData);
-          userRef.current = userData;
-          setUser(userData);
-          setTenantId(userData.tenantId);
-          useTenantStore.getState().setTenantId(userData.tenantId);
-          console.log('AUTH CONTEXT: Setting isLoading to false after setting user');
-          setIsLoading(false);
         });
+        
         return () => {
-          console.log('AUTH CONTEXT: Unsubscribing from auth state change');
-          listenerRegisteredRef.current = false;
           subscription.unsubscribe();
         };
       } catch (error) {
         console.error('AUTH CONTEXT: Error in auth setup:', error);
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
-    }
-  }, []); // Empty dependency array - should run only once
+    };
+    
+    initializeAuth();
+    
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const logout = async () => {
     useTenantStore.getState().setTenantId(null);
