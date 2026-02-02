@@ -192,10 +192,13 @@ export async function getTenantIdFromJWT() {
 
 // Function to create a Supabase client with proper RLS authentication
 export function createServerSupabaseClientForRLS(request: NextRequest) {
+  console.log('DEBUG: createServerSupabaseClientForRLS called');
+  
   const headersObj: Record<string, string> = {};
   for (const [key, value] of request.headers) {
     headersObj[key] = headersObj[key] ? `${headersObj[key]},${value}` : value;
   }
+  console.log('DEBUG: Headers extracted:', Object.keys(headersObj));
 
   const cookiesObj: Record<string, string> = {};
   try {
@@ -203,21 +206,26 @@ export function createServerSupabaseClientForRLS(request: NextRequest) {
     for (const c of cookiePairs) {
       cookiesObj[c.name] = c.value;
     }
+    console.log('DEBUG: Cookies from getAll:', Object.keys(cookiesObj));
   } catch (e) {
     const raw = request.headers.get('cookie');
+    console.log('DEBUG: Raw cookie header:', raw ? 'Present' : 'Absent');
     if (raw) {
       raw.split(';').forEach((pair) => {
         const [k, ...v] = pair.split('=');
         if (!k) return;
         cookiesObj[k.trim()] = decodeURIComponent((v || []).join('=').trim());
       });
+      console.log('DEBUG: Cookies from header parsing:', Object.keys(cookiesObj));
     }
   }
 
   // Convert to proper cookie methods format
   const cookieMethods = {
     get(name: string) {
-      return cookiesObj[name];
+      const value = cookiesObj[name];
+      console.log(`DEBUG: Cookie get(${name}):`, value ? 'Found' : 'Not found');
+      return value;
     },
     set(name: string, value: string) {
       // Server-side cookie setting not needed for RLS
@@ -226,10 +234,13 @@ export function createServerSupabaseClientForRLS(request: NextRequest) {
       // Server-side cookie removal not needed for RLS
     },
     getAll() {
-      return Object.entries(cookiesObj).map(([name, value]) => ({ name, value }));
+      const entries = Object.entries(cookiesObj).map(([name, value]) => ({ name, value }));
+      console.log('DEBUG: Cookie getAll() returning', entries.length, 'entries');
+      return entries;
     }
   };
 
+  console.log('DEBUG: Creating Supabase client with headers and cookies');
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     global: {
       headers: headersObj
