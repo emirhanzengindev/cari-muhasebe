@@ -252,7 +252,7 @@ export async function createServerSupabaseClientForRLS(request: NextRequest) {
       auth: {
         // Critical for RLS - ensures proper session handling
         detectSessionInUrl: false,
-        persistSession: true,
+        persistSession: false,
         flowType: 'pkce',
       },
     });
