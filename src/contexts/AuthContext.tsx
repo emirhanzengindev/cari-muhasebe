@@ -71,18 +71,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cleanupFunction: (() => void) | null = null;
     
     const initializeAuth = async () => {
-      if (!mounted) return;
-      
-      try {
-        const supabase = getSupabaseBrowser();
-        
-        // Get initial session
-        const { data: { session } } = await supabase.auth.getSession();
-        
+      // Use immediate timeout to ensure DOM is hydrated
+      setTimeout(async () => {
         if (!mounted) return;
         
-        // Use setTimeout to ensure DOM is ready for hydration
-        setTimeout(() => {
+        try {
+          const supabase = getSupabaseBrowser();
+          
+          // Get initial session
+          const { data: { session } } = await supabase.auth.getSession();
+          
           if (!mounted) return;
           
           if (session) {
@@ -98,47 +96,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (mounted) {
             setIsLoading(false);
           }
-        }, 0);
-        
-        // Set up auth state listener with proper cleanup
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
-          if (!mounted) return;
           
-          console.log("AUTH EVENT:", event, !!session);
-          
-          // Use setTimeout for state updates to prevent hydration issues
-          setTimeout(() => {
+          // Set up auth state listener with proper cleanup
+          const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
             if (!mounted) return;
             
-            if (event === "SIGNED_IN" && session) {
-              const userData = buildUser(session);
-              userRef.current = userData;
-              setUser(userData);
-              setTenantId(userData.tenantId);
-              useTenantStore.getState().setTenantId(userData.tenantId);
-              setIsLoading(false);
-            } else if (event === "SIGNED_OUT" || !session) {
-              userRef.current = null;
-              setUser(null);
-              setTenantId(null);
-              useTenantStore.getState().setTenantId(null);
-              setIsLoading(false);
-            }
-          }, 0);
-        });
-        
-        // Store cleanup function
-        cleanupFunction = () => {
-          subscription.unsubscribe();
-        };
-        cleanupRef.current = cleanupFunction;
-        
-      } catch (error) {
-        console.error('AUTH CONTEXT: Error in auth setup:', error);
-        if (mounted) {
-          setIsLoading(false);
+            console.log("AUTH EVENT:", event, !!session);
+            
+            // Use setTimeout for state updates to prevent hydration issues
+            setTimeout(() => {
+              if (!mounted) return;
+              
+              if (event === "SIGNED_IN" && session) {
+                const userData = buildUser(session);
+                userRef.current = userData;
+                setUser(userData);
+                setTenantId(userData.tenantId);
+                useTenantStore.getState().setTenantId(userData.tenantId);
+                setIsLoading(false);
+              } else if (event === "SIGNED_OUT" || !session) {
+                userRef.current = null;
+                setUser(null);
+                setTenantId(null);
+                useTenantStore.getState().setTenantId(null);
+                setIsLoading(false);
+              }
+            }, 0);
+          });
+          
+          // Store cleanup function
+          cleanupFunction = () => {
+            subscription.unsubscribe();
+          };
+          cleanupRef.current = cleanupFunction;
+          
+        } catch (error) {
+          console.error('AUTH CONTEXT: Error in auth setup:', error);
+          if (mounted) {
+            setIsLoading(false);
+          }
         }
-      }
+      }, 0);
     };
     
     initializeAuth();
