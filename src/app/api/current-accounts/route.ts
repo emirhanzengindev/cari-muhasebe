@@ -442,15 +442,41 @@ export async function POST(request: NextRequest) {
     // Test the database JWT context before insert
     try {
       console.log('DEBUG: Testing database JWT context before INSERT...');
-      const { data: jwtTestResult, error: jwtTestError } = await supabase.rpc('get_jwt_tenant_safe');
       
-      console.log('DEBUG: JWT Context Test Result:', {
-        data: jwtTestResult,
-        error: jwtTestError?.message || null,
-        hasData: !!jwtTestResult
-      });
+      // First try the RPC method
+      try {
+        const { data: jwtTestResult, error: jwtTestError } = await supabase.rpc('get_jwt_tenant_safe');
+        
+        console.log('DEBUG: JWT Context Test Result (RPC):', {
+          data: jwtTestResult,
+          error: jwtTestError?.message || null,
+          hasData: !!jwtTestResult
+        });
+      } catch (rpcError) {
+        console.log('DEBUG: JWT Context Test (RPC) failed, trying direct SQL method:', rpcError);
+        
+        // If RPC fails, try direct SQL method to check JWT context
+        try {
+          const { data: directSqlResult, error: directSqlError } = await supabase
+            .from('current_accounts')
+            .select(`
+              auth.uid() as current_user_id,
+              current_setting('request.jwt.claim.sub', true) as jwt_sub,
+              current_setting('request.jwt.claim.tenant_id', true) as jwt_tenant_id
+            `)
+            .limit(1);
+            
+          console.log('DEBUG: JWT Context Test Result (Direct SQL):', {
+            data: directSqlResult,
+            error: directSqlError?.message || null,
+            hasData: !!directSqlResult
+          });
+        } catch (sqlError) {
+          console.log('DEBUG: JWT Context Test (Direct SQL) also failed:', sqlError);
+        }
+      }
     } catch (jwtTestError) {
-      console.log('DEBUG: JWT Context Test failed (this is expected in some environments):', jwtTestError);
+      console.log('DEBUG: All JWT Context Tests failed:', jwtTestError);
     }
     
     const { data, error, status } = await supabase
