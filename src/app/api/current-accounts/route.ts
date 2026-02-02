@@ -439,6 +439,20 @@ export async function POST(request: NextRequest) {
     
     console.log('DEBUG: About to execute Supabase insert...');
     
+    // Test the database JWT context before insert
+    try {
+      console.log('DEBUG: Testing database JWT context before INSERT...');
+      const { data: jwtTestResult, error: jwtTestError } = await supabase.rpc('get_jwt_tenant_safe');
+      
+      console.log('DEBUG: JWT Context Test Result:', {
+        data: jwtTestResult,
+        error: jwtTestError?.message || null,
+        hasData: !!jwtTestResult
+      });
+    } catch (jwtTestError) {
+      console.log('DEBUG: JWT Context Test failed (this is expected in some environments):', jwtTestError);
+    }
+    
     const { data, error, status } = await supabase
       .from('current_accounts')
       .insert([insertData])  // Use the prepared data with explicit IDs
