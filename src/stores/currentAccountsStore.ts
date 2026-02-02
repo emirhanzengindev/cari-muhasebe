@@ -22,6 +22,7 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   console.log('DEBUG: Session retrieved:', session ? 'exists' : 'null');
   if (session) {
     console.log('DEBUG: Session user:', session.user?.email);
+    console.log('DEBUG: Session user ID:', session.user?.id);
     console.log('DEBUG: Session access_token exists:', !!session.access_token);
   }
     
@@ -43,9 +44,30 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
     headers['Content-Type'] = 'application/json';
   }
   
+  // Add tenant_id and user_id to the body for POST requests
+  let bodyWithAuth = options.body;
+  if (method === 'POST' && options.body) {
+    try {
+      const bodyObj = JSON.parse(options.body as string);
+      bodyWithAuth = JSON.stringify({
+        ...bodyObj,
+        tenant_id: tenantId,
+        user_id: session?.user?.id
+      });
+      console.log('DEBUG: Body with auth info:', {
+        originalBody: bodyObj,
+        tenant_id: tenantId,
+        user_id: session?.user?.id
+      });
+    } catch (e) {
+      console.warn('DEBUG: Failed to parse body for auth injection:', e);
+    }
+  }
+  
   const response = await fetch(`/api${endpoint}`, {
     ...options,
     headers,
+    body: bodyWithAuth,
     credentials: 'include',
   });
   
