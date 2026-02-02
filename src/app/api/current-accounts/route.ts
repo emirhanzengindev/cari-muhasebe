@@ -357,12 +357,28 @@ export async function POST(request: NextRequest) {
   try {
     console.log('DEBUG: POST /api/current-accounts called');
     
+    // Log request headers for debugging
+    console.log('DEBUG: Request headers:', Object.fromEntries(request.headers));
+    console.log('DEBUG: Cookie header:', request.headers.get('cookie'));
+    
     // Build Supabase client for route handlers using cookies from the incoming request
     const supabase = createServerSupabaseClient();
 
     // Get session (if available)
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    console.log('DEBUG: Session fetch result:', { sessionError, hasSession: !!sessionData?.session });
+    console.log('DEBUG: Session fetch result:', { 
+      sessionError: sessionError?.message || null, 
+      hasSession: !!sessionData?.session,
+      sessionId: sessionData?.session?.user?.id || null
+    });
+
+    // Log session details if available
+    if (sessionData?.session) {
+      console.log('DEBUG: Session user ID:', sessionData.session.user?.id);
+      console.log('DEBUG: Session user email:', sessionData.session.user?.email);
+      console.log('DEBUG: Session user metadata:', sessionData.session.user?.user_metadata);
+      console.log('DEBUG: Session access token length:', sessionData.session.access_token?.length || 0);
+    }
 
     // Attempt to fetch debug RPC that shows JWT context in DB session
     let debugCtx: any = null;
@@ -422,7 +438,15 @@ export async function POST(request: NextRequest) {
     const finalTenantId = tenantIdFromCtx || sessionData?.session?.user?.user_metadata?.tenant_id || body.tenant_id || sessionUserId || null;
     const finalUserId = userIdFromCtx || sessionUserId || body.user_id || null;
 
-    console.log('DEBUG: Resolved tenant/user', { finalTenantId, finalUserId });
+    console.log('DEBUG: Resolved tenant/user', { 
+      finalTenantId, 
+      finalUserId,
+      tenantIdFromCtx,
+      userIdFromCtx,
+      sessionUserId,
+      bodyTenantId: body.tenant_id,
+      bodyUserId: body.user_id
+    });
 
     if (!finalTenantId || !finalUserId) {
       // If we don't have tenant/user from any secure source, fail with actionable message
