@@ -355,7 +355,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('DEBUG: POST /api/current-accounts called - DIRECT POSTGRESQL APPROACH');
+    console.log('DEBUG: POST /api/current-accounts called - CONSISTENT SUPABASE APPROACH');
     
     // Parse request body first
     const body = await request.json();
@@ -363,134 +363,108 @@ export async function POST(request: NextRequest) {
     console.log('DEBUG: Client-side tenant_id:', body.tenant_id);
     console.log('DEBUG: Client-side user_id:', body.user_id);
     
-    // Extract auth info from request
-    const cookieHeader = request.headers.get('cookie');
-    if (!cookieHeader) {
-      console.log('ERROR: No cookies found in request');
+    // Get cookies for auth
+    const cookieStore = cookies();
+    const supabase = createServerSupabaseClient();
+    
+    // Get session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    console.log('DEBUG: Session result:', {
+      hasSession: !!session,
+      sessionError: sessionError?.message || null,
+      userId: session?.user?.id,
+      tenantId: session?.user?.user_metadata?.tenant_id
+    });
+    
+    if (!session?.user) {
+      console.log('ERROR: No authenticated user found');
       return Response.json({ error: 'Authentication required' }, { status: 401 });
     }
     
-    // Parse cookies manually
-    const cookies = cookieHeader.split(';').map(c => c.trim());
-    const authTokenCookie = cookies.find(c => c.startsWith('sb-') && c.includes('auth-token'));
+    // Use session data for auth, ignore client-provided values for security
+    const userId = session.user.id;
+    const tenantId = session.user.user_metadata?.tenant_id || userId;
     
-    if (!authTokenCookie) {
-      console.log('ERROR: No auth token cookie found');
-      return Response.json({ error: 'Authentication token missing' }, { status: 401 });
+    console.log('DEBUG: Using session-based auth info:', { userId, tenantId });
+    
+    // Validate the data
+    const name = body.name?.trim();
+    if (!name) {
+      console.log('ERROR: Account name is required');
+      return Response.json({ error: 'Account name is required' }, { status: 400 });
     }
     
-    try {
-      const cookieValue = decodeURIComponent(authTokenCookie.split('=')[1]);
-      const cookieData = JSON.parse(cookieValue);
-      
-      console.log('DEBUG: Auth token parsed successfully');
-      console.log('DEBUG: User ID from cookie:', cookieData.user?.id);
-      console.log('DEBUG: Tenant ID from cookie:', cookieData.user?.user_metadata?.tenant_id);
-      console.log('DEBUG: Has access token:', !!cookieData.access_token);
-      
-      const userId = cookieData.user?.id;
-      const tenantId = cookieData.user?.user_metadata?.tenant_id || userId;
-      const accessToken = cookieData.access_token;
-      
-      if (!userId || !tenantId || !accessToken) {
-        console.log('ERROR: Missing required auth information');
-        return Response.json({ error: 'Incomplete authentication data' }, { status: 401 });
-      }
-      
-      // Validate the data
-      const name = body.name?.trim();
-      if (!name) {
-        console.log('ERROR: Account name is required');
-        return Response.json({ error: 'Account name is required' }, { status: 400 });
-      }
-      
-      // Prepare insert data
-      const insertData = {
-        name: name,
-        phone: body.phone?.trim() || null,
-        address: body.address?.trim() || null,
-        tax_number: body.taxNumber?.trim() || null,
-        tax_office: body.taxOffice?.trim() || null,
-        company: body.company?.trim() || null,
-        is_active: body.isActive !== undefined ? body.isActive : true,
-        account_type: body.accountType || 'CUSTOMER',
-        tenant_id: tenantId,
-        user_id: userId,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      console.log('DEBUG: Final insert data prepared:', {
-        name: insertData.name,
-        tenant_id: insertData.tenant_id,
-        user_id: insertData.user_id
+    // Prepare insert data with server-side enforced values
+    const insertData = {
+      name: name,
+      phone: body.phone?.trim() || null,
+      address: body.address?.trim() || null,
+      tax_number: body.taxNumber?.trim() || null,
+      tax_office: body.taxOffice?.trim() || null,
+      company: body.company?.trim() || null,
+      is_active: body.isActive !== undefined ? body.isActive : true,
+      account_type: body.accountType || 'CUSTOMER',
+      tenant_id: tenantId,  // Enforced server-side
+      user_id: userId,      // Enforced server-side
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    console.log('DEBUG: Final insert data prepared:', {
+      name: insertData.name,
+      tenant_id: insertData.tenant_id,
+      user_id: insertData.user_id
+    });
+    
+    // Perform insert using Supabase client
+    const { data: insertResult, error: insertError } = await supabase
+      .from('current_accounts')
+      .insert([insertData])
+      .select();
+    
+    if (insertError) {
+      console.error('ERROR: Insert failed:', {
+        message: insertError.message,
+        code: insertError.code,
+        details: insertError.details,
+        hint: insertError.hint
       });
       
-      // DIRECT POSTGRESQL INSERT (bypassing Supabase RLS)
-      const { Pool } = require('pg');
-      
-      const pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: {
-          rejectUnauthorized: false
-        }
-      });
-      
-      console.log('DEBUG: Connecting to PostgreSQL directly...');
-      
-      const client = await pool.connect();
-      try {
-        console.log('DEBUG: Executing direct INSERT query...');
-        
-        const query = `
-          INSERT INTO current_accounts (
-            name, phone, address, tax_number, tax_office, company,
-            is_active, account_type, tenant_id, user_id, created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-          RETURNING *;
-        `;
-        
-        const values = [
-          insertData.name,
-          insertData.phone,
-          insertData.address,
-          insertData.tax_number,
-          insertData.tax_office,
-          insertData.company,
-          insertData.is_active,
-          insertData.account_type,
-          insertData.tenant_id,
-          insertData.user_id,
-          insertData.created_at,
-          insertData.updated_at
-        ];
-        
-        const result = await client.query(query, values);
-        const insertedRow = result.rows[0];
-        
-        console.log('SUCCESS: Record inserted directly to PostgreSQL');
-        console.log('DEBUG: Inserted row ID:', insertedRow.id);
-        
-        // Map the response to match frontend expectations
-        const mappedData = {
-          ...insertedRow,
-          created_at: new Date(insertedRow.created_at),
-          updated_at: new Date(insertedRow.updated_at),
-          isActive: insertedRow.is_active,
-          accountType: insertedRow.account_type
-        };
-        
-        return Response.json(mappedData, { status: 201 });
-        
-      } finally {
-        client.release();
-        await pool.end();
+      // Handle RLS policy violations specifically
+      if (insertError.code === '42501' || insertError.message.toLowerCase().includes('row-level security')) {
+        console.error('RLS POLICY VIOLATION: JWT context not properly propagated');
+        return Response.json(
+          { 
+            error: 'Authorization failed - security policy violation',
+            details: 'Ensure your session is properly authenticated with tenant access'
+          }, 
+          { status: 403 }
+        );
       }
       
-    } catch (parseError) {
-      console.error('ERROR: Failed to parse auth cookie:', parseError);
-      return Response.json({ error: 'Invalid authentication token' }, { status: 401 });
+      // Return other errors as 500
+      return Response.json(
+        { 
+          error: 'Failed to create account',
+          details: insertError.message 
+        }, 
+        { status: 500 }
+      );
     }
+    
+    console.log('SUCCESS: Record inserted via Supabase client');
+    console.log('DEBUG: Inserted row ID:', insertResult[0]?.id);
+    
+    // Map the response to match frontend expectations
+    const mappedData = {
+      ...insertResult[0],
+      created_at: new Date(insertResult[0].created_at),
+      updated_at: new Date(insertResult[0].updated_at),
+      isActive: insertResult[0].is_active,
+      accountType: insertResult[0].account_type
+    };
+    
+    return Response.json(mappedData, { status: 201 });
     
   } catch (err: any) {
     console.error('ERROR: Unexpected handler error', err);
