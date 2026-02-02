@@ -191,97 +191,53 @@ export async function getTenantIdFromJWT() {
 }
 
 // Function to create a Supabase client with proper RLS authentication
-export async function createServerSupabaseClientForRLS(request: NextRequest) {
-  try {
-    console.log('DEBUG: createServerSupabaseClientForRLS called')
-    
-    // Extract Authorization header if present
-    const authorizationHeader = request.headers.get('authorization') || '';
-    console.log('DEBUG: Authorization header from request:', authorizationHeader ? 'Present' : 'Absent')
-    
-    // Extract cookies from the request
-    const cookieHeader = request.headers.get('cookie') || '';
-    console.log('DEBUG: Cookie header from request:', cookieHeader ? 'Present' : 'Absent')
-    
-    // Parse cookies into a map for easier access
-    const cookiesMap = parseCookies(cookieHeader);
-    
-    // Try access token sources in order:
-    // 1. Authorization: Bearer <token>
-    // 2. cookie 'sb-access-token' or 'sb:session'
-    let accessToken: string | null = null;
-    
-    if (authorizationHeader.toLowerCase().startsWith('bearer ')) {
-      accessToken = authorizationHeader.substring(7);
-      console.log('DEBUG: Found access token in Authorization header');
-    } else {
-      // Try Supabase session cookies
-      const sbSession = cookiesMap.get('sb:session') || cookiesMap.get('sb-session') || cookiesMap.get('sb-access-token');
-      
-      if (sbSession) {
-        try {
-          // If sb:session is JSON string with access_token/refresh_token
-          const parsed = JSON.parse(decodeURIComponent(sbSession));
-          if (parsed?.access_token) {
-            accessToken = parsed.access_token;
-            console.log('DEBUG: Found access token in sb:session cookie');
-          }
-        } catch {
-          // If sb-access-token is already the token
-          if (sbSession && sbSession.split('.').length === 3) {
-            accessToken = sbSession;
-            console.log('DEBUG: Found access token in sb-access-token cookie');
-          }
-        }
-      }
-    }
-    
-    // Create client (anonymous key is OK - session will be set next)
-    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-      global: { 
-        headers: { 
-          Authorization: accessToken ? `Bearer ${accessToken}` : '' 
-        } 
-      },
-      cookies: {
-        // Minimal no-op cookie store for serverless usage; we rely on setSession instead
-        get() { return undefined; },
-        set() {},
-        remove() {},
-      },
-      auth: {
-        // Critical for RLS - ensures proper session handling
-        detectSessionInUrl: false,
-        persistSession: false,
-        flowType: 'pkce',
-      },
-    });
-    
-    // If we found an access token, set it explicitly on the client
-    if (accessToken) {
-      try {
-        await supabase.auth.setSession({ access_token: accessToken, refresh_token: '' });
-        
-        // Verify user
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (error) {
-          console.log('DEBUG: supabase.auth.getUser() error after setSession:', error);
-        } else {
-          console.log('DEBUG: supabase user after setSession:', user?.id);
-        }
-      } catch (err) {
-        console.error('ERROR setting session on server supabase client:', err);
-      }
-    } else {
-      console.log('DEBUG: No access token found in request (Authorization or cookies).');
-    }
-    
-    console.log('DEBUG: RLS-ready Supabase client created successfully')
-    return supabase;
-  } catch (error) {
-    console.error('ERROR creating RLS Supabase client:', error)
-    throw error;
+export function createServerSupabaseClientForRLS(request: NextRequest) {
+  const headersObj: Record<string, string> = {};
+  for (const [key, value] of request.headers) {
+    headersObj[key] = headersObj[key] ? `${headersObj[key]},${value}` : value;
   }
+
+  const cookiesObj: Record<string, string> = {};
+  try {
+    const cookiePairs = request.cookies.getAll ? request.cookies.getAll() : [];
+    for (const c of cookiePairs) {
+      cookiesObj[c.name] = c.value;
+    }
+  } catch (e) {
+    const raw = request.headers.get('cookie');
+    if (raw) {
+      raw.split(';').forEach((pair) => {
+        const [k, ...v] = pair.split('=');
+        if (!k) return;
+        cookiesObj[k.trim()] = decodeURIComponent((v || []).join('=').trim());
+      });
+    }
+  }
+
+  // Convert to proper cookie methods format
+  const cookieMethods = {
+    get(name: string) {
+      return cookiesObj[name];
+    },
+    set(name: string, value: string) {
+      // Server-side cookie setting not needed for RLS
+    },
+    remove(name: string) {
+      // Server-side cookie removal not needed for RLS
+    },
+    getAll() {
+      return Object.entries(cookiesObj).map(([name, value]) => ({ name, value }));
+    }
+  };
+
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: headersObj
+    },
+    cookies: cookieMethods,
+  });
+
+  return supabase;
 }
 
 // Function to extract tenant ID from Supabase auth with request context
