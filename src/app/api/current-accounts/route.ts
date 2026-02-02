@@ -361,6 +361,17 @@ export async function POST(request: NextRequest) {
     console.log('DEBUG: Request headers:', Object.fromEntries(request.headers));
     console.log('DEBUG: Cookie header:', request.headers.get('cookie'));
     
+    // Parse cookies manually to see what's actually being sent
+    const cookieHeader = request.headers.get('cookie');
+    if (cookieHeader) {
+      const cookies = cookieHeader.split(';').map(c => c.trim());
+      console.log('DEBUG: Parsed cookies:', cookies);
+      const supabaseCookies = cookies.filter(c => c.startsWith('sb-'));
+      console.log('DEBUG: Supabase cookies found:', supabaseCookies);
+    } else {
+      console.log('DEBUG: NO COOKIE HEADER FOUND!');
+    }
+    
     // Build Supabase client for route handlers using cookies from the incoming request
     const supabase = createServerSupabaseClient();
 
@@ -378,6 +389,9 @@ export async function POST(request: NextRequest) {
       console.log('DEBUG: Session user email:', sessionData.session.user?.email);
       console.log('DEBUG: Session user metadata:', sessionData.session.user?.user_metadata);
       console.log('DEBUG: Session access token length:', sessionData.session.access_token?.length || 0);
+    } else {
+      console.log('DEBUG: NO SESSION DATA FOUND!');
+      console.log('DEBUG: Session error details:', sessionError);
     }
 
     // Attempt to fetch debug RPC that shows JWT context in DB session
@@ -451,6 +465,13 @@ export async function POST(request: NextRequest) {
     if (!finalTenantId || !finalUserId) {
       // If we don't have tenant/user from any secure source, fail with actionable message
       console.log('ERROR: Missing tenant_id or user_id in server context');
+      console.log('DEBUG: All sources checked:', {
+        tenantIdFromCtx,
+        sessionTenantId: sessionData?.session?.user?.user_metadata?.tenant_id,
+        bodyTenantId: body.tenant_id,
+        sessionUserId,
+        bodyUserId: body.user_id
+      });
       return Response.json(
         { error: 'Missing tenant_id or user_id in server context. Ensure cookies are sent and createServerSupabaseClient is used.' },
         { status: 400 }
