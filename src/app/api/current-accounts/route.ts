@@ -4,12 +4,21 @@ import { NextRequest } from 'next/server';
 import { headers, cookies } from 'next/headers';
 import { createServerSupabaseClient, createServerSupabaseClientForRLS } from '@/lib/supabaseServer';
 
+// EMERGENCY TEST ENDPOINT
+export async function OPTIONS() {
+  console.log('!!! EMERGENCY: /api/current-accounts OPTIONS called !!!');
+  return new Response('OK', { status: 200 });
+}
+
 function makeSupabaseClient(request: NextRequest) {
   // Mevcut wrapper fonksiyonumuzu kullanıyoruz
   return createServerSupabaseClientForRLS(request);
 }
 
 export async function GET(request: NextRequest) {
+  // EMERGENCY DEBUG - This should appear in logs
+  console.log('!!! EMERGENCY: /api/current-accounts GET handler called !!!');
+  
   try {
     console.log('DEBUG: GET /api/current-accounts called');
     console.log('DEBUG: About to call makeSupabaseClient');
@@ -80,6 +89,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // EMERGENCY DEBUG - This should appear in logs
+  console.log('!!! EMERGENCY: /api/current-accounts POST handler called !!!');
+  
   try {
     console.log('DEBUG: POST /api/current-accounts called');
     console.log('DEBUG: About to call makeSupabaseClient');
