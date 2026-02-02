@@ -368,15 +368,166 @@ export async function POST(request: NextRequest) {
       console.log('DEBUG: Parsed cookies:', cookies);
       const supabaseCookies = cookies.filter(c => c.startsWith('sb-'));
       console.log('DEBUG: Supabase cookies found:', supabaseCookies);
+      
+      // Extract auth token from cookie
+      const authTokenCookie = cookies.find(c => c.startsWith('sb-') && c.includes('auth-token'));
+      if (authTokenCookie) {
+        try {
+          const cookieValue = decodeURIComponent(authTokenCookie.split('=')[1]);
+          const cookieData = JSON.parse(cookieValue);
+          console.log('DEBUG: Auth token cookie data:', {
+            hasAccessToken: !!cookieData.access_token,
+            userId: cookieData.user?.id,
+            userEmail: cookieData.user?.email,
+            tenantId: cookieData.user?.user_metadata?.tenant_id
+          });
+          
+          if (cookieData.access_token && cookieData.user?.id) {
+            // Create Supabase client and manually set session
+            const supabase = createServerSupabaseClient();
+            
+            // Set session manually with the access token from cookie
+            await supabase.auth.setSession({
+              access_token: cookieData.access_token,
+              refresh_token: cookieData.refresh_token || ''
+            });
+            
+            console.log('DEBUG: Manually set session from cookie');
+            
+            // Verify session was set correctly
+            const { data: { user: sessionUser }, error: sessionError } = await supabase.auth.getUser();
+            console.log('DEBUG: Session user after manual set:', {
+              userId: sessionUser?.id,
+              userEmail: sessionUser?.email,
+              hasUser: !!sessionUser,
+              error: sessionError?.message
+            });
+            
+            // Parse request body
+            const body = await request.json();
+            console.log('DEBUG: Incoming payload:', body);
+            console.log('DEBUG: Client-side tenant_id:', body.tenant_id);
+            console.log('DEBUG: Client-side user_id:', body.user_id);
+
+            // Use client-side provided values as primary source, fallback to session data
+            const finalTenantId = body.tenant_id || sessionUser?.user_metadata?.tenant_id || sessionUser?.id || null;
+            const finalUserId = body.user_id || sessionUser?.id || null;
+
+            console.log('DEBUG: Resolved tenant/user', { 
+              finalTenantId, 
+              finalUserId,
+              clientTenantId: body.tenant_id,
+              clientUserId: body.user_id,
+              sessionTenantId: sessionUser?.user_metadata?.tenant_id,
+              sessionUserId: sessionUser?.id
+            });
+
+            if (!finalTenantId || !finalUserId) {
+              // If we don't have tenant/user from any secure source, fail with actionable message
+              console.log('ERROR: Missing tenant_id or user_id in server context');
+              console.log('DEBUG: All sources checked:', {
+                clientTenantId: body.tenant_id,
+                clientUserId: body.user_id,
+                sessionTenantId: sessionUser?.user_metadata?.tenant_id,
+                sessionUserId: sessionUser?.id
+              });
+              return Response.json(
+                { error: 'Missing tenant_id or user_id in server context. Ensure cookies are sent and createServerSupabaseClient is used.' },
+                { status: 400 }
+              );
+            }
+
+            // Build payload for insert and FORCE tenant_id and user_id server-side
+            const insertPayload = {
+              name: body.name?.trim() || '',
+              phone: body.phone?.trim() || null,
+              address: body.address?.trim() || null,
+              tax_number: body.taxNumber?.trim() || null,
+              tax_office: body.taxOffice?.trim() || null,
+              company: body.company?.trim() || null,
+              is_active: body.isActive !== undefined ? body.isActive : true,
+              account_type: body.accountType || 'CUSTOMER',
+              tenant_id: finalTenantId,
+              user_id: finalUserId,
+            };
+
+            // Validate required fields
+            if (!insertPayload.name) {
+              console.error('MISSING REQUIRED FIELD: name');
+              return Response.json({ error: 'Account name is required' }, { status: 400 });
+            }
+
+            console.log('DEBUG: About to execute insert with tenant_id:', finalTenantId, 'and user_id:', finalUserId);
+            console.log('DEBUG: Insert payload:', insertPayload);
+            
+            // Attempt insert (override any client-supplied tenant/user values)
+            const { data: insertData, error: insertError } = await supabase
+              .from('current_accounts')
+              .insert([insertPayload])
+              .select();
+
+            if (insertError) {
+              console.error('ERROR: Insert failed', { 
+                message: insertError.message,
+                code: insertError.code,
+                details: insertError.details,
+                hint: insertError.hint
+              });
+              
+              // Handle RLS policy violation
+              if (insertError.code === '42501' || insertError.message.toLowerCase().includes('row-level security policy')) {
+                console.error('RLS POLICY VIOLATION DETECTED');
+                console.error('Tenant ID being used:', finalTenantId);
+                console.error('User ID:', finalUserId);
+                console.error('Full error details:', {
+                  message: insertError.message,
+                  code: insertError.code,
+                  details: insertError.details,
+                  hint: insertError.hint
+                });
+                
+                // Log the specific RLS policy check that failed
+                console.error('RLS DEBUG: Attempted insert with:', {
+                  insert_tenant_id: insertPayload.tenant_id,
+                  insert_user_id: insertPayload.user_id,
+                  final_tenant_id: finalTenantId,
+                  final_user_id: finalUserId
+                });
+              }
+              
+              // Return helpful debugging info but avoid leaking sensitive details
+              return Response.json(
+                { error: 'Failed to insert account due to security policy violation', details: insertError.message || insertError },
+                { status: 500 }
+              );
+            }
+
+            console.log('INFO: Insert successful', { inserted: insertData });
+            
+            // Map database fields to frontend interface fields
+            const mappedData = {
+              ...insertData[0],
+              created_at: new Date(insertData[0].created_at),
+              updated_at: new Date(insertData[0].updated_at),
+              isActive: insertData[0].is_active !== undefined ? insertData[0].is_active : true,
+              accountType: insertData[0].account_type || 'CUSTOMER'
+            };
+            
+            return Response.json(mappedData, { status: 201 });
+          }
+        } catch (parseError) {
+          console.error('DEBUG: Failed to parse auth token cookie:', parseError);
+        }
+      }
     } else {
       console.log('DEBUG: NO COOKIE HEADER FOUND!');
     }
     
-    // Build Supabase client for route handlers using cookies from the incoming request
+    // Fallback if cookie parsing fails
+    console.log('DEBUG: Falling back to standard session handling...');
     const supabase = createServerSupabaseClient();
-
-    // Get session (if available)
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    
     console.log('DEBUG: Session fetch result:', { 
       sessionError: sessionError?.message || null, 
       hasSession: !!sessionData?.session,
@@ -505,6 +656,7 @@ export async function POST(request: NextRequest) {
     };
     
     return Response.json(mappedData, { status: 201 });
+    
   } catch (err: any) {
     console.error('ERROR: Unexpected handler error', err);
     console.error('Full error details:', {
