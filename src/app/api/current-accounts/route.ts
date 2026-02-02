@@ -415,7 +415,7 @@ export async function POST(request: NextRequest) {
       tenant_id: tenantId  // Explicitly set tenant_id from session metadata
     };
     
-    // DEBUG: Log the JWT context and user data before insert
+    // DEBUG: Test JWT context before insert
     console.log('DEBUG: PRE-INSERT JWT CONTEXT ANALYSIS:');
     console.log('  User ID from session:', user.id);
     console.log('  User email from session:', user.email);
@@ -425,6 +425,12 @@ export async function POST(request: NextRequest) {
     console.log('  Insert data tenant_id:', insertData.tenant_id);
     console.log('  Insert data user_id:', insertData.user_id);
     console.log('  Insert data name:', insertData.name);
+    
+    // Additional debug: Verify that the values match what RLS expects
+    console.log('DEBUG: RLS COMPLIANCE CHECK:');
+    console.log('  Expected tenant_id in RLS:', tenantId);
+    console.log('  Expected user_id in RLS:', user.id);
+    console.log('  Does insert data comply?', insertData.tenant_id === tenantId && insertData.user_id === user.id);
     
     // Validate required fields
     if (!insertData.name) {
