@@ -358,6 +358,10 @@ export async function POST(request: NextRequest) {
     console.log('DEBUG: POST /api/current-accounts called');
     const accountData = await request.json();
     
+    // Log incoming request details
+    console.log('DEBUG: Request body:', accountData);
+    console.log('DEBUG: Headers:', Object.fromEntries(request.headers));
+    
     // Log authorization header
     const authHeader = request.headers.get('authorization');
     console.log('DEBUG: Authorization header present:', !!authHeader);
@@ -365,15 +369,22 @@ export async function POST(request: NextRequest) {
       console.log('DEBUG: Authorization header length:', authHeader.length);
     }
     
+    // Create Supabase client with request context
     const supabase = await createServerSupabaseClientForRLS(request);
     
-    console.log('DEBUG: Getting user from Supabase...');
+    // Critical: Check auth context immediately after client creation
+    console.log('DEBUG: Checking auth context after client creation...');
     const {
       data: { user },
       error: userError
     } = await supabase.auth.getUser();
     
-    console.log('DEBUG: User result:', { user: !!user, error: userError });
+    console.log('DEBUG: Auth check result:', { 
+      hasUser: !!user, 
+      error: userError?.message || null,
+      userId: user?.id || null,
+      userEmail: user?.email || null
+    });
     
     if (!user) {
       console.log('DEBUG: No user found, returning 401');
