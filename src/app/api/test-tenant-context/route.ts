@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
+import { createServerSupabaseClientForRLS } from '@/lib/supabaseServer';
 
 // Helper function to get tenant context
 async function getTenantContext(supabase: any) {
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    const supabase = await createServerSupabaseClientWithRequest(request);
+    const supabase = createServerSupabaseClientForRLS(request);
     
     // Get tenant context
     const { userId, tenantId } = await getTenantContext(supabase);
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClientWithRequest(request);
+    const supabase = createServerSupabaseClientForRLS(request);
     
     // Get tenant context
     const { userId, tenantId } = await getTenantContext(supabase);

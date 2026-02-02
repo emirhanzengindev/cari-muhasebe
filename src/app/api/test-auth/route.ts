@@ -1,13 +1,13 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { createServerSupabaseClientForRLS } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
     console.log('DEBUG: GET /api/test-auth called')
 
-    const supabase = await createServerSupabaseClient()
+    const supabase = createServerSupabaseClientForRLS(request)
 
     const {
       data: { user },

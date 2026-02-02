@@ -2,11 +2,11 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest } from 'next/server';
 import { headers, cookies } from 'next/headers';
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { createServerSupabaseClientForRLS } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient()
+    const supabase = createServerSupabaseClientForRLS(request)
 
     const {
       data: { user },
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
   try {
     const chequeData = await request.json();
     
-    const supabase = createServerSupabaseClient();
+    const supabase = createServerSupabaseClientForRLS(request);
     
     const {
       data: { user }

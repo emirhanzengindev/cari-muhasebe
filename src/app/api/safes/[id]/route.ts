@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer'
+import { createServerSupabaseClientForRLS, getTenantIdFromJWT } from '@/lib/supabaseServer'
 
 type Params = {
   id: string
@@ -16,7 +16,7 @@ export async function GET(
     return NextResponse.json({ error: 'Tenant ID missing' }, { status: 401 })
   }
 
-  const supabase = createServerSupabaseClient()
+  const supabase = createServerSupabaseClientForRLS(request)
 
   const { data, error } = await supabase
     .from('safes')
@@ -44,7 +44,7 @@ export async function PUT(
     return NextResponse.json({ error: 'Tenant ID missing' }, { status: 401 })
   }
 
-  const supabase = createServerSupabaseClient()
+  const supabase = createServerSupabaseClientForRLS(request)
 
   const { data, error } = await supabase
     .from('safes')
@@ -72,7 +72,7 @@ export async function DELETE(
     return NextResponse.json({ error: 'Tenant ID missing' }, { status: 401 })
   }
 
-  const supabase = createServerSupabaseClient()
+  const supabase = createServerSupabaseClientForRLS(request)
 
   const { error } = await supabase
     .from('safes')

@@ -2,11 +2,11 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest } from 'next/server';
 import { headers, cookies } from 'next/headers';
-import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
+import { createServerSupabaseClientForRLS, getTenantIdFromJWTWithRequest } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClientWithRequest(request)
+    const supabase = createServerSupabaseClientForRLS(request)
 
     const {
       data: { user },
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
   try {
     const safeData = await request.json();
     
-    const supabase = await createServerSupabaseClientWithRequest(request);
+    const supabase = createServerSupabaseClientForRLS(request);
     
     const {
       data: { user }
