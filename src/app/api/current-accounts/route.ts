@@ -4,7 +4,7 @@ import { NextRequest } from 'next/server';
 import { headers, cookies } from 'next/headers';
 import { createServerSupabaseClient, createServerSupabaseClientForRLS } from '@/lib/supabaseServer';
 
-async function makeSupabaseClient(request: NextRequest) {
+function makeSupabaseClient(request: NextRequest) {
   // Mevcut wrapper fonksiyonumuzu kullanıyoruz
   return createServerSupabaseClientForRLS(request);
 }
@@ -12,7 +12,9 @@ async function makeSupabaseClient(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     console.log('DEBUG: GET /api/current-accounts called');
-    const supabase = await makeSupabaseClient(request);
+    console.log('DEBUG: About to call makeSupabaseClient');
+    const supabase = makeSupabaseClient(request);
+    console.log('DEBUG: Supabase client created successfully');
 
     // 1) RPC ile DB session/JWT context kontrolü
     let rpcData = null;
@@ -80,7 +82,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     console.log('DEBUG: POST /api/current-accounts called');
-    const supabase = await makeSupabaseClient(request);
+    console.log('DEBUG: About to call makeSupabaseClient');
+    const supabase = makeSupabaseClient(request);
+    console.log('DEBUG: Supabase client created successfully');
 
     const body = await request.json();
     console.log('DEBUG: incoming body', body);
