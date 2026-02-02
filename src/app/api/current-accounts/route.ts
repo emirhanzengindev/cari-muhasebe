@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest } from 'next/server';
 import { headers, cookies } from 'next/headers';
-import { createServerSupabaseClientForRLS } from '@/lib/supabaseServer';
+import { createServerSupabaseClient, createServerSupabaseClientForRLS } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
@@ -356,287 +356,159 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     console.log('DEBUG: POST /api/current-accounts called');
-    const accountData = await request.json();
     
-    // Log incoming request details
-    console.log('DEBUG: Request body:', accountData);
-    console.log('DEBUG: Headers:', Object.fromEntries(request.headers));
-    
-    // Log authorization header
-    const authHeader = request.headers.get('authorization');
-    console.log('DEBUG: Authorization header present:', !!authHeader);
-    if (authHeader) {
-      console.log('DEBUG: Authorization header length:', authHeader.length);
+    // Build Supabase client for route handlers using cookies from the incoming request
+    const supabase = createServerSupabaseClient();
+
+    // Get session (if available)
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    console.log('DEBUG: Session fetch result:', { sessionError, hasSession: !!sessionData?.session });
+
+    // Attempt to fetch debug RPC that shows JWT context in DB session
+    let debugCtx: any = null;
+    try {
+      const rpcRes: any = await supabase.rpc('debug_current_user_context');
+      console.log('DEBUG: RPC debug_current_user_context result:', rpcRes);
+      if (rpcRes?.data && rpcRes.data.length > 0) {
+        debugCtx = rpcRes.data[0];
+      }
+    } catch (rpcErr) {
+      console.warn('DEBUG: RPC debug_current_user_context failed:', rpcErr);
     }
-    
-    // Create Supabase client with request context
-    const supabase = await createServerSupabaseClientForRLS(request);
-    
-    // Critical: Check auth context immediately after client creation
-    console.log('DEBUG: Checking auth context after client creation...');
-    const {
-      data: { user },
-      error: userError
-    } = await supabase.auth.getUser();
-    
-    console.log('DEBUG: Auth check result:', { 
-      hasUser: !!user, 
-      error: userError?.message || null,
-      userId: user?.id || null,
-      userEmail: user?.email || null
-    });
-    
-    if (!user) {
-      console.log('DEBUG: No user found, returning 401');
+
+    // Fallback: direct SQL to read current_setting, if RPC not present or returned nothing
+    if (!debugCtx) {
+      try {
+        const sqlRes: any = await supabase
+          .from('current_accounts')
+          .select(`
+            auth.uid() AS current_user_id,
+            current_setting('request.jwt.claim.tenant_id', true) AS jwt_tenant_id,
+            current_setting('request.jwt.claim.sub', true) AS jwt_sub,
+            current_user AS pg_current_user,
+            session_user AS pg_session_user`
+          )
+          .limit(1);
+        console.log('DEBUG: Fallback SQL direct query result:', sqlRes);
+        if (sqlRes?.data && sqlRes.data.length > 0) {
+          debugCtx = sqlRes.data[0];
+        }
+      } catch (e) {
+        console.warn('DEBUG: Fallback SQL read failed (expected in many setups):', e);
+      }
+
+      // As additional fallback, attempt to call a safe RPC if exists
+      try {
+        const alt: any = await supabase.rpc('get_current_user_details');
+        console.log('DEBUG: get_current_user_details RPC result:', alt);
+        if (alt?.data && alt.data.length > 0) debugCtx = alt.data[0];
+      } catch (e) {
+        console.warn('DEBUG: get_current_user_details RPC not available or failed:', e);
+      }
+    }
+
+    // Parse request body
+    const body = await request.json();
+    console.log('DEBUG: Incoming payload:', body);
+
+    // Determine tenantId and userId to use for the insert.
+    // Prefer debugCtx if present, otherwise fallback to session data or incoming payload (last resort).
+    const tenantIdFromCtx = debugCtx?.jwt_tenant_id || debugCtx?.tenant_id || null;
+    const userIdFromCtx = debugCtx?.current_user_id || debugCtx?.auth_uid_result || null;
+
+    const sessionAccessToken = sessionData?.session?.access_token ?? null;
+    const sessionUserId = sessionData?.session?.user?.id ?? null;
+
+    const finalTenantId = tenantIdFromCtx || sessionData?.session?.user?.user_metadata?.tenant_id || body.tenant_id || sessionUserId || null;
+    const finalUserId = userIdFromCtx || sessionUserId || body.user_id || null;
+
+    console.log('DEBUG: Resolved tenant/user', { finalTenantId, finalUserId });
+
+    if (!finalTenantId || !finalUserId) {
+      // If we don't have tenant/user from any secure source, fail with actionable message
+      console.log('ERROR: Missing tenant_id or user_id in server context');
       return Response.json(
-        { error: 'Auth session missing' },
-        { status: 401 }
+        { error: 'Missing tenant_id or user_id in server context. Ensure cookies are sent and createServerSupabaseClient is used.' },
+        { status: 400 }
       );
     }
-    
-    console.log('DEBUG: Starting RLS validation and insert process...');
-    
-    // Extract tenant_id from user's metadata
-    const userMetadata = user.user_metadata || {};
-    const tenantId = userMetadata.tenant_id || user.id; // Fallback to user.id if tenant_id not in metadata
-    
-    // Prepare the data for insertion with explicit tenant and user IDs
-    const insertData = {
-      name: accountData.name?.trim() || '',
-      phone: accountData.phone?.trim() || null,
-      address: accountData.address?.trim() || null,
-      tax_number: accountData.taxNumber?.trim() || null,
-      tax_office: accountData.taxOffice?.trim() || null,
-      company: accountData.company?.trim() || null,
-      is_active: accountData.isActive !== undefined ? accountData.isActive : true,
-      account_type: accountData.accountType || 'CUSTOMER',
-      user_id: user.id,  // Explicitly set user_id from session
-      tenant_id: tenantId  // Explicitly set tenant_id from session metadata
+
+    // Build payload for insert and FORCE tenant_id and user_id server-side
+    const insertPayload = {
+      name: body.name?.trim() || '',
+      phone: body.phone?.trim() || null,
+      address: body.address?.trim() || null,
+      tax_number: body.taxNumber?.trim() || null,
+      tax_office: body.taxOffice?.trim() || null,
+      company: body.company?.trim() || null,
+      is_active: body.isActive !== undefined ? body.isActive : true,
+      account_type: body.accountType || 'CUSTOMER',
+      tenant_id: finalTenantId,
+      user_id: finalUserId,
     };
-    
-    // DEBUG: Test JWT context before insert
-    console.log('DEBUG: PRE-INSERT JWT CONTEXT ANALYSIS:');
-    console.log('  User ID from session:', user.id);
-    console.log('  User email from session:', user.email);
-    console.log('  User metadata:', userMetadata);
-    console.log('  Tenant ID from metadata:', userMetadata.tenant_id || 'NOT_FOUND');
-    console.log('  Fallback Tenant ID:', tenantId);
-    console.log('  Insert data tenant_id:', insertData.tenant_id);
-    console.log('  Insert data user_id:', insertData.user_id);
-    console.log('  Insert data name:', insertData.name);
-    
-    // Additional debug: Verify that the values match what RLS expects
-    console.log('DEBUG: RLS COMPLIANCE CHECK:');
-    console.log('  Expected tenant_id in RLS:', tenantId);
-    console.log('  Expected user_id in RLS:', user.id);
-    console.log('  Does insert data comply?', insertData.tenant_id === tenantId && insertData.user_id === user.id);
-    
+
     // Validate required fields
-    if (!insertData.name) {
+    if (!insertPayload.name) {
       console.error('MISSING REQUIRED FIELD: name');
       return Response.json({ error: 'Account name is required' }, { status: 400 });
     }
-    
-    console.log('DEBUG: About to execute Supabase insert...');
-    
-    // Test the database JWT context before insert
-    try {
-      console.log('DEBUG: Testing database JWT context before INSERT...');
-      
-      // First try the RPC method
-      try {
-        const { data: jwtTestResult, error: jwtTestError } = await supabase.rpc('get_jwt_tenant_safe');
-        
-        console.log('DEBUG: JWT Context Test Result (RPC):', {
-          data: jwtTestResult,
-          error: jwtTestError?.message || null,
-          hasData: !!jwtTestResult
-        });
-      } catch (rpcError) {
-        console.log('DEBUG: JWT Context Test (RPC) failed, trying direct SQL method:', rpcError);
-        
-        // If RPC fails, try direct SQL method to check JWT context
-        try {
-          // Direct SQL query to test JWT context in database
-          const { data: directSqlResult, error: directSqlError } = await supabase
-            .from('current_accounts')
-            .select(`
-              auth.uid() as current_user_id,
-              current_setting('request.jwt.claim.sub', true) as jwt_sub,
-              current_setting('request.jwt.claim.tenant_id', true) as jwt_tenant_id
-            `)
-            .limit(1);
-            
-          console.log('DEBUG: JWT Context Test Result (Direct SQL):', {
-            data: directSqlResult,
-            error: directSqlError?.message || null,
-            hasData: !!directSqlResult
-          });
-        } catch (sqlError) {
-          console.log('DEBUG: JWT Context Test (Direct SQL) also failed:', sqlError);
-        }
-      }
-    } catch (jwtTestError) {
-      console.log('DEBUG: All JWT Context Tests failed:', jwtTestError);
-    }
-    
-    // NEW: Additional test - try to manually set the JWT context if possible
-    try {
-      console.log('DEBUG: Attempting direct JWT context check via raw SQL...');
-      const { data, error } = await supabase.rpc('get_current_user_details');
-      console.log('DEBUG: get_current_user_details result:', { data, error });
-    } catch (userDetailsError) {
-      console.log('DEBUG: get_current_user_details not available or failed:', userDetailsError);
-    }
-    
-    const { data, error, status } = await supabase
-      .from('current_accounts')
-      .insert([insertData])  // Use the prepared data with explicit IDs
-      .select()
-      .single();
 
-    console.log('DEBUG: Supabase insert completed, checking for errors...');
+    console.log('DEBUG: About to execute insert with tenant_id:', finalTenantId, 'and user_id:', finalUserId);
     
-    if (error) {
-      console.error('SUPABASE ERROR (POST current_accounts):', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-        status: status
+    // Attempt insert (override any client-supplied tenant/user values)
+    const { data: insertData, error: insertError } = await supabase
+      .from('current_accounts')
+      .insert([insertPayload])
+      .select();
+
+    if (insertError) {
+      console.error('ERROR: Insert failed', { 
+        message: insertError.message,
+        code: insertError.code,
+        details: insertError.details,
+        hint: insertError.hint
       });
       
-      // Handle specific error cases
-      if (error.code === '42P01' || error.message.toLowerCase().includes('does not exist')) {
-        // Table does not exist
-        console.error('Table current_accounts does not exist for insert operation');
-        return Response.json({ error: 'Accounts table does not exist' }, { status: 500 });
-      }
-      
       // Handle RLS policy violation
-      if (error.code === '42501' || error.message.toLowerCase().includes('row-level security policy')) {
+      if (insertError.code === '42501' || insertError.message.toLowerCase().includes('row-level security policy')) {
         console.error('RLS POLICY VIOLATION DETECTED');
-        console.error('Tenant ID being used:', tenantId);
-        console.error('User ID:', user.id);
-        console.error('Full error details:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint
-        });
         
         // Log the specific RLS policy check that failed
         console.error('RLS DEBUG: Attempted insert with:', {
-          insert_tenant_id: insertData.tenant_id,
-          insert_user_id: insertData.user_id,
-          expected_tenant_id: tenantId,
-          expected_user_id: user.id,
-          user_metadata: user.user_metadata
+          insert_tenant_id: insertPayload.tenant_id,
+          insert_user_id: insertPayload.user_id,
+          final_tenant_id: finalTenantId,
+          final_user_id: finalUserId,
+          debug_context: debugCtx
         });
-        
-        // Try alternative approach: use dedicated server-side insert endpoint
-        try {
-          console.log('Attempting fallback insert via server-side endpoint...');
-          
-          // Call the server-side insert endpoint
-          const serverInsertResponse = await fetch(
-            `${request.url.split('/api/')[0]}/api/current-accounts-server-insert`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(insertData)
-            }
-          );
-          
-          if (!serverInsertResponse.ok) {
-            const errorText = await serverInsertResponse.text();
-            console.error('Server-side insert failed:', errorText);
-            throw new Error(`Server insert failed: ${errorText}`);
-          }
-          
-          const serverData = await serverInsertResponse.json();
-          console.log('SUCCESS: Record inserted using server-side endpoint');
-          return Response.json(serverData.data);
-          
-        } catch (serverError) {
-          console.error('Server-side approach failed:', serverError);
-          return Response.json({ 
-            error: 'Failed to insert account due to security policy violation',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
-          }, { status: 500 });
-        }
       }
       
-      // For RLS (Row Level Security) violations
-      if (error.code === '42501' || error.message.toLowerCase().includes('permission denied')) {
-        console.error('Permission denied inserting into current_accounts');
-        return Response.json({ error: 'Permission denied' }, { status: 403 });
-      }
-      
-      // Handle PostgREST schema cache errors specifically
-      if (error.code === 'PGRST204' && (error.message.includes('accountType') || error.message.includes('account_type') || error.message.includes('is_active'))) {
-        console.warn('SCHEMA CACHE ISSUE DETECTED during insert: Column schema cache mismatch');
-        console.warn('Attempting insert without problematic fields');
-        
-        // Remove problematic fields and try again
-        const { is_active, account_type, ...cleanAccountData } = insertData;  // Removed camelCase fields that don't exist in insertData
-        
-        const { data: cleanData, error: cleanError } = await supabase
-          .from('current_accounts')
-          .insert([{ ...cleanAccountData }])
-          .select()
-          .single();
-          
-        if (cleanError) {
-          console.error('Clean insert also failed:', cleanError);
-          return Response.json({ 
-            error: cleanError.message,
-            code: cleanError.code,
-            details: cleanError.details
-          }, { status: 500 });
-        }
-        
-        // Map the response data
-        const mappedData = {
-          ...cleanData,
-          created_at: new Date(cleanData.created_at),
-          updated_at: new Date(cleanData.updated_at),
-          isActive: cleanData.is_active !== undefined ? cleanData.is_active : true,
-          accountType: cleanData.account_type || 'CUSTOMER'
-        };
-        
-        return Response.json(mappedData);
-      }
-      
-      // For other errors, return the error message
-      return Response.json({ 
-        error: error.message,
-        code: error.code,
-        details: error.details
-      }, { status: 500 });
+      // Return helpful debugging info but avoid leaking sensitive details
+      return Response.json(
+        { error: 'Failed to insert account due to security policy violation', details: insertError.message || insertError },
+        { status: 500 }
+      );
     }
 
+    console.log('INFO: Insert successful', { inserted: insertData });
+    
     // Map database fields to frontend interface fields
     const mappedData = {
-      ...data,
-      created_at: new Date(data.created_at),
-      updated_at: new Date(data.updated_at),
-      isActive: data.is_active !== undefined ? data.is_active : true,
-      accountType: data.account_type || 'CUSTOMER'
+      ...insertData[0],
+      created_at: new Date(insertData[0].created_at),
+      updated_at: new Date(insertData[0].updated_at),
+      isActive: insertData[0].is_active !== undefined ? insertData[0].is_active : true,
+      accountType: insertData[0].account_type || 'CUSTOMER'
     };
     
-    console.log('DEBUG: Successfully inserted account with ID:', data?.id);
-    return Response.json(mappedData);
-    
-  } catch (error: any) {
-    console.error('ERROR in POST /api/current-accounts:', error);
+    return Response.json(mappedData, { status: 201 });
+  } catch (err: any) {
+    console.error('ERROR: Unexpected handler error', err);
     console.error('Full error details:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
+      name: err.name,
+      message: err.message,
+      stack: err.stack
     });
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return Response.json({ error: 'Unexpected server error' }, { status: 500 });
   }
 }
