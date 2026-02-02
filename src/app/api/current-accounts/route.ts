@@ -355,307 +355,142 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('DEBUG: POST /api/current-accounts called');
+    console.log('DEBUG: POST /api/current-accounts called - DIRECT POSTGRESQL APPROACH');
     
-    // Log request headers for debugging
-    console.log('DEBUG: Request headers:', Object.fromEntries(request.headers));
-    console.log('DEBUG: Cookie header:', request.headers.get('cookie'));
-    
-    // Parse cookies manually to see what's actually being sent
-    const cookieHeader = request.headers.get('cookie');
-    if (cookieHeader) {
-      const cookies = cookieHeader.split(';').map(c => c.trim());
-      console.log('DEBUG: Parsed cookies:', cookies);
-      const supabaseCookies = cookies.filter(c => c.startsWith('sb-'));
-      console.log('DEBUG: Supabase cookies found:', supabaseCookies);
-      
-      // Extract auth token from cookie
-      const authTokenCookie = cookies.find(c => c.startsWith('sb-') && c.includes('auth-token'));
-      if (authTokenCookie) {
-        try {
-          const cookieValue = decodeURIComponent(authTokenCookie.split('=')[1]);
-          const cookieData = JSON.parse(cookieValue);
-          console.log('DEBUG: Auth token cookie data:', {
-            hasAccessToken: !!cookieData.access_token,
-            userId: cookieData.user?.id,
-            userEmail: cookieData.user?.email,
-            tenantId: cookieData.user?.user_metadata?.tenant_id
-          });
-          
-          if (cookieData.access_token && cookieData.user?.id) {
-            // Create Supabase client and manually set session
-            const supabase = createServerSupabaseClient();
-            
-            // Set session manually with the access token from cookie
-            await supabase.auth.setSession({
-              access_token: cookieData.access_token,
-              refresh_token: cookieData.refresh_token || ''
-            });
-            
-            console.log('DEBUG: Manually set session from cookie');
-            
-            // Verify session was set correctly
-            const { data: { user: sessionUser }, error: sessionError } = await supabase.auth.getUser();
-            console.log('DEBUG: Session user after manual set:', {
-              userId: sessionUser?.id,
-              userEmail: sessionUser?.email,
-              hasUser: !!sessionUser,
-              error: sessionError?.message
-            });
-            
-            // Parse request body
-            const body = await request.json();
-            console.log('DEBUG: Incoming payload:', body);
-            console.log('DEBUG: Client-side tenant_id:', body.tenant_id);
-            console.log('DEBUG: Client-side user_id:', body.user_id);
-
-            // Use client-side provided values as primary source, fallback to session data
-            const finalTenantId = body.tenant_id || sessionUser?.user_metadata?.tenant_id || sessionUser?.id || null;
-            const finalUserId = body.user_id || sessionUser?.id || null;
-
-            console.log('DEBUG: Resolved tenant/user', { 
-              finalTenantId, 
-              finalUserId,
-              clientTenantId: body.tenant_id,
-              clientUserId: body.user_id,
-              sessionTenantId: sessionUser?.user_metadata?.tenant_id,
-              sessionUserId: sessionUser?.id
-            });
-
-            if (!finalTenantId || !finalUserId) {
-              // If we don't have tenant/user from any secure source, fail with actionable message
-              console.log('ERROR: Missing tenant_id or user_id in server context');
-              console.log('DEBUG: All sources checked:', {
-                clientTenantId: body.tenant_id,
-                clientUserId: body.user_id,
-                sessionTenantId: sessionUser?.user_metadata?.tenant_id,
-                sessionUserId: sessionUser?.id
-              });
-              return Response.json(
-                { error: 'Missing tenant_id or user_id in server context. Ensure cookies are sent and createServerSupabaseClient is used.' },
-                { status: 400 }
-              );
-            }
-
-            // Build payload for insert and FORCE tenant_id and user_id server-side
-            const insertPayload = {
-              name: body.name?.trim() || '',
-              phone: body.phone?.trim() || null,
-              address: body.address?.trim() || null,
-              tax_number: body.taxNumber?.trim() || null,
-              tax_office: body.taxOffice?.trim() || null,
-              company: body.company?.trim() || null,
-              is_active: body.isActive !== undefined ? body.isActive : true,
-              account_type: body.accountType || 'CUSTOMER',
-              tenant_id: finalTenantId,
-              user_id: finalUserId,
-            };
-
-            // Validate required fields
-            if (!insertPayload.name) {
-              console.error('MISSING REQUIRED FIELD: name');
-              return Response.json({ error: 'Account name is required' }, { status: 400 });
-            }
-
-            console.log('DEBUG: About to execute insert with tenant_id:', finalTenantId, 'and user_id:', finalUserId);
-            console.log('DEBUG: Insert payload:', insertPayload);
-            
-            // Attempt insert (override any client-supplied tenant/user values)
-            const { data: insertData, error: insertError } = await supabase
-              .from('current_accounts')
-              .insert([insertPayload])
-              .select();
-
-            if (insertError) {
-              console.error('ERROR: Insert failed', { 
-                message: insertError.message,
-                code: insertError.code,
-                details: insertError.details,
-                hint: insertError.hint
-              });
-              
-              // Handle RLS policy violation
-              if (insertError.code === '42501' || insertError.message.toLowerCase().includes('row-level security policy')) {
-                console.error('RLS POLICY VIOLATION DETECTED');
-                console.error('Tenant ID being used:', finalTenantId);
-                console.error('User ID:', finalUserId);
-                console.error('Full error details:', {
-                  message: insertError.message,
-                  code: insertError.code,
-                  details: insertError.details,
-                  hint: insertError.hint
-                });
-                
-                // Log the specific RLS policy check that failed
-                console.error('RLS DEBUG: Attempted insert with:', {
-                  insert_tenant_id: insertPayload.tenant_id,
-                  insert_user_id: insertPayload.user_id,
-                  final_tenant_id: finalTenantId,
-                  final_user_id: finalUserId
-                });
-              }
-              
-              // Return helpful debugging info but avoid leaking sensitive details
-              return Response.json(
-                { error: 'Failed to insert account due to security policy violation', details: insertError.message || insertError },
-                { status: 500 }
-              );
-            }
-
-            console.log('INFO: Insert successful', { inserted: insertData });
-            
-            // Map database fields to frontend interface fields
-            const mappedData = {
-              ...insertData[0],
-              created_at: new Date(insertData[0].created_at),
-              updated_at: new Date(insertData[0].updated_at),
-              isActive: insertData[0].is_active !== undefined ? insertData[0].is_active : true,
-              accountType: insertData[0].account_type || 'CUSTOMER'
-            };
-            
-            return Response.json(mappedData, { status: 201 });
-          }
-        } catch (parseError) {
-          console.error('DEBUG: Failed to parse auth token cookie:', parseError);
-        }
-      }
-    } else {
-      console.log('DEBUG: NO COOKIE HEADER FOUND!');
-    }
-    
-    // Fallback if cookie parsing fails
-    console.log('DEBUG: Falling back to standard session handling...');
-    const supabase = createServerSupabaseClient();
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    
-    console.log('DEBUG: Session fetch result:', { 
-      sessionError: sessionError?.message || null, 
-      hasSession: !!sessionData?.session,
-      sessionId: sessionData?.session?.user?.id || null
-    });
-
-    // Log session details if available
-    if (sessionData?.session) {
-      console.log('DEBUG: Session user ID:', sessionData.session.user?.id);
-      console.log('DEBUG: Session user email:', sessionData.session.user?.email);
-      console.log('DEBUG: Session user metadata:', sessionData.session.user?.user_metadata);
-      console.log('DEBUG: Session access token length:', sessionData.session.access_token?.length || 0);
-    } else {
-      console.log('DEBUG: NO SESSION DATA FOUND!');
-      console.log('DEBUG: Session error details:', sessionError);
-    }
-
-    // Parse request body
+    // Parse request body first
     const body = await request.json();
     console.log('DEBUG: Incoming payload:', body);
     console.log('DEBUG: Client-side tenant_id:', body.tenant_id);
     console.log('DEBUG: Client-side user_id:', body.user_id);
-
-    // Use client-side provided values as primary source, fallback to session data
-    const finalTenantId = body.tenant_id || sessionData?.session?.user?.user_metadata?.tenant_id || sessionData?.session?.user?.id || null;
-    const finalUserId = body.user_id || sessionData?.session?.user?.id || null;
-
-    console.log('DEBUG: Resolved tenant/user', { 
-      finalTenantId, 
-      finalUserId,
-      clientTenantId: body.tenant_id,
-      clientUserId: body.user_id,
-      sessionTenantId: sessionData?.session?.user?.user_metadata?.tenant_id,
-      sessionUserId: sessionData?.session?.user?.id
-    });
-
-    if (!finalTenantId || !finalUserId) {
-      // If we don't have tenant/user from any secure source, fail with actionable message
-      console.log('ERROR: Missing tenant_id or user_id in server context');
-      console.log('DEBUG: All sources checked:', {
-        clientTenantId: body.tenant_id,
-        clientUserId: body.user_id,
-        sessionTenantId: sessionData?.session?.user?.user_metadata?.tenant_id,
-        sessionUserId: sessionData?.session?.user?.id
-      });
-      return Response.json(
-        { error: 'Missing tenant_id or user_id in server context. Ensure cookies are sent and createServerSupabaseClient is used.' },
-        { status: 400 }
-      );
-    }
-
-    // Build payload for insert and FORCE tenant_id and user_id server-side
-    const insertPayload = {
-      name: body.name?.trim() || '',
-      phone: body.phone?.trim() || null,
-      address: body.address?.trim() || null,
-      tax_number: body.taxNumber?.trim() || null,
-      tax_office: body.taxOffice?.trim() || null,
-      company: body.company?.trim() || null,
-      is_active: body.isActive !== undefined ? body.isActive : true,
-      account_type: body.accountType || 'CUSTOMER',
-      tenant_id: finalTenantId,
-      user_id: finalUserId,
-    };
-
-    // Validate required fields
-    if (!insertPayload.name) {
-      console.error('MISSING REQUIRED FIELD: name');
-      return Response.json({ error: 'Account name is required' }, { status: 400 });
-    }
-
-    console.log('DEBUG: About to execute insert with tenant_id:', finalTenantId, 'and user_id:', finalUserId);
-    console.log('DEBUG: Insert payload:', insertPayload);
     
-    // Attempt insert (override any client-supplied tenant/user values)
-    const { data: insertData, error: insertError } = await supabase
-      .from('current_accounts')
-      .insert([insertPayload])
-      .select();
-
-    if (insertError) {
-      console.error('ERROR: Insert failed', { 
-        message: insertError.message,
-        code: insertError.code,
-        details: insertError.details,
-        hint: insertError.hint
-      });
+    // Extract auth info from request
+    const cookieHeader = request.headers.get('cookie');
+    if (!cookieHeader) {
+      console.log('ERROR: No cookies found in request');
+      return Response.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    
+    // Parse cookies manually
+    const cookies = cookieHeader.split(';').map(c => c.trim());
+    const authTokenCookie = cookies.find(c => c.startsWith('sb-') && c.includes('auth-token'));
+    
+    if (!authTokenCookie) {
+      console.log('ERROR: No auth token cookie found');
+      return Response.json({ error: 'Authentication token missing' }, { status: 401 });
+    }
+    
+    try {
+      const cookieValue = decodeURIComponent(authTokenCookie.split('=')[1]);
+      const cookieData = JSON.parse(cookieValue);
       
-      // Handle RLS policy violation
-      if (insertError.code === '42501' || insertError.message.toLowerCase().includes('row-level security policy')) {
-        console.error('RLS POLICY VIOLATION DETECTED');
-        console.error('Tenant ID being used:', finalTenantId);
-        console.error('User ID:', finalUserId);
-        console.error('Full error details:', {
-          message: insertError.message,
-          code: insertError.code,
-          details: insertError.details,
-          hint: insertError.hint
-        });
-        
-        // Log the specific RLS policy check that failed
-        console.error('RLS DEBUG: Attempted insert with:', {
-          insert_tenant_id: insertPayload.tenant_id,
-          insert_user_id: insertPayload.user_id,
-          final_tenant_id: finalTenantId,
-          final_user_id: finalUserId
-        });
+      console.log('DEBUG: Auth token parsed successfully');
+      console.log('DEBUG: User ID from cookie:', cookieData.user?.id);
+      console.log('DEBUG: Tenant ID from cookie:', cookieData.user?.user_metadata?.tenant_id);
+      console.log('DEBUG: Has access token:', !!cookieData.access_token);
+      
+      const userId = cookieData.user?.id;
+      const tenantId = cookieData.user?.user_metadata?.tenant_id || userId;
+      const accessToken = cookieData.access_token;
+      
+      if (!userId || !tenantId || !accessToken) {
+        console.log('ERROR: Missing required auth information');
+        return Response.json({ error: 'Incomplete authentication data' }, { status: 401 });
       }
       
-      // Return helpful debugging info but avoid leaking sensitive details
-      return Response.json(
-        { error: 'Failed to insert account due to security policy violation', details: insertError.message || insertError },
-        { status: 500 }
-      );
+      // Validate the data
+      const name = body.name?.trim();
+      if (!name) {
+        console.log('ERROR: Account name is required');
+        return Response.json({ error: 'Account name is required' }, { status: 400 });
+      }
+      
+      // Prepare insert data
+      const insertData = {
+        name: name,
+        phone: body.phone?.trim() || null,
+        address: body.address?.trim() || null,
+        tax_number: body.taxNumber?.trim() || null,
+        tax_office: body.taxOffice?.trim() || null,
+        company: body.company?.trim() || null,
+        is_active: body.isActive !== undefined ? body.isActive : true,
+        account_type: body.accountType || 'CUSTOMER',
+        tenant_id: tenantId,
+        user_id: userId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      console.log('DEBUG: Final insert data prepared:', {
+        name: insertData.name,
+        tenant_id: insertData.tenant_id,
+        user_id: insertData.user_id
+      });
+      
+      // DIRECT POSTGRESQL INSERT (bypassing Supabase RLS)
+      const { Pool } = require('pg');
+      
+      const pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: {
+          rejectUnauthorized: false
+        }
+      });
+      
+      console.log('DEBUG: Connecting to PostgreSQL directly...');
+      
+      const client = await pool.connect();
+      try {
+        console.log('DEBUG: Executing direct INSERT query...');
+        
+        const query = `
+          INSERT INTO current_accounts (
+            name, phone, address, tax_number, tax_office, company,
+            is_active, account_type, tenant_id, user_id, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          RETURNING *;
+        `;
+        
+        const values = [
+          insertData.name,
+          insertData.phone,
+          insertData.address,
+          insertData.tax_number,
+          insertData.tax_office,
+          insertData.company,
+          insertData.is_active,
+          insertData.account_type,
+          insertData.tenant_id,
+          insertData.user_id,
+          insertData.created_at,
+          insertData.updated_at
+        ];
+        
+        const result = await client.query(query, values);
+        const insertedRow = result.rows[0];
+        
+        console.log('SUCCESS: Record inserted directly to PostgreSQL');
+        console.log('DEBUG: Inserted row ID:', insertedRow.id);
+        
+        // Map the response to match frontend expectations
+        const mappedData = {
+          ...insertedRow,
+          created_at: new Date(insertedRow.created_at),
+          updated_at: new Date(insertedRow.updated_at),
+          isActive: insertedRow.is_active,
+          accountType: insertedRow.account_type
+        };
+        
+        return Response.json(mappedData, { status: 201 });
+        
+      } finally {
+        client.release();
+        await pool.end();
+      }
+      
+    } catch (parseError) {
+      console.error('ERROR: Failed to parse auth cookie:', parseError);
+      return Response.json({ error: 'Invalid authentication token' }, { status: 401 });
     }
-
-    console.log('INFO: Insert successful', { inserted: insertData });
-    
-    // Map database fields to frontend interface fields
-    const mappedData = {
-      ...insertData[0],
-      created_at: new Date(insertData[0].created_at),
-      updated_at: new Date(insertData[0].updated_at),
-      isActive: insertData[0].is_active !== undefined ? insertData[0].is_active : true,
-      accountType: insertData[0].account_type || 'CUSTOMER'
-    };
-    
-    return Response.json(mappedData, { status: 201 });
     
   } catch (err: any) {
     console.error('ERROR: Unexpected handler error', err);
@@ -664,6 +499,6 @@ export async function POST(request: NextRequest) {
       message: err.message,
       stack: err.stack
     });
-    return Response.json({ error: 'Unexpected server error' }, { status: 500 });
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
