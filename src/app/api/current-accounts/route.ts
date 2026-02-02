@@ -401,39 +401,40 @@ export async function POST(request: NextRequest) {
     const userMetadata = user.user_metadata || {};
     const tenantId = userMetadata.tenant_id || user.id; // Fallback to user.id if tenant_id not in metadata
     
-    // DEBUG: Log JWT context before insert
+    // Prepare the data for insertion with explicit tenant and user IDs
+    const insertData = {
+      name: accountData.name?.trim() || '',
+      phone: accountData.phone?.trim() || null,
+      address: accountData.address?.trim() || null,
+      tax_number: accountData.taxNumber?.trim() || null,
+      tax_office: accountData.taxOffice?.trim() || null,
+      company: accountData.company?.trim() || null,
+      is_active: accountData.isActive !== undefined ? accountData.isActive : true,
+      account_type: accountData.accountType || 'CUSTOMER',
+      user_id: user.id,  // Explicitly set user_id from session
+      tenant_id: tenantId  // Explicitly set tenant_id from session metadata
+    };
+    
+    // DEBUG: Log the JWT context and user data before insert
     console.log('DEBUG: PRE-INSERT JWT CONTEXT ANALYSIS:');
     console.log('  User ID from session:', user.id);
     console.log('  User email from session:', user.email);
     console.log('  User metadata:', userMetadata);
     console.log('  Tenant ID from metadata:', userMetadata.tenant_id || 'NOT_FOUND');
     console.log('  Fallback Tenant ID:', tenantId);
-    console.log('  Account data to insert:', {
-      name: accountData.name,
-      tenant_id: tenantId,
-      user_id: user.id
-    });
-    
-    const accountWithTenant = {
-      ...accountData,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      tenant_id: tenantId,  // Add tenant_id from user's metadata
-      is_active: accountData.isActive,  // Map camelCase to snake_case
-      account_type: accountData.accountType  // Map camelCase to snake_case
-    };
+    console.log('  Insert data tenant_id:', insertData.tenant_id);
+    console.log('  Insert data user_id:', insertData.user_id);
+    console.log('  Insert data name:', insertData.name);
     
     // Validate required fields
-    if (!accountWithTenant.name) {
+    if (!insertData.name) {
       console.error('MISSING REQUIRED FIELD: name');
       return Response.json({ error: 'Account name is required' }, { status: 400 });
     }
-
-
     
     const { data, error, status } = await supabase
       .from('current_accounts')
-      .insert([accountWithTenant])
+      .insert([insertData])  // Use the prepared data with explicit IDs
       .select()
       .single();
 
@@ -471,7 +472,7 @@ export async function POST(request: NextRequest) {
               headers: {
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify(accountWithTenant)
+              body: JSON.stringify(insertData)  // Changed from accountWithTenant to insertData
             }
           );
           
@@ -506,7 +507,7 @@ export async function POST(request: NextRequest) {
         console.warn('Attempting insert without problematic fields');
         
         // Remove problematic fields and try again
-        const { is_active, account_type, isActive, accountType, ...cleanAccountData } = accountWithTenant;
+        const { is_active, account_type, ...cleanAccountData } = insertData;  // Removed camelCase fields that don't exist in insertData
         
         const { data: cleanData, error: cleanError } = await supabase
           .from('current_accounts')
