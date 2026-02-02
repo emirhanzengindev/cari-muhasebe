@@ -394,8 +394,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    console.log('DEBUG: User ID:', user.id);
-    console.log('DEBUG: User metadata:', user.user_metadata);
+    console.log('DEBUG: Starting RLS validation and insert process...');
     
     // Extract tenant_id from user's metadata
     const userMetadata = user.user_metadata || {};
@@ -438,12 +437,16 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Account name is required' }, { status: 400 });
     }
     
+    console.log('DEBUG: About to execute Supabase insert...');
+    
     const { data, error, status } = await supabase
       .from('current_accounts')
       .insert([insertData])  // Use the prepared data with explicit IDs
       .select()
       .single();
 
+    console.log('DEBUG: Supabase insert completed, checking for errors...');
+    
     if (error) {
       console.error('SUPABASE ERROR (POST current_accounts):', {
         message: error.message,
@@ -574,9 +577,16 @@ export async function POST(request: NextRequest) {
       accountType: data.account_type || 'CUSTOMER'
     };
     
+    console.log('DEBUG: Successfully inserted account with ID:', data?.id);
     return Response.json(mappedData);
-  } catch (error) {
-    console.error('Error creating current account:', error);
+    
+  } catch (error: any) {
+    console.error('ERROR in POST /api/current-accounts:', error);
+    console.error('Full error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
