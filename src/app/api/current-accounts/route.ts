@@ -457,6 +457,7 @@ export async function POST(request: NextRequest) {
         
         // If RPC fails, try direct SQL method to check JWT context
         try {
+          // Direct SQL query to test JWT context in database
           const { data: directSqlResult, error: directSqlError } = await supabase
             .from('current_accounts')
             .select(`
@@ -477,6 +478,15 @@ export async function POST(request: NextRequest) {
       }
     } catch (jwtTestError) {
       console.log('DEBUG: All JWT Context Tests failed:', jwtTestError);
+    }
+    
+    // NEW: Additional test - try to manually set the JWT context if possible
+    try {
+      console.log('DEBUG: Attempting direct JWT context check via raw SQL...');
+      const { data, error } = await supabase.rpc('get_current_user_details');
+      console.log('DEBUG: get_current_user_details result:', { data, error });
+    } catch (userDetailsError) {
+      console.log('DEBUG: get_current_user_details not available or failed:', userDetailsError);
     }
     
     const { data, error, status } = await supabase
