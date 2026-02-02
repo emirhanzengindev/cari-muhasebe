@@ -394,83 +394,33 @@ export async function POST(request: NextRequest) {
       console.log('DEBUG: Session error details:', sessionError);
     }
 
-    // Attempt to fetch debug RPC that shows JWT context in DB session
-    let debugCtx: any = null;
-    try {
-      const rpcRes: any = await supabase.rpc('debug_current_user_context');
-      console.log('DEBUG: RPC debug_current_user_context result:', rpcRes);
-      if (rpcRes?.data && rpcRes.data.length > 0) {
-        debugCtx = rpcRes.data[0];
-      }
-    } catch (rpcErr) {
-      console.warn('DEBUG: RPC debug_current_user_context failed:', rpcErr);
-    }
-
-    // Fallback: direct SQL to read current_setting, if RPC not present or returned nothing
-    if (!debugCtx) {
-      try {
-        const sqlRes: any = await supabase
-          .from('current_accounts')
-          .select(`
-            auth.uid() AS current_user_id,
-            current_setting('request.jwt.claim.tenant_id', true) AS jwt_tenant_id,
-            current_setting('request.jwt.claim.sub', true) AS jwt_sub,
-            current_user AS pg_current_user,
-            session_user AS pg_session_user`
-          )
-          .limit(1);
-        console.log('DEBUG: Fallback SQL direct query result:', sqlRes);
-        if (sqlRes?.data && sqlRes.data.length > 0) {
-          debugCtx = sqlRes.data[0];
-        }
-      } catch (e) {
-        console.warn('DEBUG: Fallback SQL read failed (expected in many setups):', e);
-      }
-
-      // As additional fallback, attempt to call a safe RPC if exists
-      try {
-        const alt: any = await supabase.rpc('get_current_user_details');
-        console.log('DEBUG: get_current_user_details RPC result:', alt);
-        if (alt?.data && alt.data.length > 0) debugCtx = alt.data[0];
-      } catch (e) {
-        console.warn('DEBUG: get_current_user_details RPC not available or failed:', e);
-      }
-    }
-
     // Parse request body
     const body = await request.json();
     console.log('DEBUG: Incoming payload:', body);
+    console.log('DEBUG: Client-side tenant_id:', body.tenant_id);
+    console.log('DEBUG: Client-side user_id:', body.user_id);
 
-    // Determine tenantId and userId to use for the insert.
-    // Prefer debugCtx if present, otherwise fallback to session data or incoming payload (last resort).
-    const tenantIdFromCtx = debugCtx?.jwt_tenant_id || debugCtx?.tenant_id || null;
-    const userIdFromCtx = debugCtx?.current_user_id || debugCtx?.auth_uid_result || null;
-
-    const sessionAccessToken = sessionData?.session?.access_token ?? null;
-    const sessionUserId = sessionData?.session?.user?.id ?? null;
-
-    const finalTenantId = tenantIdFromCtx || sessionData?.session?.user?.user_metadata?.tenant_id || body.tenant_id || sessionUserId || null;
-    const finalUserId = userIdFromCtx || sessionUserId || body.user_id || null;
+    // Use client-side provided values as primary source, fallback to session data
+    const finalTenantId = body.tenant_id || sessionData?.session?.user?.user_metadata?.tenant_id || sessionData?.session?.user?.id || null;
+    const finalUserId = body.user_id || sessionData?.session?.user?.id || null;
 
     console.log('DEBUG: Resolved tenant/user', { 
       finalTenantId, 
       finalUserId,
-      tenantIdFromCtx,
-      userIdFromCtx,
-      sessionUserId,
-      bodyTenantId: body.tenant_id,
-      bodyUserId: body.user_id
+      clientTenantId: body.tenant_id,
+      clientUserId: body.user_id,
+      sessionTenantId: sessionData?.session?.user?.user_metadata?.tenant_id,
+      sessionUserId: sessionData?.session?.user?.id
     });
 
     if (!finalTenantId || !finalUserId) {
       // If we don't have tenant/user from any secure source, fail with actionable message
       console.log('ERROR: Missing tenant_id or user_id in server context');
       console.log('DEBUG: All sources checked:', {
-        tenantIdFromCtx,
+        clientTenantId: body.tenant_id,
+        clientUserId: body.user_id,
         sessionTenantId: sessionData?.session?.user?.user_metadata?.tenant_id,
-        bodyTenantId: body.tenant_id,
-        sessionUserId,
-        bodyUserId: body.user_id
+        sessionUserId: sessionData?.session?.user?.id
       });
       return Response.json(
         { error: 'Missing tenant_id or user_id in server context. Ensure cookies are sent and createServerSupabaseClient is used.' },
@@ -499,6 +449,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('DEBUG: About to execute insert with tenant_id:', finalTenantId, 'and user_id:', finalUserId);
+    console.log('DEBUG: Insert payload:', insertPayload);
     
     // Attempt insert (override any client-supplied tenant/user values)
     const { data: insertData, error: insertError } = await supabase
@@ -517,14 +468,21 @@ export async function POST(request: NextRequest) {
       // Handle RLS policy violation
       if (insertError.code === '42501' || insertError.message.toLowerCase().includes('row-level security policy')) {
         console.error('RLS POLICY VIOLATION DETECTED');
+        console.error('Tenant ID being used:', finalTenantId);
+        console.error('User ID:', finalUserId);
+        console.error('Full error details:', {
+          message: insertError.message,
+          code: insertError.code,
+          details: insertError.details,
+          hint: insertError.hint
+        });
         
         // Log the specific RLS policy check that failed
         console.error('RLS DEBUG: Attempted insert with:', {
           insert_tenant_id: insertPayload.tenant_id,
           insert_user_id: insertPayload.user_id,
           final_tenant_id: finalTenantId,
-          final_user_id: finalUserId,
-          debug_context: debugCtx
+          final_user_id: finalUserId
         });
       }
       
