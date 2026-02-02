@@ -390,6 +390,19 @@ export async function POST(request: NextRequest) {
     const userMetadata = user.user_metadata || {};
     const tenantId = userMetadata.tenant_id || user.id; // Fallback to user.id if tenant_id not in metadata
     
+    // DEBUG: Log JWT context before insert
+    console.log('DEBUG: PRE-INSERT JWT CONTEXT ANALYSIS:');
+    console.log('  User ID from session:', user.id);
+    console.log('  User email from session:', user.email);
+    console.log('  User metadata:', userMetadata);
+    console.log('  Tenant ID from metadata:', userMetadata.tenant_id || 'NOT_FOUND');
+    console.log('  Fallback Tenant ID:', tenantId);
+    console.log('  Account data to insert:', {
+      name: accountData.name,
+      tenant_id: tenantId,
+      user_id: user.id
+    });
+    
     const accountWithTenant = {
       ...accountData,
       created_at: new Date().toISOString(),
