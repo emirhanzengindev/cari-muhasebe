@@ -465,6 +465,21 @@ export async function POST(request: NextRequest) {
         console.error('RLS POLICY VIOLATION DETECTED');
         console.error('Tenant ID being used:', tenantId);
         console.error('User ID:', user.id);
+        console.error('Full error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
+        
+        // Log the specific RLS policy check that failed
+        console.error('RLS DEBUG: Attempted insert with:', {
+          insert_tenant_id: insertData.tenant_id,
+          insert_user_id: insertData.user_id,
+          expected_tenant_id: tenantId,
+          expected_user_id: user.id,
+          user_metadata: user.user_metadata
+        });
         
         // Try alternative approach: use dedicated server-side insert endpoint
         try {
@@ -478,7 +493,7 @@ export async function POST(request: NextRequest) {
               headers: {
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify(insertData)  // Changed from accountWithTenant to insertData
+              body: JSON.stringify(insertData)
             }
           );
           
