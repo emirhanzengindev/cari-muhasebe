@@ -157,10 +157,14 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString()
     };
 
+    console.log('DEBUG: About to insert row:', insertRow);
     const { data: insertData, error: insertError } = await supabase
       .from('current_accounts')
       .insert([insertRow])
       .select();
+    
+    console.log('DEBUG: Insert operation completed');
+    console.log('DEBUG: Insert result - data:', insertData, 'error:', insertError);
 
     if (insertError) {
       console.error('Insert error', insertError);
@@ -174,7 +178,15 @@ export async function POST(request: NextRequest) {
     return new Response(JSON.stringify(inserted), { status: 201 });
 
   } catch (err: any) {
-    console.error('Unhandled POST error', err);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500 });
+    console.error('Unhandled POST error:', {
+      message: err?.message,
+      stack: err?.stack,
+      name: err?.name,
+      cause: err?.cause
+    });
+    return new Response(JSON.stringify({ 
+      error: 'Internal server error',
+      details: err?.message || 'Unknown error'
+    }), { status: 500 });
   }
 }
