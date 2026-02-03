@@ -188,16 +188,13 @@ export async function getTenantIdFromJWT() {
 export async function createServerSupabaseClientForRLS(request: NextRequest) {
   console.log('DEBUG: createServerSupabaseClientForRLS called');
   
-  // Extract headers from request
-  const headersObj: Record<string, string> = {};
-  for (const [key, value] of request.headers) {
-    headersObj[key] = value;
-  }
+  // Only extract the Authorization header - don't pass all headers
+  const authHeader = request.headers.get('authorization') || '';
+  console.log('DEBUG: Authorization header present:', !!authHeader);
   
-  console.log('DEBUG: Creating Supabase client with Authorization header');
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     global: {
-      headers: headersObj
+      headers: authHeader ? { authorization: authHeader } : {}
     },
     cookies: {
       get: () => undefined,

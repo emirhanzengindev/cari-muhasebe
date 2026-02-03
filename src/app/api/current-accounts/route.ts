@@ -163,10 +163,11 @@ export async function POST(request: NextRequest) {
     let insertData = null;
     let insertError = null;
     let retries = 0;
-    const maxRetries = 2;
+    const maxRetries = 3;
     
     while (retries < maxRetries) {
       try {
+        console.log(`DEBUG: Insert attempt ${retries + 1}/${maxRetries}`);
         const result = await supabase
           .from('current_accounts')
           .insert([insertRow])
@@ -181,7 +182,7 @@ export async function POST(request: NextRequest) {
         } else if (retries < maxRetries - 1) {
           console.log(`DEBUG: Insert error on attempt ${retries + 1}, retrying...`, insertError.message);
           retries++;
-          await new Promise(resolve => setTimeout(resolve, 100)); // Small delay before retry
+          await new Promise(resolve => setTimeout(resolve, 200)); // Longer delay before retry
           continue;
         }
         break;
