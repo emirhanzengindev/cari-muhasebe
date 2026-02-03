@@ -132,6 +132,18 @@ export async function POST(request: NextRequest) {
     const supabase = await makeSupabaseClient(request);
     console.log('DEBUG: Supabase client created successfully');
 
+    // Set session on Supabase client for RLS to work
+    console.log('DEBUG: Setting session for RLS with user_id:', user_id);
+    try {
+      await supabase.auth.setSession({
+        access_token: token,
+        refresh_token: ''
+      });
+      console.log('DEBUG: Session set successfully for RLS');
+    } catch (sessionErr) {
+      console.warn('DEBUG: setSession warning (may not be critical):', sessionErr);
+    }
+
     const userId = user_id;
     const tenantId = user_id;
     
