@@ -128,14 +128,27 @@ export async function POST(request: NextRequest) {
       return new Response(JSON.stringify({ error: 'Invalid request body' }), { status: 400 });
     }
 
-    console.log('DEBUG: About to call makeSupabaseClient');
-    // Create a simple anonymous Supabase client - we'll bypass RLS by using explicit filtering
+    // DEBUG: Log all request headers to diagnose inconsistent auth
+    console.log('DEBUG: ===== REQUEST HEADERS DEBUG =====');
+    console.log('DEBUG: Authorization header:', request.headers.get('authorization') ? 'PRESENT' : 'MISSING');
+    console.log('DEBUG: Cookie header:', request.headers.get('cookie') ? 'PRESENT' : 'MISSING');
+    const allHeaders = Object.fromEntries(request.headers);
+    console.log('DEBUG: All headers keys:', Object.keys(allHeaders));
+    
+    // Create Supabase client with Authorization header passed through
     const { createClient } = await import('@supabase/supabase-js');
+    const authHeader = request.headers.get('authorization') || '';
+    
     const supabaseAnon = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+      {
+        global: {
+          headers: authHeader ? { authorization: authHeader } : {}
+        }
+      }
     );
-    console.log('DEBUG: Anonymous Supabase client created');
+    console.log('DEBUG: Supabase client created with Authorization:', authHeader ? 'YES' : 'NO');
 
     const userId = user_id;
     const tenantId = user_id;
