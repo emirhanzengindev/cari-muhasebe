@@ -203,7 +203,6 @@ export async function createServerSupabaseClientForRLS(request: NextRequest) {
       get: () => undefined,
       set: () => {},
       remove: () => {},
-      getAll: () => [],
     },
   });
 
