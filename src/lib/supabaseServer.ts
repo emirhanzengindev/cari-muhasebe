@@ -83,6 +83,12 @@ export async function createServerSupabaseClientWithRequest(request: NextRequest
     const authorizationHeader = request.headers.get('authorization') || '';
     console.log('DEBUG: Authorization header extracted:', authorizationHeader ? `Present (${authorizationHeader.substring(0, 30)}...)` : 'MISSING')
     
+    // Extract and parse cookies from request
+    const cookieHeader = request.headers.get('cookie') || '';
+    console.log('DEBUG: Cookie header present:', !!cookieHeader);
+    const cookieMap = parseCookies(cookieHeader);
+    console.log('DEBUG: Parsed cookies count:', cookieMap.size);
+    
     // Log all headers for debugging
     console.log('DEBUG: All request headers:');
     for (const [key, value] of request.headers) {
@@ -93,15 +99,21 @@ export async function createServerSupabaseClientWithRequest(request: NextRequest
       }
     }
     
-    // Create client with Authorization header - PostgREST will read this for RLS
+    // Create client with both Authorization header AND cookies - PostgREST will read this for RLS
     const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       global: { 
         headers: authorizationHeader ? { authorization: authorizationHeader } : {}
       },
       cookies: {
-        get() { return undefined; },
-        set() {},
-        remove() {},
+        get(name: string) {
+          const value = cookieMap.get(name);
+          if (name.startsWith('sb-')) {
+            console.log('DEBUG: Cookie get:', name, 'exists:', !!value);
+          }
+          return value;
+        },
+        set() { /* cookies are read-only from request */ },
+        remove() { /* cookies are read-only from request */ },
       },
       auth: {
         detectSessionInUrl: false,
@@ -109,7 +121,7 @@ export async function createServerSupabaseClientWithRequest(request: NextRequest
       },
     });
 
-    console.log('DEBUG: Supabase client created with headers:', authorizationHeader ? 'YES - Authorization header included' : 'NO - No Authorization header')
+    console.log('DEBUG: Supabase client created with headers:', authorizationHeader ? 'YES - Authorization header included' : 'NO - No Authorization header', 'and cookies:', cookieMap.size > 0 ? 'YES' : 'NO')
     return supabase;
   } catch (error) {
     console.error('ERROR creating Supabase client:', error)
