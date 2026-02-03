@@ -118,12 +118,19 @@ export async function POST(request: NextRequest) {
       return new Response(JSON.stringify({ error: 'Authentication required' }), { status: 401 });
     }
 
+    // Read request body BEFORE creating Supabase client to avoid stream consumption issues
+    let body: any = {};
+    try {
+      body = await request.json();
+      console.log('DEBUG: incoming body', body);
+    } catch (err) {
+      console.error('DEBUG: Failed to parse request body:', err);
+      return new Response(JSON.stringify({ error: 'Invalid request body' }), { status: 400 });
+    }
+
     console.log('DEBUG: About to call makeSupabaseClient');
     const supabase = await makeSupabaseClient(request);
     console.log('DEBUG: Supabase client created successfully');
-
-    const body = await request.json();
-    console.log('DEBUG: incoming body', body);
 
     const userId = user_id;
     const tenantId = user_id;
