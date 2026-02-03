@@ -242,6 +242,17 @@ export function createServerSupabaseClientForRLS(request: NextRequest) {
     cookies: cookieMethods,
   });
 
+  // If we have Authorization header but no session cookies, try to set the session from the token
+  const authHeader = headersObj['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    console.log('DEBUG: Found Bearer token, attempting to set session');
+    supabase.auth.setSession({
+      access_token: token,
+      refresh_token: '',
+    }).catch(err => console.log('DEBUG: setSession failed:', err.message));
+  }
+
   return supabase;
 }
 
