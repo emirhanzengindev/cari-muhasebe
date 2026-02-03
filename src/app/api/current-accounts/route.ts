@@ -158,12 +158,48 @@ export async function POST(request: NextRequest) {
     };
 
     console.log('DEBUG: About to insert row:', insertRow);
-    const { data: insertData, error: insertError } = await supabase
-      .from('current_accounts')
-      .insert([insertRow])
-      .select();
     
-    console.log('DEBUG: Insert operation completed');
+    // Execute insert with retry on network failure
+    let insertData = null;
+    let insertError = null;
+    let retries = 0;
+    const maxRetries = 2;
+    
+    while (retries < maxRetries) {
+      try {
+        const result = await supabase
+          .from('current_accounts')
+          .insert([insertRow])
+          .select();
+        
+        insertData = result.data;
+        insertError = result.error;
+        
+        if (!insertError) {
+          console.log('DEBUG: Insert operation completed successfully');
+          break;
+        } else if (retries < maxRetries - 1) {
+          console.log(`DEBUG: Insert error on attempt ${retries + 1}, retrying...`, insertError.message);
+          retries++;
+          await new Promise(resolve => setTimeout(resolve, 100)); // Small delay before retry
+          continue;
+        }
+        break;
+      } catch (queryErr: any) {
+        console.error(`DEBUG: Insert query threw exception on attempt ${retries + 1}:`, {
+          message: queryErr?.message,
+          name: queryErr?.name
+        });
+        if (retries < maxRetries - 1) {
+          retries++;
+          await new Promise(resolve => setTimeout(resolve, 100));
+          continue;
+        } else {
+          throw queryErr;
+        }
+      }
+    }
+    
     console.log('DEBUG: Insert result - data:', insertData, 'error:', insertError);
 
     if (insertError) {
