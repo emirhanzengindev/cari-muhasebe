@@ -242,20 +242,11 @@ export async function createServerSupabaseClientForRLS(request: NextRequest) {
     cookies: cookieMethods,
   });
 
-  // If we have Authorization header but no session cookies, try to set the session from the token
+  // Authorization header is already passed through global headers to Supabase client
+  // No need to call setSession() - just let the header propagate to the database
   const authHeader = headersObj['authorization'];
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7);
-    console.log('DEBUG: Found Bearer token, attempting to set session');
-    try {
-      await supabase.auth.setSession({
-        access_token: token,
-        refresh_token: '',
-      });
-      console.log('DEBUG: Session set successfully from Bearer token');
-    } catch (err: any) {
-      console.log('DEBUG: setSession failed:', err.message);
-    }
+    console.log('DEBUG: Authorization header found and will be used by Supabase client');
   }
 
   return supabase;
