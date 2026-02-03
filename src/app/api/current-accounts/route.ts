@@ -137,7 +137,6 @@ export async function POST(request: NextRequest) {
     
     // Create Supabase client with Authorization header passed through
     const { createClient } = await import('@supabase/supabase-js');
-    const authHeader = request.headers.get('authorization') || '';
     
     const supabaseAnon = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || '',
