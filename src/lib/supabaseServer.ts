@@ -81,7 +81,17 @@ export async function createServerSupabaseClientWithRequest(request: NextRequest
     
     // Extract Authorization header if present
     const authorizationHeader = request.headers.get('authorization') || '';
-    console.log('DEBUG: Authorization header from request:', authorizationHeader ? 'Present' : 'Absent')
+    console.log('DEBUG: Authorization header extracted:', authorizationHeader ? `Present (${authorizationHeader.substring(0, 30)}...)` : 'MISSING')
+    
+    // Log all headers for debugging
+    console.log('DEBUG: All request headers:');
+    for (const [key, value] of request.headers) {
+      if (key.toLowerCase() === 'authorization') {
+        console.log(`  ${key}: ${value.substring(0, 50)}...`);
+      } else if (!['cookie', 'user-agent', 'accept'].includes(key.toLowerCase())) {
+        console.log(`  ${key}: ${value}`);
+      }
+    }
     
     // Create client with Authorization header - PostgREST will read this for RLS
     const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -99,7 +109,7 @@ export async function createServerSupabaseClientWithRequest(request: NextRequest
       },
     });
 
-    console.log('DEBUG: Supabase client created successfully with Authorization header')
+    console.log('DEBUG: Supabase client created with headers:', authorizationHeader ? 'YES - Authorization header included' : 'NO - No Authorization header')
     return supabase;
   } catch (error) {
     console.error('ERROR creating Supabase client:', error)

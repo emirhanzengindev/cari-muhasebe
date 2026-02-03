@@ -131,6 +131,10 @@ export async function POST(request: NextRequest) {
     console.log('DEBUG: About to call makeSupabaseClient');
     const supabase = await makeSupabaseClient(request);
     console.log('DEBUG: Supabase client created successfully with session set');
+    
+    // Debug: Verify Authorization header is present
+    const requestAuthHeader = request.headers.get('authorization');
+    console.log('DEBUG: Request Authorization header:', requestAuthHeader ? `Present (${requestAuthHeader.substring(0, 30)}...)` : 'MISSING - THIS IS THE PROBLEM');
 
     const userId = user_id;
     const tenantId = user_id;
