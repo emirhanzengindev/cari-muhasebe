@@ -29,7 +29,9 @@ if (!supabaseAnonKey) {
 }
 
 // Function to create a Supabase client that reads cookies automatically - Updated for Vercel deployment
-export function createServerSupabaseClient() {
+export async function createServerSupabaseClient() {
+  const cookieStore = await cookies();
+  
   return createServerClient(
     supabaseUrl,
     supabaseAnonKey,
@@ -37,11 +39,7 @@ export function createServerSupabaseClient() {
       cookies: {
         get(name: string) {
           try {
-            const cookieStore = cookies();
-            // Next.js 14 returns a synchronous cookies object
-            // Use type assertion to handle the typing issue
-            const syncCookieStore = cookieStore as any;
-            const value = syncCookieStore.get(name)?.value;
+            const value = cookieStore.get(name)?.value;
             if (name.startsWith('sb-')) {
               console.log('DEBUG: Supabase cookie found:', name, 'exists:', !!value);
             }
@@ -53,9 +51,7 @@ export function createServerSupabaseClient() {
         },
         set(name: string, value: string, options: any) {
           try {
-            const cookieStore = cookies();
-            const syncCookieStore = cookieStore as any;
-            syncCookieStore.set(name, value, options);
+            cookieStore.set(name, value, options);
             if (name.startsWith('sb-')) {
               console.log('DEBUG: Supabase cookie set:', name);
             }
@@ -65,9 +61,7 @@ export function createServerSupabaseClient() {
         },
         remove(name: string, options: any) {
           try {
-            const cookieStore = cookies();
-            const syncCookieStore = cookieStore as any;
-            syncCookieStore.delete({ name, ...options });
+            cookieStore.delete({ name, ...options });
             if (name.startsWith('sb-')) {
               console.log('DEBUG: Supabase cookie removed:', name);
             }
@@ -174,7 +168,7 @@ export async function createServerSupabaseClientWithRequest(request: NextRequest
 
 // Function to extract tenant ID from Supabase auth
 export async function getTenantIdFromJWT() {
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
 
   const {
     data: { user },
