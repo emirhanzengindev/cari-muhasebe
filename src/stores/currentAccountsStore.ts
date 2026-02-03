@@ -16,10 +16,29 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
     return null;
   }
   
-  // Get Supabase session token
+  // Get Supabase session token with retry for race condition handling
   const supabase = getSupabaseBrowser();
-  const { data: { session } } = await supabase.auth.getSession();
-  console.log('DEBUG: Session retrieved:', session ? 'exists' : 'null');
+  let session = null;
+  let retries = 0;
+  const maxRetries = 3;
+  
+  while (retries < maxRetries && !session) {
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    if (currentSession?.access_token) {
+      session = currentSession;
+      console.log('DEBUG: Session retrieved on attempt', retries + 1);
+      break;
+    }
+    if (retries < maxRetries - 1) {
+      console.warn('DEBUG: Session not ready, waiting before retry...');
+      await new Promise(resolve => setTimeout(resolve, 50));
+      retries++;
+    } else {
+      retries++;
+    }
+  }
+  
+  console.log('DEBUG: Session retrieved:', session ? 'exists' : 'null', '(after', retries, 'attempts)');
   if (session) {
     console.log('DEBUG: Session user:', session.user?.email);
     console.log('DEBUG: Session user ID:', session.user?.id);
@@ -34,6 +53,8 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   // Add Authorization header if session exists
   if (session?.access_token) {
     headers['Authorization'] = `Bearer ${session.access_token}`;
+  } else {
+    console.warn('DEBUG: No session token available - request will be sent without Authorization header');
   }
     
   console.log('DEBUG: Headers being sent:', headers);
