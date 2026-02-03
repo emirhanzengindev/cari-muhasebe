@@ -135,19 +135,9 @@ export async function POST(request: NextRequest) {
     const allHeaders = Object.fromEntries(request.headers);
     console.log('DEBUG: All headers keys:', Object.keys(allHeaders));
     
-    // Create Supabase client with Authorization header passed through
-    const { createClient } = await import('@supabase/supabase-js');
-    
-    const supabaseAnon = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-      {
-        global: {
-          headers: authHeader ? { authorization: authHeader } : {}
-        }
-      }
-    );
-    console.log('DEBUG: Supabase client created with Authorization:', authHeader ? 'YES' : 'NO');
+    // Use the proper SSR client that handles both headers AND cookies
+    const supabaseAnon = await createServerSupabaseClientWithRequest(request);
+    console.log('DEBUG: Supabase client created with proper header/cookie handling');
 
     const userId = user_id;
     const tenantId = user_id;
