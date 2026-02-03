@@ -26,7 +26,7 @@ export async function GET(
       );
     }
     
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
     
     const { data, error } = await supabase
       .from('stock_movements')

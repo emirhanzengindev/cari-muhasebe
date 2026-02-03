@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
     
     // Direct RPC call to delete user role
     const { error } = await supabase.rpc('delete_user_role', { 

@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
     
     // Direct RPC call to get user role
     const { data, error } = await supabase.rpc('get_user_role', { 

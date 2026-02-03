@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
     
     // Direct RPC call to upsert user role using service role
     const { error } = await supabase.rpc('upsert_user_role', { 
