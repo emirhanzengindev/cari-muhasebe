@@ -185,7 +185,7 @@ export async function getTenantIdFromJWT() {
 }
 
 // Function to create a Supabase client with proper RLS authentication
-export function createServerSupabaseClientForRLS(request: NextRequest) {
+export async function createServerSupabaseClientForRLS(request: NextRequest) {
   console.log('DEBUG: createServerSupabaseClientForRLS called');
   
   const headersObj: Record<string, string> = {};
@@ -247,10 +247,15 @@ export function createServerSupabaseClientForRLS(request: NextRequest) {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
     console.log('DEBUG: Found Bearer token, attempting to set session');
-    supabase.auth.setSession({
-      access_token: token,
-      refresh_token: '',
-    }).catch(err => console.log('DEBUG: setSession failed:', err.message));
+    try {
+      await supabase.auth.setSession({
+        access_token: token,
+        refresh_token: '',
+      });
+      console.log('DEBUG: Session set successfully from Bearer token');
+    } catch (err: any) {
+      console.log('DEBUG: setSession failed:', err.message);
+    }
   }
 
   return supabase;

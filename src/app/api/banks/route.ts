@@ -6,7 +6,7 @@ import { createServerSupabaseClientForRLS } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerSupabaseClientForRLS(request)
+    const supabase = await createServerSupabaseClientForRLS(request)
 
     const {
       data: { user },
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
   try {
     const bankData = await request.json();
     
-    const supabase = createServerSupabaseClientForRLS(request);
+    const supabase = await createServerSupabaseClientForRLS(request);
     
     const {
       data: { user }

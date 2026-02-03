@@ -10,9 +10,9 @@ export async function OPTIONS() {
   return new Response('OK', { status: 200 });
 }
 
-function makeSupabaseClient(request: NextRequest) {
+async function makeSupabaseClient(request: NextRequest) {
   // Mevcut wrapper fonksiyonumuzu kullanıyoruz
-  return createServerSupabaseClientForRLS(request);
+  return await createServerSupabaseClientForRLS(request);
 }
 
 export async function GET(request: NextRequest) {
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   try {
     console.log('DEBUG: GET /api/current-accounts called');
     console.log('DEBUG: About to call makeSupabaseClient');
-    const supabase = makeSupabaseClient(request);
+    const supabase = await makeSupabaseClient(request);
     console.log('DEBUG: Supabase client created successfully');
 
     // 1) RPC ile DB session/JWT context kontrolü
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
   try {
     console.log('DEBUG: POST /api/current-accounts called');
     console.log('DEBUG: About to call makeSupabaseClient');
-    const supabase = makeSupabaseClient(request);
+    const supabase = await makeSupabaseClient(request);
     console.log('DEBUG: Supabase client created successfully');
 
     const body = await request.json();

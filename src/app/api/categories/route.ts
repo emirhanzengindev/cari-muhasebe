@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   try {
     console.log('DEBUG: GET /api/categories called')
 
-    const supabase = createServerSupabaseClientForRLS(request)
+    const supabase = await createServerSupabaseClientForRLS(request)
 
     const {
       data: { user },
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     const categoryData = await request.json();
     console.log('BODY:', categoryData);
     
-    const supabase = createServerSupabaseClientForRLS(request);
+    const supabase = await createServerSupabaseClientForRLS(request);
     
     const {
       data: { user }
