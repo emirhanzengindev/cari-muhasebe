@@ -71,72 +71,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cleanupFunction: (() => void) | null = null;
     
     const initializeAuth = async () => {
-      // Use immediate timeout to ensure DOM is hydrated
-      setTimeout(async () => {
+      try {
+        const supabase = getSupabaseBrowser();
+        
+        // Get initial session
+        const { data: { session } } = await supabase.auth.getSession();
+        
         if (!mounted) return;
         
-        try {
-          const supabase = getSupabaseBrowser();
-          
-          // Get initial session
-          const { data: { session } } = await supabase.auth.getSession();
-          
+        if (session) {
+          const userData = buildUser(session);
+          userRef.current = userData;
+          setUser(userData);
+          setTenantId(userData.tenantId);
+          useTenantStore.getState().setTenantId(userData.tenantId);
+        }
+        
+        setIsLoading(false);
+        
+        // Set up auth state listener with proper cleanup
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
           if (!mounted) return;
           
-          if (session) {
+          console.log("AUTH EVENT:", event, !!session);
+          
+          if (event === "SIGNED_IN" && session) {
             const userData = buildUser(session);
-            if (mounted) {
-              userRef.current = userData;
-              setUser(userData);
-              setTenantId(userData.tenantId);
-              useTenantStore.getState().setTenantId(userData.tenantId);
-            }
+            userRef.current = userData;
+            setUser(userData);
+            setTenantId(userData.tenantId);
+            useTenantStore.getState().setTenantId(userData.tenantId);
+          } else if (event === "SIGNED_OUT" || !session) {
+            userRef.current = null;
+            setUser(null);
+            setTenantId(null);
+            useTenantStore.getState().setTenantId(null);
           }
-          
-          if (mounted) {
-            setIsLoading(false);
-          }
-          
-          // Set up auth state listener with proper cleanup
-          const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
-            if (!mounted) return;
-            
-            console.log("AUTH EVENT:", event, !!session);
-            
-            // Use setTimeout for state updates to prevent hydration issues
-            setTimeout(() => {
-              if (!mounted) return;
-              
-              if (event === "SIGNED_IN" && session) {
-                const userData = buildUser(session);
-                userRef.current = userData;
-                setUser(userData);
-                setTenantId(userData.tenantId);
-                useTenantStore.getState().setTenantId(userData.tenantId);
-                setIsLoading(false);
-              } else if (event === "SIGNED_OUT" || !session) {
-                userRef.current = null;
-                setUser(null);
-                setTenantId(null);
-                useTenantStore.getState().setTenantId(null);
-                setIsLoading(false);
-              }
-            }, 0);
-          });
-          
-          // Store cleanup function
-          cleanupFunction = () => {
-            subscription.unsubscribe();
-          };
-          cleanupRef.current = cleanupFunction;
-          
-        } catch (error) {
-          console.error('AUTH CONTEXT: Error in auth setup:', error);
-          if (mounted) {
-            setIsLoading(false);
-          }
+        });
+        
+        // Store cleanup function
+        cleanupFunction = () => {
+          subscription.unsubscribe();
+        };
+        cleanupRef.current = cleanupFunction;
+        
+      } catch (error) {
+        console.error('AUTH CONTEXT: Error in auth setup:', error);
+        if (mounted) {
+          setIsLoading(false);
         }
-      }, 0);
+      }
     };
     
     initializeAuth();
