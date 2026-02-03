@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest } from 'next/server';
 import { headers, cookies } from 'next/headers';
-import { createServerSupabaseClient, createServerSupabaseClientForRLS } from '@/lib/supabaseServer';
+import { createServerSupabaseClient, createServerSupabaseClientForRLS, createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
 
 // EMERGENCY TEST ENDPOINT
 export async function OPTIONS() {
@@ -11,8 +11,8 @@ export async function OPTIONS() {
 }
 
 async function makeSupabaseClient(request: NextRequest) {
-  // Mevcut wrapper fonksiyonumuzu kullanıyoruz
-  return await createServerSupabaseClientForRLS(request);
+  // Use the robust client with proper session setup
+  return await createServerSupabaseClientWithRequest(request);
 }
 
 export async function GET(request: NextRequest) {
@@ -130,19 +130,7 @@ export async function POST(request: NextRequest) {
 
     console.log('DEBUG: About to call makeSupabaseClient');
     const supabase = await makeSupabaseClient(request);
-    console.log('DEBUG: Supabase client created successfully');
-
-    // Set session on Supabase client for RLS to work
-    console.log('DEBUG: Setting session for RLS with user_id:', user_id);
-    try {
-      await supabase.auth.setSession({
-        access_token: token,
-        refresh_token: ''
-      });
-      console.log('DEBUG: Session set successfully for RLS');
-    } catch (sessionErr) {
-      console.warn('DEBUG: setSession warning (may not be critical):', sessionErr);
-    }
+    console.log('DEBUG: Supabase client created successfully with session set');
 
     const userId = user_id;
     const tenantId = user_id;
