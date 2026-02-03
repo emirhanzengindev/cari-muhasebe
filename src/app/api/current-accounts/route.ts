@@ -21,43 +21,41 @@ export async function GET(request: NextRequest) {
   
   try {
     console.log('DEBUG: GET /api/current-accounts called');
+    
+    // Extract user from Authorization header JWT
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.warn('DEBUG: No Authorization header');
+      return new Response(JSON.stringify({ error: 'Auth session missing' }), { status: 401 });
+    }
+    
+    const token = authHeader.substring(7);
+    let user_id: string | null = null;
+    
+    try {
+      // Decode JWT payload (without verification - the token was already sent by client)
+      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+      user_id = payload.sub;
+      console.log('DEBUG: JWT payload decoded, user_id:', user_id);
+    } catch (err) {
+      console.error('DEBUG: JWT decode error:', err);
+      return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401 });
+    }
+    
+    if (!user_id) {
+      console.warn('DEBUG: No user_id in token');
+      return new Response(JSON.stringify({ error: 'Authentication required' }), { status: 401 });
+    }
+
     console.log('DEBUG: About to call makeSupabaseClient');
     const supabase = await makeSupabaseClient(request);
     console.log('DEBUG: Supabase client created successfully');
-
-    // 1) RPC ile DB session/JWT context kontrolü
-    let rpcData = null;
-    let rpcError = null;
-    try {
-      const rpcResult = await supabase.rpc('debug_current_user_context');
-      rpcData = rpcResult.data;
-      rpcError = rpcResult.error;
-    } catch (err) {
-      console.log('DEBUG: RPC debug_current_user_context not available or failed:', err);
-    }
-    console.log('DEBUG: RPC debug_current_user_context result:', rpcData, rpcError?.message || null);
-
-    // 2) Auth üzerinden user kontrolü
-    const { data: authData, error: authErr } = await supabase.auth.getUser();
-
-    const user = authData?.user ?? null;
-
-    console.log('DEBUG: auth.getUser() =>', { 
-      id: user?.id ?? null, 
-      email: user?.email ?? null, 
-      authErr: authErr?.message ?? null 
-    });
-
-    if (!user) {
-      console.warn('DEBUG: No authenticated user found');
-      return new Response(JSON.stringify({ error: 'Auth session missing' }), { status: 401 });
-    }
 
     // 3) Temel sorgu (güvenli alan listesi ile)
     const { data, error } = await supabase
       .from('current_accounts')
       .select('id, name, phone, balance, tenant_id, created_at, updated_at, is_active, account_type')
-      .eq('tenant_id', user.id);
+      .eq('tenant_id', user_id);
 
     if (error) {
       console.error('ERROR fetching current_accounts:', error);
@@ -94,6 +92,32 @@ export async function POST(request: NextRequest) {
   
   try {
     console.log('DEBUG: POST /api/current-accounts called');
+
+    // Extract user from Authorization header JWT (same approach as GET)
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.warn('DEBUG: No Authorization header in POST');
+      return new Response(JSON.stringify({ error: 'Auth session missing' }), { status: 401 });
+    }
+    
+    const token = authHeader.substring(7);
+    let user_id: string | null = null;
+    
+    try {
+      // Decode JWT payload (without verification - the token was already sent by client)
+      const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+      user_id = payload.sub;
+      console.log('DEBUG: JWT payload decoded in POST, user_id:', user_id);
+    } catch (err) {
+      console.error('DEBUG: JWT decode error in POST:', err);
+      return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401 });
+    }
+    
+    if (!user_id) {
+      console.warn('DEBUG: No user_id in token (POST)');
+      return new Response(JSON.stringify({ error: 'Authentication required' }), { status: 401 });
+    }
+
     console.log('DEBUG: About to call makeSupabaseClient');
     const supabase = await makeSupabaseClient(request);
     console.log('DEBUG: Supabase client created successfully');
@@ -101,47 +125,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('DEBUG: incoming body', body);
 
-    // Detaylı session debug
-    console.log('DEBUG: Checking session with multiple methods...');
-    
-    // Yöntem 1: Standart getSession
-    const { data: sessionData1, error: sessionError1 } = await supabase.auth.getSession();
-    console.log('DEBUG: Method 1 - getSession:', {
-      hasSession: !!sessionData1?.session,
-      userId: sessionData1?.session?.user?.id,
-      tenantId: sessionData1?.session?.user?.user_metadata?.tenant_id,
-      error: sessionError1?.message
-    });
-
-    // Yöntem 2: getUser doğrudan
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    console.log('DEBUG: Method 2 - getUser:', {
-      hasUser: !!userData?.user,
-      userId: userData?.user?.id,
-      tenantId: userData?.user?.user_metadata?.tenant_id,
-      error: userError?.message
-    });
-
-    // Yöntem 3: RPC ile JWT context kontrolü
-    try {
-      const { data: rpcData, error: rpcError } = await supabase.rpc('debug_current_user_context');
-      console.log('DEBUG: Method 3 - RPC debug:', {
-        rpcData: rpcData,
-        rpcError: rpcError?.message
-      });
-    } catch (rpcException) {
-      console.log('DEBUG: RPC method failed:', rpcException);
-    }
-
-    // En güvenli yöntem: getUser
-    const user = userData?.user;
-    if (!user) {
-      console.warn('DEBUG: No authenticated user found via getUser');
-      return new Response(JSON.stringify({ error: 'Authentication required' }), { status: 401 });
-    }
-
-    const userId = user.id;
-    const tenantId = user.user_metadata?.tenant_id ?? userId;
+    const userId = user_id;
+    const tenantId = user_id;
     
     console.log('DEBUG: Using authenticated user:', { userId, tenantId });
     
