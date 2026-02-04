@@ -1,260 +1,136 @@
-import { create } from 'zustand';
-import { CurrentAccount } from '@/types';
-import { useTenantStore } from '@/lib/tenantStore';
-import { getSupabaseBrowser } from '../lib/supabase';
+import { create } from "zustand";
+import { CurrentAccount } from "@/types";
+import { useTenantStore } from "@/lib/tenantStore";
+import { getSupabaseBrowser } from "@/lib/supabase";
 
-// Helper function to make API requests
-const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
+/* =========================
+   API HELPER
+========================= */
+const makeApiRequest = async (
+  endpoint: string,
+  options: RequestInit = {}
+) => {
   const tenantId = useTenantStore.getState().tenantId;
-    console.log('DEBUG: Raw tenantId from store in currentAccountsStore:', tenantId);
-  
-  console.log('DEBUG: makeApiRequest called for endpoint:', endpoint);
-  console.log('DEBUG: Retrieved tenantId:', tenantId);
-  
+
   if (!tenantId) {
-    console.warn('WARNING: Tenant ID not available, skipping request for endpoint:', endpoint);
-    return null;
+    console.warn("Tenant ID not ready, request skipped:", endpoint);
+    return undefined;
   }
-  
-  // Get Supabase session token with retry for race condition handling
+
   const supabase = getSupabaseBrowser();
-  let session = null;
-  let retries = 0;
-  const maxRetries = 3;
-  
-  while (retries < maxRetries && !session) {
-    const { data: { session: currentSession } } = await supabase.auth.getSession();
-    if (currentSession?.access_token) {
-      session = currentSession;
-      console.log('DEBUG: Session retrieved on attempt', retries + 1);
-      break;
-    }
-    if (retries < maxRetries - 1) {
-      console.warn('DEBUG: Session not ready, waiting before retry...');
-      await new Promise(resolve => setTimeout(resolve, 50));
-      retries++;
-    } else {
-      retries++;
-    }
-  }
-  
-  console.log('DEBUG: Session retrieved:', session ? 'exists' : 'null', '(after', retries, 'attempts)');
-  if (session) {
-    console.log('DEBUG: Session user:', session.user?.email);
-    console.log('DEBUG: Session user ID:', session.user?.id);
-    console.log('DEBUG: Session access_token exists:', !!session.access_token);
-  }
-    
-  // Conditionally add Content-Type header only for requests that have a body
-  const headers: any = {
-    ...options.headers,
+  const { data } = await supabase.auth.getSession();
+  const session = data.session;
+
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string>),
   };
-  
-  // Add Authorization header if session exists
+
   if (session?.access_token) {
-    headers['Authorization'] = `Bearer ${session.access_token}`;
-  } else {
-    console.warn('DEBUG: No session token available - request will be sent without Authorization header');
+    headers.Authorization = `Bearer ${session.access_token}`;
   }
-    
-  console.log('DEBUG: Headers being sent:', headers);
-    
-  // Add Content-Type for methods that typically have a body
-  const method = options.method?.toUpperCase();
-  if (method === 'POST' || method === 'PUT' || method === 'PATCH' || (method === undefined && options.body !== undefined)) {
-    headers['Content-Type'] = 'application/json';
+
+  if (options.body) {
+    headers["Content-Type"] = "application/json";
   }
-  
-  // Add tenant_id and user_id to the body for POST requests
-  let bodyWithAuth = options.body;
-  if (method === 'POST' && options.body) {
-    try {
-      const bodyObj = JSON.parse(options.body as string);
-      bodyWithAuth = JSON.stringify({
-        ...bodyObj,
-        tenant_id: tenantId,
-        user_id: session?.user?.id
-      });
-      console.log('DEBUG: Body with auth info:', {
-        originalBody: bodyObj,
-        tenant_id: tenantId,
-        user_id: session?.user?.id
-      });
-    } catch (e) {
-      console.warn('DEBUG: Failed to parse body for auth injection:', e);
-    }
+
+  let body = options.body;
+  if (options.method === "POST" && body) {
+    body = JSON.stringify({
+      ...JSON.parse(body as string),
+      tenant_id: tenantId,
+      user_id: session?.user?.id,
+    });
   }
-  
-  const response = await fetch(`/api${endpoint}`, {
+
+  const res = await fetch(`/api${endpoint}`, {
     ...options,
     headers,
-    body: bodyWithAuth,
-    credentials: 'include',
+    body,
+    credentials: "include",
   });
-  
-  console.log('DEBUG: API response status:', response.status);
-  
-  if (!response.ok) {
-    console.error('ERROR: API request failed with status:', response.status);
-    const errorText = await response.text();
-    console.error('ERROR: API response text:', errorText);
-    
-    // Check if it's an auth session error
-    if (response.status === 401 && errorText.includes('Auth session missing')) {
-      console.error('AUTH SESSION ERROR: Session expired or missing. Letting middleware handle auth...');
-      // Let middleware handle auth redirects
-      return;
-    }
-    
-    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || res.statusText);
   }
-  
-  return response.json();
+
+  return res.json();
 };
 
+/* =========================
+   STORE
+========================= */
 interface CurrentAccountState {
   accounts: CurrentAccount[];
   loading: boolean;
   error: string | null;
-  
-  // Account actions
+
   fetchAccounts: () => Promise<void>;
-  addAccount: (account: Omit<CurrentAccount, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
-  updateAccount: (id: string, account: Partial<Omit<CurrentAccount, 'created_at' | 'updated_at'>>) => Promise<void>;
+  addAccount: (
+    data: Omit<CurrentAccount, "id" | "created_at" | "updated_at">
+  ) => Promise<void>;
   deleteAccount: (id: string) => Promise<void>;
   toggleAccountStatus: (id: string) => Promise<void>;
-  updateAccountBalance: (id: string, amount: number, type: 'SALES' | 'PURCHASE') => Promise<void>;
 }
 
 export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) => ({
-
   accounts: [],
   loading: false,
   error: null,
 
-  // Account actions
   fetchAccounts: async () => {
+    const tenantId = useTenantStore.getState().tenantId;
+    if (!tenantId) return;
+
     set({ loading: true, error: null });
+
     try {
-      const accounts = await makeApiRequest('/current-accounts');
-      if (accounts !== null && Array.isArray(accounts)) {
-        // Filter out any invalid account entries that don't have required properties
-        const validAccounts = accounts.filter(account => 
-          account && 
-          typeof account === 'object' && 
-          account.id && 
-          typeof account.id === 'string'
-        );
-        set({ accounts: validAccounts, loading: false });
-      } else {
-        // API call failed or returned invalid data, keep accounts as empty array
-        set({ accounts: [], loading: false });
-      }
-    } catch (error) {
-      set({ error: 'Failed to fetch accounts', loading: false, accounts: [] });
+      const data = await makeApiRequest("/current-accounts");
+      set({ accounts: Array.isArray(data) ? data : [], loading: false });
+    } catch {
+      set({ error: "Hesaplar alınamadı", loading: false });
     }
   },
 
-  addAccount: async (accountData) => {
+  addAccount: async (account) => {
     try {
-      const newAccount = await makeApiRequest('/current-accounts', {
-        method: 'POST',
-        body: JSON.stringify(accountData),
+      const created = await makeApiRequest("/current-accounts", {
+        method: "POST",
+        body: JSON.stringify(account),
       });
-      
-      if (newAccount !== null) {
-        set((state) => {
-          const updatedAccounts = [...state.accounts, newAccount];
-          return { accounts: updatedAccounts };
-        });
-      }
-    } catch (error) {
-      set({ error: 'Failed to add account' });
-    }
-  },
 
-  updateAccount: async (id, accountData) => {
-    try {
-      const updatedAccount = await makeApiRequest(`/current-accounts/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(accountData),
-      });
-      
-      if (updatedAccount !== null) {
-        set((state) => {
-          const updatedAccounts = state.accounts.map((account) =>
-            account.id === id ? updatedAccount : account
-          );
-          return { accounts: updatedAccounts };
-        });
-      }
-    } catch (error) {
-      set({ error: 'Failed to update account' });
+      if (!created) return;
+
+      set((state) => ({
+        accounts: [created, ...state.accounts],
+      }));
+    } catch {
+      set({ error: "Hesap eklenemedi" });
     }
   },
 
   deleteAccount: async (id) => {
-    try {
-      const result = await makeApiRequest(`/current-accounts/${id}`, {
-        method: 'DELETE',
-      });
-      
-      if (result !== null) {
-        set((state) => {
-          const updatedAccounts = state.accounts.filter((account) => account.id !== id);
-          return { accounts: updatedAccounts };
-        });
-      }
-    } catch (error) {
-      set({ error: 'Failed to delete account' });
-    }
+    await makeApiRequest(`/current-accounts/${id}`, { method: "DELETE" });
+    set((state) => ({
+      accounts: state.accounts.filter((a) => a.id !== id),
+    }));
   },
 
   toggleAccountStatus: async (id) => {
-    try {
-      const currentAccount = get().accounts.find(acc => acc.id === id);
-      if (!currentAccount) return;
-      
-      const updatedAccount = await makeApiRequest(`/current-accounts/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ isActive: !currentAccount.isActive }),
-      });
-      
-      if (updatedAccount !== null) {
-        set((state) => {
-          const updatedAccounts = state.accounts.map((account) =>
-            account.id === id ? updatedAccount : account
-          );
-          return { accounts: updatedAccounts };
-        });
-      }
-    } catch (error) {
-      set({ error: 'Failed to toggle account status' });
-    }
-  },
+    const acc = get().accounts.find((a) => a.id === id);
+    if (!acc) return;
 
-  updateAccountBalance: async (id, amount, type) => {
-    try {
-      const currentAccount = get().accounts.find(acc => acc.id === id);
-      if (!currentAccount) return;
-      
-      const newBalance = type === 'SALES' ? currentAccount.balance + amount : currentAccount.balance - amount;
-      
-      const updatedAccount = await makeApiRequest(`/current-accounts/${id}/balance`, {
-        method: 'PUT',
-        body: JSON.stringify({ balance: newBalance }),
-      });
-      
-      if (updatedAccount !== null) {
-        set((state) => {
-          const updatedAccounts = state.accounts.map((account) =>
-            account.id === id ? updatedAccount : account
-          );
-          return { accounts: updatedAccounts };
-        });
-      }
-    } catch (error) {
-      set({ error: 'Failed to update account balance' });
-    }
-  }
+    const updated = await makeApiRequest(`/current-accounts/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ isActive: !acc.isActive }),
+    });
+
+    if (!updated) return;
+
+    set((state) => ({
+      accounts: state.accounts.map((a) =>
+        a.id === id ? updated : a
+      ),
+    }));
+  },
 }));
