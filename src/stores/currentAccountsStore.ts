@@ -108,6 +108,7 @@ export const useCurrentAccountsStore =
       const updated = await makeApiRequest(
         `/current-accounts/${id}`,
         {
+
           method: "PUT",
           body: JSON.stringify({ isActive: !acc.isActive }),
         }
@@ -119,7 +120,7 @@ export const useCurrentAccountsStore =
         ),
       }));
     },
-
+//tekrar yenilme 
     /* =========================
        ✅ BAKİYE GÜNCELLEME
     ========================= */
