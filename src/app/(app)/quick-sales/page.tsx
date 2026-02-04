@@ -112,9 +112,10 @@ export default function QuickSales() {
       // Update account balance
       const customer = customerAccounts.find(c => c.id === selectedCustomer);
       if (customer) {
-        await updateAccountBalance(customer.id, totalAmount, 'SALES');
+        await updateAccountBalance(customer.id, totalAmount);
+
       }
-      
+      //s
       // Create invoice items and deduct stock for each item
       for (const item of cartItems) {
         // Create invoice item
