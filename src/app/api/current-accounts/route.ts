@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
-
+import {
+  createServerSupabaseClient,
+  getTenantIdFromJWT,
+} from "@/lib/supabaseServer";
 
 // GET /api/current-accounts
 export async function GET() {
@@ -23,9 +25,20 @@ export async function POST(req: Request) {
   const supabase = await createServerSupabaseClient();
   const body = await req.json();
 
+  // 🔴 KRİTİK SATIR
+  const tenantId = await getTenantIdFromJWT();
+
+  if (!tenantId) {
+    return NextResponse.json(
+      { error: "Tenant bulunamadı (unauthorized)" },
+      { status: 401 }
+    );
+  }
+
   const { data, error } = await supabase
     .from("current_accounts")
     .insert({
+      tenant_id: tenantId, // ✅ RLS BUNU BEKLİYOR
       name: body.name,
       phone: body.phone,
       address: body.address,
@@ -45,3 +58,4 @@ export async function POST(req: Request) {
 
   return NextResponse.json(data, { status: 201 });
 }
+// PUT /api/current-accounts/:id
