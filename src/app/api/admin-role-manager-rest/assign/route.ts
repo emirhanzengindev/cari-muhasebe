@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { createServerSupabaseClient } from '@/lib/supabaseServer.ts';
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,4 +37,4 @@ export async function POST(request: NextRequest) {
     console.error('Assign role error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+} 
