@@ -1,57 +1,36 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-import { NextRequest } from "next/server";
+import { createClient } from '@supabase/supabase-js';
+import { cookies, headers } from 'next/headers';
+import jwt from 'jsonwebtoken';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+export function createServerSupabaseClientForRLS() {
+  const cookieStore = cookies();
+  const headerStore = headers();
 
-/**
- * ✅ SERVER COMPONENT / ROUTE (cookie tabanlı)
- */
-export async function createServerSupabaseClient() {
-  const cookieStore = await cookies();
+  // Supabase auth token (cookie veya Authorization header)
+  const accessToken =
+    cookieStore.get('sb-access-token')?.value ||
+    headerStore.get('authorization')?.replace('Bearer ', '');
 
-  return createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value;
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      global: {
+        headers: {
+          Authorization: accessToken
+            ? `Bearer ${accessToken}`
+            : '',
+        },
       },
-      set(name: string, value: string, options: any) {
-        cookieStore.set({ name, value, ...options });
-      },
-      remove(name: string, options: any) {
-        cookieStore.set({ name, value: "", ...options });
-      },
-    },
-  });
+    }
+  );
 }
 
 /**
- * ✅ API ROUTE (NextRequest üzerinden)
+ * JWT içinden tenant_id okumak için (opsiyonel)
  */
-export function createServerSupabaseClientWithRequest(req: NextRequest) {
-  return createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      get(name: string) {
-        return req.cookies.get(name)?.value;
-      },
-      set() {},
-      remove() {},
-    },
-  });
-}
-
-/**
- * ✅ JWT → tenantId (user.id)
- */
-export async function getTenantIdFromJWT() {
-  const supabase = await createServerSupabaseClient();
-  const { data } = await supabase.auth.getUser();
-  return data.user?.id ?? null;
-}
-
-export async function getTenantIdFromJWTWithRequest(req: NextRequest) {
-  const supabase = createServerSupabaseClientWithRequest(req);
-  const { data } = await supabase.auth.getUser();
-  return data.user?.id ?? null;
+export function getTenantIdFromJWT(token?: string) {
+  if (!token) return null;
+  const decoded = jwt.decode(token) as any;
+  return decoded?.tenant_id ?? null;
 }

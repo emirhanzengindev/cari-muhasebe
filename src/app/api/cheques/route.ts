@@ -1,12 +1,17 @@
 export const dynamic = 'force-dynamic'
 
-import { NextRequest } from 'next/server';
-import { headers, cookies } from 'next/headers';
-import { createServerSupabaseClientForRLS } from '@/lib/supabaseServer';
+import { NextRequest } from "next/server";
+import {
+  createServerSupabaseClientForRLS,
+  getTenantIdFromJWT
+} from '@/lib/supabaseServer'
+
+
+
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClientForRLS(request)
+    const supabase =  createServerSupabaseClientForRLS()
 
     const {
       data: { user },
@@ -48,7 +53,7 @@ export async function POST(request: NextRequest) {
   try {
     const chequeData = await request.json();
     
-    const supabase = await createServerSupabaseClientForRLS(request);
+    const supabase = createServerSupabaseClientForRLS();
     
     const {
       data: { user }
