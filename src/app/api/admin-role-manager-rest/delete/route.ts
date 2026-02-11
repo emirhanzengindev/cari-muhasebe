@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { createServerSupabaseClientForRLS } from "@/lib/supabaseServer";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createServerSupabaseClientForRLS();
     
     // Direct RPC call to delete user role using service role
     const { error } = await supabase.rpc('delete_user_role', { 

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { createServerSupabaseClientForRLS } from "@/lib/supabaseServer";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createServerSupabaseClientForRLS();
     
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('user_id');

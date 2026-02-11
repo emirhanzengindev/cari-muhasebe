@@ -1,111 +1,126 @@
 export const dynamic = 'force-dynamic'
 
-import { NextRequest } from "next/server";
-import {
-  createServerSupabaseClientForRLS,
-  getTenantIdFromJWT
-} from '@/lib/supabaseServer'
+import { NextRequest } from 'next/server'
+import { createServerSupabaseClientForRLS } from '@/lib/supabaseServer'
 
-
-
-
-export async function GET(request: NextRequest) {
+/* =========================
+   GET /api/cheques
+========================= */
+export async function GET() {
   try {
-    const supabase =  createServerSupabaseClientForRLS()
+    const supabase = await createServerSupabaseClientForRLS()
 
     const {
       data: { user },
       error: authError
     } = await supabase.auth.getUser()
 
-    if (!user) {
-      console.error('DEBUG: Auth session missing')
+    if (authError || !user) {
       return Response.json(
         { error: 'Auth session missing' },
         { status: 401 }
       )
     }
 
-    const { data, error, status } = await supabase
+    const { data, error } = await supabase
       .from('cheques')
       .select('*')
+      .eq('tenant_id', user.id)
 
-    // If table doesn't exist, return empty array
-    if (error && status === 404) {
-      console.warn('Table cheques does not exist, returning empty array');
-      return Response.json([]);
-    }
-    
     if (error) {
-      console.error('SUPABASE ERROR (GET cheques):', error);
-      // For other errors, return the error message
-      return Response.json({ error: error.message }, { status: 500 });
+      // tablo yoksa boş array
+      if (
+        error.code === '42P01' ||
+        error.message.toLowerCase().includes('does not exist')
+      ) {
+        return Response.json([])
+      }
+
+      return Response.json(
+        { error: error.message },
+        { status: 500 }
+      )
     }
 
-    return Response.json(data);
+    return Response.json(data ?? [])
   } catch (error) {
-    console.error('Error fetching cheques:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('GET /cheques error:', error)
+    return Response.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }
 
+/* =========================
+   POST /api/cheques
+========================= */
 export async function POST(request: NextRequest) {
   try {
-    const chequeData = await request.json();
-    
-    const supabase = createServerSupabaseClientForRLS();
-    
+    const body = await request.json()
+
+    const supabase = await createServerSupabaseClientForRLS()
+
     const {
-      data: { user }
-    } = await supabase.auth.getUser();
-    
-    if (!user) {
+      data: { user },
+      error: authError
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
       return Response.json(
         { error: 'Auth session missing' },
         { status: 401 }
-      );
+      )
     }
-    
-    const chequeWithTenant = {
-      ...chequeData,
+
+    // ZORUNLU ALANLAR
+    if (!body?.chequeType) {
+      return Response.json(
+        { error: 'Cheque type is required' },
+        { status: 400 }
+      )
+    }
+
+    if (body.amount === undefined || body.amount === null) {
+      return Response.json(
+        { error: 'Amount is required' },
+        { status: 400 }
+      )
+    }
+
+    if (!body?.issuerName) {
+      return Response.json(
+        { error: 'Issuer name is required' },
+        { status: 400 }
+      )
+    }
+
+    const payload = {
+      ...body,
+      tenant_id: user.id,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      tenant_id: user.id  // Add tenant_id from authenticated user
-    };
-    
-    // Validate required fields
-    if (!chequeWithTenant.chequeType) {
-      console.error('MISSING REQUIRED FIELD: chequeType');
-      return Response.json({ error: 'Cheque type is required' }, { status: 400 });
-    }
-    if (chequeWithTenant.amount === undefined || chequeWithTenant.amount === null) {
-      console.error('MISSING REQUIRED FIELD: amount');
-      return Response.json({ error: 'Amount is required' }, { status: 400 });
-    }
-    if (!chequeWithTenant.issuerName) {
-      console.error('MISSING REQUIRED FIELD: issuerName');
-      return Response.json({ error: 'Issuer name is required' }, { status: 400 });
+      updated_at: new Date().toISOString()
     }
 
-    const { data, error, status } = await supabase
+    const { data, error } = await supabase
       .from('cheques')
-      .insert([chequeWithTenant])
+      .insert(payload)
       .select()
-      .single();
+      .single()
 
-    if (error && status === 404) {
-      console.error('Table cheques does not exist for insert operation');
-      return Response.json({ error: 'Cheques table does not exist' }, { status: 500 });
-    }
-    
     if (error) {
-      console.error('SUPABASE ERROR (POST cheques):', error);
-      return Response.json({ error: error.message }, { status: 500 });
+      return Response.json(
+        { error: error.message },
+        { status: 500 }
+      )
     }
 
-    return Response.json(data);
+    return Response.json(data)
   } catch (error) {
-    console.error('Error creating cheque:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('POST /cheques error:', error)
+    return Response.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }
