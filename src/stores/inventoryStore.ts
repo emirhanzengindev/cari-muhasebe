@@ -52,7 +52,17 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
       return;
     }
     
-    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    let parsedMessage = "";
+    try {
+      const parsed = JSON.parse(errorText);
+      parsedMessage = parsed?.error || parsed?.message || "";
+    } catch {
+      parsedMessage = "";
+    }
+
+    throw new Error(
+      parsedMessage || `API request failed: ${response.status} ${response.statusText}`
+    );
   }
   
   return response.json();
@@ -153,7 +163,9 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
           }));
         }
       } catch (error: any) {
-        set({ error: error.message || 'Failed to add product' });
+        const message = error?.message || 'Failed to add product';
+        set({ error: message });
+        throw new Error(message);
       }
     },
 
