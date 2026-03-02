@@ -111,8 +111,13 @@ export async function POST(request: NextRequest) {
     productWithTenant.created_at = new Date().toISOString();
     productWithTenant.updated_at = new Date().toISOString();
     
-    // Use the user.id as tenant_id since that's how RLS is configured
-    productWithTenant.tenant_id = user.id;
+    const userMetadataTenantId =
+      typeof user.user_metadata?.tenant_id === 'string'
+        ? user.user_metadata.tenant_id
+        : null;
+    const resolvedTenantId = userMetadataTenantId || user.id;
+
+    productWithTenant.tenant_id = resolvedTenantId;
     
     console.log('PRODUCT WITH TENANT:', productWithTenant);
     
