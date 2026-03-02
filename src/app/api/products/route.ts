@@ -128,7 +128,8 @@ export async function POST(request: NextRequest) {
 
     // PostgREST schema cache can lag behind migrations.
     // Retry by dropping missing columns reported as PGRST204.
-    for (let attempt = 0; attempt < 5; attempt++) {
+    const maxAttempts = Object.keys(insertPayload).length + 1;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const result = await supabase
         .from('products')
         .insert(insertPayload)
@@ -146,7 +147,7 @@ export async function POST(request: NextRequest) {
         break;
       }
 
-      const match = error.message.match(/'([^']+)' column/);
+      const match = error.message.match(/'([^']+)' column of 'products'/i);
       const missingColumn = match?.[1];
       if (!missingColumn || !(missingColumn in insertPayload)) {
         break;
