@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useInventoryStore } from "@/stores/inventoryStore";
 import { useTenantStore } from "@/lib/tenantStore";
@@ -39,11 +39,13 @@ export default function Inventory() {
   const [productFormError, setProductFormError] = useState("");
   const [productFormSuccess, setProductFormSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const didInitialLoadRef = useRef(false);
 
   const tenantId = useTenantStore(state => state.tenantId);
   
   useEffect(() => {
-    if (tenantId) {
+    if (tenantId && !didInitialLoadRef.current) {
+      didInitialLoadRef.current = true;
       fetchProducts();
       fetchCategories();
       fetchWarehouses();

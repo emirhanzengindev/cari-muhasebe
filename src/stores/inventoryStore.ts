@@ -6,7 +6,6 @@ import { getSupabaseBrowser } from '../lib/supabase';
 // Helper function to get tenant ID
 const getTenantId = () => {
   const tenantId = useTenantStore.getState().tenantId;
-  console.log('DEBUG: Raw tenantId from store:', tenantId);
   return tenantId;
 };
 
@@ -14,11 +13,7 @@ const getTenantId = () => {
 const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const tenantId = getTenantId();
   
-  console.log('DEBUG: makeApiRequest called for endpoint:', endpoint);
-  console.log('DEBUG: Retrieved tenantId:', tenantId);
-  
   if (!tenantId) {
-    console.warn('WARNING: Tenant ID not available, skipping request for endpoint:', endpoint);
     return null;
   }
   
@@ -36,8 +31,6 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
     headers['Authorization'] = `Bearer ${session.access_token}`;
   }
     
-  console.log('DEBUG: Headers being sent:', headers);
-  
   // Add Content-Type for methods that typically have a body
   const method = options.method?.toUpperCase();
   if (method === 'POST' || method === 'PUT' || method === 'PATCH' || (method === undefined && options.body !== undefined)) {
@@ -50,16 +43,11 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
     credentials: 'include',
   });
   
-  console.log('DEBUG: API response status:', response.status);
-  
   if (!response.ok) {
-    console.error('ERROR: API request failed with status:', response.status);
     const errorText = await response.text();
-    console.error('ERROR: API response text:', errorText);
     
     // Check if it's an auth session error
     if (response.status === 401 && errorText.includes('Auth session missing')) {
-      console.error('AUTH SESSION ERROR: Session expired or missing. Letting middleware handle auth...');
       // Let middleware handle auth redirects
       return;
     }
