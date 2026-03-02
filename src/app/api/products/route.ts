@@ -54,10 +54,16 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const userMetadataTenantId =
+      typeof user.user_metadata?.tenant_id === 'string'
+        ? user.user_metadata.tenant_id
+        : null;
+    const resolvedTenantId = userMetadataTenantId || user.id;
+
     const { data, error } = await supabase
       .from('products')
       .select('*')
-      .eq('tenant_id', user.id)  // Filter by authenticated user's tenant ID
+      .eq('tenant_id', resolvedTenantId)
 
     if (error) {
       console.error('SUPABASE ERROR:', {
