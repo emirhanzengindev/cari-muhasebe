@@ -22,10 +22,18 @@ export async function POST(req: Request) {
   const supabase = await createServerSupabaseClientForRLS();
   const body = await req.json();
 
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: "Auth session missing" }, { status: 401 });
+  }
+
   const { data, error } = await supabase
     .from("current_accounts")
     .insert({
-      // ❌ tenant_id YOK — RLS + trigger otomatik ekler
       name: body.name,
       phone: body.phone,
       address: body.address,
@@ -35,6 +43,8 @@ export async function POST(req: Request) {
       balance: body.balance ?? 0,
       is_active: body.isActive ?? true,
       account_type: body.accountType ?? body.account_type,
+      tenant_id: user.id,
+      user_id: user.id,
     })
     .select()
     .single();
