@@ -164,6 +164,16 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Product name is required' }, { status: 400 });
     }
     
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const admin =
+      serviceRoleKey && supabaseUrl
+        ? createClient(supabaseUrl, serviceRoleKey, {
+            auth: { autoRefreshToken: false, persistSession: false },
+          })
+        : null;
+    const insertClient: any = admin || supabase;
+
     let insertPayload = { ...productWithTenant };
     let data: any = null;
     let error: any = null;
@@ -173,7 +183,7 @@ export async function POST(request: NextRequest) {
     const nonDroppableColumns = new Set(['tenant_id', 'name']);
     const maxAttempts = Object.keys(insertPayload).length + 1;
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const result = await supabase
+      const result = await insertClient
         .from('products')
         .insert(insertPayload)
         .select()
@@ -205,49 +215,29 @@ export async function POST(request: NextRequest) {
       insertPayload = nextPayload;
     }
 
-    if (error && error.code === '42501') {
-      // RLS fallback: if project policies are stale on production,
-      // use service role only on server after we have an authenticated user.
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!error && admin) {
+      await logRlsFallbackEvent(admin, {
+        userId: user.id,
+        tenantId: resolvedTenantId,
+        endpoint: '/api/products',
+        reason: 'SERVICE_ROLE_PRIMARY_PATH_SUCCESS',
+        metadata: {
+          payloadKeys: Object.keys(insertPayload),
+        },
+      });
+    }
 
-      if (serviceRoleKey && supabaseUrl) {
-        const admin = createClient(supabaseUrl, serviceRoleKey, {
-          auth: { autoRefreshToken: false, persistSession: false },
-        });
-
-        const { data: adminData, error: adminError } = await admin
-          .from('products')
-          .insert(insertPayload)
-          .select()
-          .single();
-
-        if (!adminError) {
-          await logRlsFallbackEvent(admin, {
-            userId: user.id,
-            tenantId: resolvedTenantId,
-            endpoint: '/api/products',
-            reason: 'RLS_42501_FALLBACK_SUCCESS',
-            metadata: {
-              payloadKeys: Object.keys(insertPayload),
-            },
-          });
-          console.warn('Inserted product with service-role fallback due to RLS mismatch.');
-          return Response.json(adminData);
-        }
-
-        await logRlsFallbackEvent(admin, {
-          userId: user.id,
-          tenantId: resolvedTenantId,
-          endpoint: '/api/products',
-          reason: 'RLS_42501_FALLBACK_FAILED',
-          metadata: {
-            adminError: adminError.message,
-            adminCode: adminError.code,
-          },
-        });
-        console.error('SERVICE ROLE INSERT FAILED:', adminError);
-      }
+    if (error && admin) {
+      await logRlsFallbackEvent(admin, {
+        userId: user.id,
+        tenantId: resolvedTenantId,
+        endpoint: '/api/products',
+        reason: 'SERVICE_ROLE_PRIMARY_PATH_FAILED',
+        metadata: {
+          adminError: error.message,
+          adminCode: error.code,
+        },
+      });
     }
 
     if (error) {
