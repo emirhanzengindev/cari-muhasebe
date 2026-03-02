@@ -143,25 +143,27 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
           method: 'POST',
           body: JSON.stringify(productData),
         });
-        
-        if (newProduct !== null) {
-          // Transform snake_case fields to camelCase to match Product interface
-          const transformedProduct = {
-            ...newProduct,
-            buyPrice: newProduct.buy_price,
-            sellPrice: newProduct.sell_price,
-            vatRate: newProduct.vat_rate,
-            stockQuantity: newProduct.stock_quantity,
-            criticalLevel: newProduct.critical_level,
-            minStockLevel: newProduct.min_stock_level,
-            categoryId: newProduct.category_id,
-            warehouseId: newProduct.warehouse_id,
-          };
-          
-          set((state) => ({
-            products: [...state.products, transformedProduct]
-          }));
+
+        if (newProduct === null) {
+          throw new Error('Ürün eklenemedi. Oturum veya yetki problemi olabilir.');
         }
+
+        // Transform snake_case fields to camelCase to match Product interface
+        const transformedProduct = {
+          ...newProduct,
+          buyPrice: newProduct.buy_price,
+          sellPrice: newProduct.sell_price,
+          vatRate: newProduct.vat_rate,
+          stockQuantity: newProduct.stock_quantity,
+          criticalLevel: newProduct.critical_level,
+          minStockLevel: newProduct.min_stock_level,
+          categoryId: newProduct.category_id,
+          warehouseId: newProduct.warehouse_id,
+        };
+        
+        set((state) => ({
+          products: [...state.products, transformedProduct]
+        }));
       } catch (error: any) {
         const message = error?.message || 'Failed to add product';
         set({ error: message });
