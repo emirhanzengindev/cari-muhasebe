@@ -65,6 +65,18 @@ export async function GET(request: NextRequest) {
       .select('*')
       .eq('tenant_id', resolvedTenantId)
 
+    // Fallback: some old rows may still be keyed by user.id.
+    if (!error && (!data || data.length === 0) && resolvedTenantId !== user.id) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('tenant_id', user.id)
+
+      if (!fallbackError && fallbackData) {
+        return Response.json(fallbackData)
+      }
+    }
+
     if (error) {
       console.error('SUPABASE ERROR:', {
         message: error.message,
