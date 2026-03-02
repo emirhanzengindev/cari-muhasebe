@@ -127,7 +127,8 @@ export async function POST(request: NextRequest) {
     let error: any = null;
 
     // PostgREST schema cache can lag behind migrations.
-    // Retry by dropping missing columns reported as PGRST204.
+    // Retry by dropping missing optional columns reported as PGRST204.
+    const nonDroppableColumns = new Set(['tenant_id', 'name']);
     const maxAttempts = Object.keys(insertPayload).length + 1;
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const result = await supabase
@@ -150,6 +151,10 @@ export async function POST(request: NextRequest) {
       const match = error.message.match(/'([^']+)' column of 'products'/i);
       const missingColumn = match?.[1];
       if (!missingColumn || !(missingColumn in insertPayload)) {
+        break;
+      }
+      if (nonDroppableColumns.has(missingColumn)) {
+        console.error('Schema cache missing non-droppable column:', missingColumn);
         break;
       }
 
