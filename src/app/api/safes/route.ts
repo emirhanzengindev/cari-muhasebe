@@ -8,7 +8,7 @@ import { createServerSupabaseClientForRLS } from '@/lib/supabaseServer';
 ========================= */
 export async function GET() {
   try {
-    const supabase = createServerSupabaseClientForRLS();
+    const supabase = await createServerSupabaseClientForRLS();
 
     const {
       data: { user },
@@ -60,7 +60,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const supabase = createServerSupabaseClientForRLS();
+    const supabase = await createServerSupabaseClientForRLS();
 
     const {
       data: { user },
@@ -111,3 +111,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+

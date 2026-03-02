@@ -1,36 +1,49 @@
-import { createClient } from '@supabase/supabase-js';
-import { cookies, headers } from 'next/headers';
-import jwt from 'jsonwebtoken';
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
-export function createServerSupabaseClientForRLS() {
-  const cookieStore = cookies();
-  const headerStore = headers();
+/**
+ * Ana Supabase client (RLS için)
+ */
+export async function createServerSupabaseClientForRLS() {
+  const cookieStore = await cookies();
 
-  // Supabase auth token (cookie veya Authorization header)
-  const accessToken =
-    cookieStore.get('sb-access-token')?.value ||
-    headerStore.get('authorization')?.replace('Bearer ', '');
-
-  return createClient(
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      global: {
-        headers: {
-          Authorization: accessToken
-            ? `Bearer ${accessToken}`
-            : '',
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
         },
+        set() {},
+        remove() {},
       },
     }
   );
 }
 
 /**
- * JWT içinden tenant_id okumak için (opsiyonel)
+ * 🔥 BACKWARD COMPATIBILITY
+ * Eski kodları bozmamak için alias exportlar
  */
-export function getTenantIdFromJWT(token?: string) {
-  if (!token) return null;
-  const decoded = jwt.decode(token) as any;
-  return decoded?.tenant_id ?? null;
+
+export const createServerSupabaseClient =
+  createServerSupabaseClientForRLS;
+
+export const createServerSupabaseClientWithRequest =
+  createServerSupabaseClientForRLS;
+
+/**
+ * Tenant ID artık JWT’den otomatik geliyor.
+ * Ama eski kod kırılmasın diye dummy fonksiyon bırakıyoruz.
+ */
+export async function getTenantIdFromJWT() {
+  const supabase = await createServerSupabaseClientForRLS();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return user?.id ?? null;
 }
+
+export const getTenantIdFromJWTWithRequest = getTenantIdFromJWT;

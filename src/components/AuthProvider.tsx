@@ -1,7 +1,7 @@
 "use client";
 
 import { createBrowserClient } from "@supabase/ssr";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Session } from "@supabase/supabase-js";
 
 export default function AuthProvider({
@@ -11,9 +11,13 @@ export default function AuthProvider({
 }) {
   const [session, setSession] = useState<Session | null>(null);
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  const supabase = useMemo(
+    () =>
+      createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      ),
+    []
   );
 
   useEffect(() => {
@@ -30,7 +34,7 @@ export default function AuthProvider({
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [supabase]);
 
   return <>{children}</>;
 }

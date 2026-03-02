@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   try {
     console.log('DEBUG: GET /api/stock-movements called')
 
-    const supabase = await createServerSupabaseClientWithRequest(request)
+    const supabase = await createServerSupabaseClientWithRequest()
 
     const {
       data: { user },
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
   try {
     const movementData = await request.json()
 
-    const supabase = await createServerSupabaseClientWithRequest(request);
+    const supabase = await createServerSupabaseClientWithRequest();
 
     const {
       data: { user }

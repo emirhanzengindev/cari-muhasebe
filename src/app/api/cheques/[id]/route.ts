@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClientForRLS } from '@/lib/supabaseServer'
 
-type Params = {
-  id: string
-}
-
 /* =========================
    GET /api/cheques/[id]
 ========================= */
 export async function GET(
   request: NextRequest,
-  context: { params: Params }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = context.params
+  const { id } = await params
 
   const supabase = await createServerSupabaseClientForRLS()
 
@@ -22,10 +18,7 @@ export async function GET(
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    return NextResponse.json(
-      { error: 'Auth session missing' },
-      { status: 401 }
-    )
+    return NextResponse.json({ error: 'Auth session missing' }, { status: 401 })
   }
 
   const { data, error } = await supabase
@@ -36,10 +29,7 @@ export async function GET(
     .single()
 
   if (error) {
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
   return NextResponse.json(data)
@@ -50,9 +40,9 @@ export async function GET(
 ========================= */
 export async function PUT(
   request: NextRequest,
-  context: { params: Params }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = context.params
+  const { id } = await params
   const body = await request.json()
 
   const supabase = await createServerSupabaseClientForRLS()
@@ -63,10 +53,7 @@ export async function PUT(
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    return NextResponse.json(
-      { error: 'Auth session missing' },
-      { status: 401 }
-    )
+    return NextResponse.json({ error: 'Auth session missing' }, { status: 401 })
   }
 
   const { data, error } = await supabase
@@ -78,10 +65,7 @@ export async function PUT(
     .single()
 
   if (error) {
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
   return NextResponse.json(data)
@@ -92,9 +76,9 @@ export async function PUT(
 ========================= */
 export async function DELETE(
   request: NextRequest,
-  context: { params: Params }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = context.params
+  const { id } = await params
 
   const supabase = await createServerSupabaseClientForRLS()
 
@@ -104,10 +88,7 @@ export async function DELETE(
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
-    return NextResponse.json(
-      { error: 'Auth session missing' },
-      { status: 401 }
-    )
+    return NextResponse.json({ error: 'Auth session missing' }, { status: 401 })
   }
 
   const { error } = await supabase
@@ -117,10 +98,7 @@ export async function DELETE(
     .eq('tenant_id', user.id)
 
   if (error) {
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })

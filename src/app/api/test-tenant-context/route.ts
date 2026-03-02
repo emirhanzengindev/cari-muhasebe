@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    const supabase = await createServerSupabaseClientForRLS(request);
+    const supabase = await createServerSupabaseClientForRLS();
     
     // Get tenant context
     const { userId, tenantId } = await getTenantContext(supabase);
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClientForRLS(request);
+    const supabase = await createServerSupabaseClientForRLS();
     
     // Get tenant context
     const { userId, tenantId } = await getTenantContext(supabase);

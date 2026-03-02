@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   try {
     console.log('DEBUG: GET /api/products called')
 
-    const supabase = await createServerSupabaseClientWithRequest(request)
+    const supabase = await createServerSupabaseClientWithRequest()
 
     const {
       data: { user },
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     console.log('BODY:', productData);
     console.log('RAW BODY 👉', productData);
     
-    const supabase = await createServerSupabaseClientWithRequest(request);
+    const supabase = await createServerSupabaseClientWithRequest();
     
     const {
       data: { user }

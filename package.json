@@ -9,7 +9,7 @@
     "dev": "next dev",
     "build": "npx prisma generate && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -51,3 +51,5 @@
     "typescript": "^5.2.2"
   }
 }
+
+
