@@ -122,11 +122,40 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Product name is required' }, { status: 400 });
     }
     
-    const { data, error } = await supabase
-      .from('products')
-      .insert(productWithTenant)
-      .select()
-      .single();
+    let insertPayload = { ...productWithTenant };
+    let data: any = null;
+    let error: any = null;
+
+    // PostgREST schema cache can lag behind migrations.
+    // Retry by dropping missing columns reported as PGRST204.
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const result = await supabase
+        .from('products')
+        .insert(insertPayload)
+        .select()
+        .single();
+
+      data = result.data;
+      error = result.error;
+
+      if (!error) {
+        break;
+      }
+
+      if (error.code !== 'PGRST204' || typeof error.message !== 'string') {
+        break;
+      }
+
+      const match = error.message.match(/'([^']+)' column/);
+      const missingColumn = match?.[1];
+      if (!missingColumn || !(missingColumn in insertPayload)) {
+        break;
+      }
+
+      console.warn('Schema cache mismatch, retrying without column:', missingColumn);
+      const { [missingColumn]: _removed, ...nextPayload } = insertPayload;
+      insertPayload = nextPayload;
+    }
 
     if (error) {
       console.error('SUPABASE ERROR DETAILS:', {
