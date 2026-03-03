@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest } from 'next/server';
-import { cookies } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
 import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
@@ -114,6 +114,14 @@ export async function POST(request: NextRequest) {
         : null;
     const resolvedTenantId = userMetadataTenantId || user.id;
     const tenantCandidates = Array.from(new Set([resolvedTenantId, user.id]));
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const admin =
+      serviceRoleKey && supabaseUrl
+        ? createClient(supabaseUrl, serviceRoleKey, {
+            auth: { autoRefreshToken: false, persistSession: false },
+          })
+        : null;
 
     // Primary path: DB RPC (atomic).
     const { error } = await supabase.rpc('apply_stock_movement', {
@@ -128,59 +136,48 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.warn('SUPABASE RPC ERROR (falling back to app-level update):', error)
 
-      // Fallback path: keeps compatibility when RPC/RLS tenant assumptions drift.
-      const { data: product, error: productError } = await supabase
-        .from('products')
-        .select('id, stock_quantity')
-        .eq('id', movementData.productId)
-        .maybeSingle();
+      const applyFallback = async (client: any) => {
+        const { data: product, error: productError } = await client
+          .from('products')
+          .select('id, stock_quantity, tenant_id')
+          .eq('id', movementData.productId)
+          .maybeSingle();
 
-      if (productError || !product) {
-        return Response.json({ error: 'Product not found' }, { status: 400 });
-      }
+        if (productError || !product) {
+          return { ok: false, message: 'Product not found' };
+        }
 
-      const currentStock = Number(product.stock_quantity || 0);
-      if (normalizedMovementType === 'out' && currentStock < numericQuantity) {
-        return Response.json(
-          { error: `Insufficient stock. Available: ${currentStock}, Requested: ${numericQuantity}` },
-          { status: 400 }
-        );
-      }
+        if (admin && !tenantCandidates.includes(String(product.tenant_id))) {
+          return { ok: false, message: 'Product not found' };
+        }
 
-      const nextStock =
-        normalizedMovementType === 'out'
-          ? currentStock - numericQuantity
-          : currentStock + numericQuantity;
+        const currentStock = Number(product.stock_quantity || 0);
+        if (normalizedMovementType === 'out' && currentStock < numericQuantity) {
+          return {
+            ok: false,
+            message: `Insufficient stock. Available: ${currentStock}, Requested: ${numericQuantity}`,
+          };
+        }
 
-      const { error: stockUpdateError } = await supabase
-        .from('products')
-        .update({
-          stock_quantity: nextStock,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', movementData.productId);
+        const nextStock =
+          normalizedMovementType === 'out'
+            ? currentStock - numericQuantity
+            : currentStock + numericQuantity;
 
-      if (stockUpdateError) {
-        return Response.json({ error: stockUpdateError.message }, { status: 400 });
-      }
+        const { error: stockUpdateError } = await client
+          .from('products')
+          .update({
+            stock_quantity: nextStock,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', movementData.productId);
 
-      const { data: movementRow, error: movementInsertError } = await supabase
-        .from('stock_movements')
-        .insert({
-          product_id: movementData.productId,
-          movement_type: normalizedMovementType,
-          quantity: numericQuantity,
-          description: movementData.description || null,
-          warehouse_id: movementData.warehouseId || null,
-          price: movementData.price || null,
-          tenant_id: resolvedTenantId,
-        })
-        .select('*')
-        .maybeSingle();
+        if (stockUpdateError) {
+          return { ok: false, message: stockUpdateError.message };
+        }
 
-      if (movementInsertError) {
-        // Retry once with auth user id as tenant_id for mixed-tenant legacy rows.
-        const { data: retryMovementRow, error: retryInsertError } = await supabase
+        const insertTenantId = product.tenant_id || resolvedTenantId;
+        const { data: movementRow, error: movementInsertError } = await client
           .from('stock_movements')
           .insert({
             product_id: movementData.productId,
@@ -189,23 +186,35 @@ export async function POST(request: NextRequest) {
             description: movementData.description || null,
             warehouse_id: movementData.warehouseId || null,
             price: movementData.price || null,
-            tenant_id: user.id,
+            tenant_id: insertTenantId,
           })
           .select('*')
           .maybeSingle();
 
-        if (retryInsertError) {
-          return Response.json({ error: retryInsertError.message }, { status: 400 });
+        if (movementInsertError) {
+          return { ok: false, message: movementInsertError.message };
         }
 
-        return Response.json(
-          retryMovementRow ?? { success: true, message: 'Stock movement applied successfully (retry path)' }
-        );
+        return {
+          ok: true,
+          payload: movementRow ?? { success: true, message: 'Stock movement applied successfully (fallback path)' },
+        };
+      };
+
+      const primaryFallback = await applyFallback(supabase);
+      if (primaryFallback.ok) {
+        return Response.json(primaryFallback.payload);
       }
 
-      return Response.json(
-        movementRow ?? { success: true, message: 'Stock movement applied successfully (fallback path)' }
-      );
+      if (admin) {
+        const adminFallback = await applyFallback(admin);
+        if (adminFallback.ok) {
+          return Response.json(adminFallback.payload);
+        }
+        return Response.json({ error: adminFallback.message }, { status: 400 });
+      }
+
+      return Response.json({ error: primaryFallback.message }, { status: 400 });
     }
 
     // RPC succeeded
