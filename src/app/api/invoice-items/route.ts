@@ -6,8 +6,17 @@ import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
 
 const getMissingColumnName = (message?: string | null) => {
   if (!message) return null;
-  const match = message.match(/Could not find the '([^']+)' column/i);
-  return match?.[1] ?? null;
+  const patterns = [
+    /Could not find the '([^']+)' column/i,
+    /Could not find the "([^"]+)" column/i,
+    /column '([^']+)'/i,
+    /column "([^"]+)"/i,
+  ];
+  for (const pattern of patterns) {
+    const match = message.match(pattern);
+    if (match?.[1]) return match[1];
+  }
+  return null;
 };
 
 export async function GET(request: NextRequest) {
@@ -141,7 +150,10 @@ export async function POST(request: NextRequest) {
 
       if (!error) break;
 
-      const missingColumn = getMissingColumnName(error.message);
+      const missingColumn =
+        getMissingColumnName(error.message) ||
+        getMissingColumnName(error.details) ||
+        getMissingColumnName(error.hint);
       if (missingColumn && missingColumn in insertPayload) {
         delete insertPayload[missingColumn];
         continue;
