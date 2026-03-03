@@ -109,8 +109,15 @@ export async function POST(request: NextRequest) {
     const invoiceWithTenant: any = {};
     
     // Explicitly map each field to ensure no camelCase fields leak through
-    if (invoiceData.invoiceNumber !== undefined) invoiceWithTenant.invoice_number = invoiceData.invoiceNumber;
-    if (invoiceData.invoiceType !== undefined) invoiceWithTenant.invoice_type = invoiceData.invoiceType;
+    if (invoiceData.invoiceNumber !== undefined) {
+      invoiceWithTenant.invoice_number = invoiceData.invoiceNumber;
+      invoiceWithTenant.invoice_no = invoiceData.invoiceNumber;
+      invoiceWithTenant.number = invoiceData.invoiceNumber;
+    }
+    if (invoiceData.invoiceType !== undefined) {
+      invoiceWithTenant.invoice_type = invoiceData.invoiceType;
+      invoiceWithTenant.type = invoiceData.invoiceType;
+    }
     if (invoiceData.currentAccountId !== undefined) invoiceWithTenant.current_account_id = invoiceData.currentAccountId;
     if (invoiceData.accountId !== undefined) invoiceWithTenant.account_id = invoiceData.accountId;
     if (invoiceData.invoiceDate !== undefined) invoiceWithTenant.invoice_date = invoiceData.invoiceDate;
@@ -142,7 +149,7 @@ export async function POST(request: NextRequest) {
     invoiceWithTenant.tenant_id = resolvedTenantId;
     
     // Validate required fields
-    if (!invoiceWithTenant.invoice_number) {
+    if (!invoiceWithTenant.invoice_number && !invoiceWithTenant.invoice_no && !invoiceWithTenant.number) {
       console.error('MISSING REQUIRED FIELD: invoice_number');
       return Response.json({ error: 'Invoice number is required' }, { status: 400 });
     }
@@ -162,8 +169,6 @@ export async function POST(request: NextRequest) {
     ) => {
       const insertPayload = { ...payload };
       const requiredColumns = new Set([
-        'invoice_number',
-        'invoice_type',
         'total_amount',
         'tenant_id',
       ]);
@@ -205,6 +210,26 @@ export async function POST(request: NextRequest) {
           }
           if (missingColumn === 'invoice_date' && 'date' in insertPayload) {
             delete insertPayload.invoice_date;
+            continue;
+          }
+          if (missingColumn === 'invoice_number' && ('invoice_no' in insertPayload || 'number' in insertPayload)) {
+            delete insertPayload.invoice_number;
+            continue;
+          }
+          if (missingColumn === 'invoice_no' && ('invoice_number' in insertPayload || 'number' in insertPayload)) {
+            delete insertPayload.invoice_no;
+            continue;
+          }
+          if (missingColumn === 'number' && ('invoice_number' in insertPayload || 'invoice_no' in insertPayload)) {
+            delete insertPayload.number;
+            continue;
+          }
+          if (missingColumn === 'invoice_type' && 'type' in insertPayload) {
+            delete insertPayload.invoice_type;
+            continue;
+          }
+          if (missingColumn === 'type' && 'invoice_type' in insertPayload) {
+            delete insertPayload.type;
             continue;
           }
           if (requiredColumns.has(missingColumn)) {
