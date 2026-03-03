@@ -17,9 +17,6 @@ export default function Invoices() {
   }, [fetchInvoices, fetchAccounts]);
 
   const filteredInvoices = invoices?.filter(invoice => {
-    // Hide malformed legacy rows created by old minimal insert fallback.
-    if (!invoice?.invoiceNumber || !invoice?.accountId) return false;
-
     const account = accounts?.find(acc => acc.id === invoice.accountId);
     const q = String(searchTerm ?? "").toLowerCase();
     const invoiceNumber = String(invoice?.invoiceNumber ?? "").toLowerCase();
