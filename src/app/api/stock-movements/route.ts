@@ -216,7 +216,10 @@ export async function POST(request: NextRequest) {
           }
           stockUpdateError = candidateError;
           const msg = String(candidateError.message || '').toLowerCase();
-          if (!msg.includes('column') || !msg.includes('does not exist')) {
+          const isMissingColumnError =
+            (msg.includes('column') && msg.includes('does not exist')) ||
+            (msg.includes('could not find') && msg.includes('column'));
+          if (!isMissingColumnError) {
             break;
           }
         }
