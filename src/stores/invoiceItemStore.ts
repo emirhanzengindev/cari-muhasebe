@@ -39,7 +39,17 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   });
   
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    const errorText = await response.text();
+    let parsedMessage = "";
+    try {
+      const parsed = JSON.parse(errorText);
+      parsedMessage = parsed?.error || parsed?.message || "";
+    } catch {
+      parsedMessage = "";
+    }
+    throw new Error(
+      parsedMessage || `API request failed: ${response.status} ${response.statusText}`
+    );
   }
   
   return response.json();

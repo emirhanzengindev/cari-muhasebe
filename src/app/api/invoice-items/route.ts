@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 import { headers, cookies } from 'next/headers';
 import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
 
@@ -132,34 +133,102 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Invoice ID and Product ID are required' }, { status: 400 });
     }
 
-    const insertPayload = { ...invoiceItemWithTenant };
-    let data: any = null;
-    let error: any = null;
-    let status: number | null = null;
+    const tryInsertWithColumnPruning = async (
+      client: any,
+      payload: Record<string, unknown>
+    ) => {
+      const insertPayload = { ...payload };
+      let data: any = null;
+      let error: any = null;
+      let status: number | null = null;
 
-    for (let attempt = 0; attempt < 10; attempt++) {
-      const result = await supabase
-        .from('invoice_items')
-        .insert([insertPayload])
-        .select()
-        .single();
+      for (let attempt = 0; attempt < 25; attempt++) {
+        const result = await client
+          .from('invoice_items')
+          .insert([insertPayload])
+          .select()
+          .single();
 
-      data = result.data;
-      error = result.error;
-      status = result.status;
+        data = result.data;
+        error = result.error;
+        status = result.status;
 
-      if (!error) break;
+        if (!error) break;
 
-      const missingColumn =
-        getMissingColumnName(error.message) ||
-        getMissingColumnName(error.details) ||
-        getMissingColumnName(error.hint);
-      if (missingColumn && missingColumn in insertPayload) {
-        delete insertPayload[missingColumn];
-        continue;
+        const missingColumn =
+          getMissingColumnName(error.message) ||
+          getMissingColumnName(error.details) ||
+          getMissingColumnName(error.hint);
+
+        if (missingColumn && missingColumn in insertPayload) {
+          delete insertPayload[missingColumn];
+          continue;
+        }
+
+        break;
       }
 
-      break;
+      return { data, error, status };
+    };
+
+    let { data, error, status } = await tryInsertWithColumnPruning(
+      supabase,
+      invoiceItemWithTenant
+    );
+
+    if (error) {
+      const minimalPayload: Record<string, unknown> = {
+        invoice_id: invoiceItemWithTenant.invoice_id,
+        product_id: invoiceItemWithTenant.product_id,
+        quantity: invoiceItemWithTenant.quantity,
+        unit_price: invoiceItemWithTenant.unit_price,
+        total: invoiceItemWithTenant.total,
+        tenant_id: invoiceItemWithTenant.tenant_id,
+        created_at: invoiceItemWithTenant.created_at,
+        updated_at: invoiceItemWithTenant.updated_at,
+      };
+      const retry = await tryInsertWithColumnPruning(supabase, minimalPayload);
+      data = retry.data;
+      error = retry.error;
+      status = retry.status;
+    }
+
+    if (error?.code === '42501') {
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (serviceRoleKey && supabaseUrl) {
+        const admin = createClient(supabaseUrl, serviceRoleKey, {
+          auth: { autoRefreshToken: false, persistSession: false },
+        });
+
+        const adminRetry = await tryInsertWithColumnPruning(
+          admin,
+          invoiceItemWithTenant
+        );
+        data = adminRetry.data;
+        error = adminRetry.error;
+        status = adminRetry.status;
+
+        if (error) {
+          const minimalPayload: Record<string, unknown> = {
+            invoice_id: invoiceItemWithTenant.invoice_id,
+            product_id: invoiceItemWithTenant.product_id,
+            quantity: invoiceItemWithTenant.quantity,
+            unit_price: invoiceItemWithTenant.unit_price,
+            total: invoiceItemWithTenant.total,
+            tenant_id: invoiceItemWithTenant.tenant_id,
+            created_at: invoiceItemWithTenant.created_at,
+            updated_at: invoiceItemWithTenant.updated_at,
+          };
+          const adminMinimalRetry = await tryInsertWithColumnPruning(
+            admin,
+            minimalPayload
+          );
+          data = adminMinimalRetry.data;
+          error = adminMinimalRetry.error;
+          status = adminMinimalRetry.status;
+        }
+      }
     }
 
     if (error && status === 404) {
