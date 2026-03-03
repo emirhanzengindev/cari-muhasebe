@@ -2,7 +2,6 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { headers, cookies } from 'next/headers';
 import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
 
 const getMissingColumnName = (message?: string | null) => {
@@ -147,12 +146,26 @@ export async function POST(request: NextRequest) {
       console.error('MISSING REQUIRED FIELD: invoice_number');
       return Response.json({ error: 'Invoice number is required' }, { status: 400 });
     }
+    if (!invoiceWithTenant.account_id) {
+      return Response.json({ error: 'Account is required' }, { status: 400 });
+    }
+    if (invoiceWithTenant.total_amount === undefined || invoiceWithTenant.total_amount === null) {
+      return Response.json({ error: 'Total amount is required' }, { status: 400 });
+    }
 
     const tryInsertWithColumnPruning = async (
       client: any,
       payload: Record<string, unknown>
     ) => {
       const insertPayload = { ...payload };
+      const requiredColumns = new Set([
+        'invoice_number',
+        'invoice_type',
+        'account_id',
+        'date',
+        'total_amount',
+        'tenant_id',
+      ]);
       let data: any = null;
       let error: any = null;
       let status: number | null = null;
@@ -176,6 +189,9 @@ export async function POST(request: NextRequest) {
           getMissingColumnName(error.hint);
 
         if (missingColumn && missingColumn in insertPayload) {
+          if (requiredColumns.has(missingColumn)) {
+            break;
+          }
           delete insertPayload[missingColumn];
           continue;
         }
@@ -187,19 +203,6 @@ export async function POST(request: NextRequest) {
     };
 
     let { data, error, status } = await tryInsertWithColumnPruning(supabase, invoiceWithTenant);
-
-    if (error) {
-      const minimalPayload: Record<string, unknown> = {
-        invoice_number: invoiceWithTenant.invoice_number,
-        tenant_id: invoiceWithTenant.tenant_id,
-        created_at: invoiceWithTenant.created_at,
-        updated_at: invoiceWithTenant.updated_at,
-      };
-      const retry = await tryInsertWithColumnPruning(supabase, minimalPayload);
-      data = retry.data;
-      error = retry.error;
-      status = retry.status;
-    }
 
     // Fallback for stale/mismatched RLS policies in production environments.
     // Only used when authenticated insert fails with RLS violation.
@@ -215,19 +218,6 @@ export async function POST(request: NextRequest) {
         data = adminRetry.data;
         error = adminRetry.error;
         status = adminRetry.status;
-
-        if (error) {
-          const minimalPayload: Record<string, unknown> = {
-            invoice_number: invoiceWithTenant.invoice_number,
-            tenant_id: invoiceWithTenant.tenant_id,
-            created_at: invoiceWithTenant.created_at,
-            updated_at: invoiceWithTenant.updated_at,
-          };
-          const adminMinimalRetry = await tryInsertWithColumnPruning(admin, minimalPayload);
-          data = adminMinimalRetry.data;
-          error = adminMinimalRetry.error;
-          status = adminMinimalRetry.status;
-        }
       }
     }
 

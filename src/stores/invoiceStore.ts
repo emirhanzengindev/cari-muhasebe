@@ -6,7 +6,7 @@ import { getSupabaseBrowser } from '../lib/supabase';
 const toDate = (value: unknown): Date => {
   if (value instanceof Date) return value;
   const parsed = new Date(String(value ?? ''));
-  return Number.isNaN(parsed.getTime()) ? new Date(0) : parsed;
+  return Number.isNaN(parsed.getTime()) ? new Date('') : parsed;
 };
 
 const normalizeInvoice = (invoice: any): Invoice => ({
