@@ -162,8 +162,10 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
           return { invoices: updatedInvoices };
         });
       }
-    } catch (error) {
-      set({ error: 'Failed to update invoice' });
+    } catch (error: any) {
+      const message = error?.message || 'Failed to update invoice';
+      set({ error: message });
+      throw new Error(message);
     }
   },
 
