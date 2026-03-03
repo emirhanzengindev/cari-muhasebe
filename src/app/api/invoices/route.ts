@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
       if (!error) break;
 
       const missingColumn = getMissingColumnName(error.message);
-      if (error.code === 'PGRST204' && missingColumn && missingColumn in insertPayload) {
+      if (missingColumn && missingColumn in insertPayload) {
         delete insertPayload[missingColumn];
         continue;
       }
