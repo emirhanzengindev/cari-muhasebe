@@ -11,8 +11,13 @@ const toDate = (value: unknown): Date => {
 
 const normalizeInvoice = (invoice: any): Invoice => ({
   ...invoice,
-  invoiceNumber: invoice?.invoiceNumber ?? invoice?.invoice_number ?? '',
-  invoiceType: invoice?.invoiceType ?? invoice?.invoice_type ?? 'SALES',
+  invoiceNumber:
+    invoice?.invoiceNumber ??
+    invoice?.invoice_number ??
+    invoice?.invoice_no ??
+    invoice?.number ??
+    '',
+  invoiceType: invoice?.invoiceType ?? invoice?.invoice_type ?? invoice?.type ?? 'SALES',
   accountId: invoice?.accountId ?? invoice?.account_id ?? invoice?.current_account_id ?? '',
   totalAmount: Number(invoice?.totalAmount ?? invoice?.total_amount ?? invoice?.total ?? invoice?.amount ?? 0),
   subtotal: Number(invoice?.subtotal ?? invoice?.sub_total ?? 0),
