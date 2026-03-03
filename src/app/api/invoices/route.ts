@@ -152,6 +152,9 @@ export async function POST(request: NextRequest) {
     if (invoiceWithTenant.total_amount === undefined || invoiceWithTenant.total_amount === null) {
       return Response.json({ error: 'Total amount is required' }, { status: 400 });
     }
+    if (!invoiceWithTenant.date && !invoiceWithTenant.invoice_date) {
+      return Response.json({ error: 'Invoice date is required' }, { status: 400 });
+    }
 
     const tryInsertWithColumnPruning = async (
       client: any,
@@ -161,7 +164,6 @@ export async function POST(request: NextRequest) {
       const requiredColumns = new Set([
         'invoice_number',
         'invoice_type',
-        'date',
         'total_amount',
         'tenant_id',
       ]);
@@ -195,6 +197,14 @@ export async function POST(request: NextRequest) {
           }
           if (missingColumn === 'current_account_id' && 'account_id' in insertPayload) {
             delete insertPayload.current_account_id;
+            continue;
+          }
+          if (missingColumn === 'date' && 'invoice_date' in insertPayload) {
+            delete insertPayload.date;
+            continue;
+          }
+          if (missingColumn === 'invoice_date' && 'date' in insertPayload) {
+            delete insertPayload.invoice_date;
             continue;
           }
           if (requiredColumns.has(missingColumn)) {
