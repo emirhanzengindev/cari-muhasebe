@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { downloadAccountStatementPdf } from "@/lib/pdfExports";
 
 type Account = {
   id: string;
@@ -21,7 +22,9 @@ export default function CurrentAccountDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [account, setAccount] = useState<Account | null>(null);
+  const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -34,9 +37,19 @@ export default function CurrentAccountDetailPage() {
         if (!res.ok) {
           throw new Error(await res.text());
         }
-        setAccount(await res.json());
+
+        const accountBody = await res.json();
+        setAccount(accountBody);
+
+        const txRes = await fetch("/api/transactions", { credentials: "include" });
+        const txBody = txRes.ok ? await txRes.json() : [];
+        const accountTx = (Array.isArray(txBody) ? txBody : []).filter((tx: any) => {
+          const txAccountId = tx.account_id || tx.accountId;
+          return txAccountId === params.id;
+        });
+        setTransactions(accountTx);
       } catch {
-        setError("Hesap bilgisi alınamadı.");
+        setError("Hesap bilgisi alinamadi.");
       } finally {
         setLoading(false);
       }
@@ -59,11 +72,47 @@ export default function CurrentAccountDetailPage() {
     );
   }
 
+  const handleDownloadStatement = async () => {
+    if (!account) return;
+    setDownloading(true);
+    try {
+      await downloadAccountStatementPdf(
+        {
+          id: account.id,
+          name: account.name || "Cari Hesap",
+          phone: account.phone || "",
+          address: account.address || "",
+          taxNumber: account.tax_number || "",
+          taxOffice: account.tax_office || "",
+          accountType: account.accountType || "",
+          balance: Number(account.balance ?? 0),
+        },
+        transactions.map((tx: any) => ({
+          date: tx.date || tx.created_at,
+          type: tx.transaction_type || tx.transactionType,
+          description: tx.description || "",
+          amount: Number(tx.amount ?? 0),
+        }))
+      );
+    } catch {
+      setError("Cari ekstre PDF olusturulamadi.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="py-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{account.name || "Cari Hesap"}</h1>
         <div className="flex gap-3">
+          <button
+            onClick={handleDownloadStatement}
+            disabled={downloading}
+            className="px-3 py-2 rounded bg-emerald-600 text-white disabled:opacity-60"
+          >
+            {downloading ? "Hazirlaniyor..." : "Ekstre PDF Indir"}
+          </button>
           <button
             onClick={() => router.push(`/current-accounts/${account.id}/edit`)}
             className="px-3 py-2 rounded bg-blue-600 text-white"
