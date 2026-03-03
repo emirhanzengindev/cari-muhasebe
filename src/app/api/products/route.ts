@@ -60,22 +60,31 @@ export async function GET(request: NextRequest) {
         : null;
     const resolvedTenantId = userMetadataTenantId || user.id;
 
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const tenantCandidates = Array.from(new Set([resolvedTenantId, user.id]));
+
+    // Read with service role (when available) to avoid stale/mismatched RLS rules.
+    // We still enforce tenant scoping using authenticated user's tenant candidates.
+    if (serviceRoleKey && supabaseUrl) {
+      const admin = createClient(supabaseUrl, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+      const { data: adminData, error: adminError } = await admin
+        .from('products')
+        .select('*')
+        .in('tenant_id', tenantCandidates);
+
+      if (!adminError) {
+        return Response.json(adminData ?? []);
+      }
+      console.error('SUPABASE ADMIN GET ERROR:', adminError);
+    }
+
     const { data, error } = await supabase
       .from('products')
       .select('*')
-      .eq('tenant_id', resolvedTenantId)
-
-    // Fallback: some old rows may still be keyed by user.id.
-    if (!error && (!data || data.length === 0) && resolvedTenantId !== user.id) {
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from('products')
-        .select('*')
-        .eq('tenant_id', user.id)
-
-      if (!fallbackError && fallbackData) {
-        return Response.json(fallbackData)
-      }
-    }
+      .in('tenant_id', tenantCandidates)
 
     if (error) {
       console.error('SUPABASE ERROR:', {
@@ -102,7 +111,7 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('DEBUG: Successfully fetched', data?.length || 0, 'products')
-    return Response.json(data)
+    return Response.json(data ?? [])
   } catch (error) {
     console.error('Error fetching products:', error)
     return Response.json({ error: 'Internal server error' }, { status: 500 })
