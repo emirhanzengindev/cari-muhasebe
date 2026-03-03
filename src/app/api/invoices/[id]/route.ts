@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer'
+import { createServerSupabaseClient } from '@/lib/supabaseServer'
 
 type Params = {
   id: string
@@ -10,23 +10,31 @@ export async function GET(
   context: { params: Promise<Params> }
 ) {
   const { id } = await context.params
-  const tenantId = await getTenantIdFromJWT()
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  if (!tenantId) {
-    return NextResponse.json({ error: 'Tenant ID missing' }, { status: 401 })
+  if (!user) {
+    return NextResponse.json({ error: 'Auth session missing' }, { status: 401 })
   }
 
-  const supabase = await createServerSupabaseClient()
+  const userMetadataTenantId =
+    typeof user.user_metadata?.tenant_id === 'string'
+      ? user.user_metadata.tenant_id
+      : null;
+  const resolvedTenantId = userMetadataTenantId || user.id;
+  const tenantCandidates = Array.from(new Set([resolvedTenantId, user.id]));
 
   const { data, error } = await supabase
     .from('invoices')
     .select('*')
     .eq('id', id)
-    .eq('tenant_id', tenantId)
-    .single()
+    .in('tenant_id', tenantCandidates)
+    .maybeSingle()
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error || !data) {
+    return NextResponse.json({ error: error?.message || 'Invoice not found' }, { status: 404 })
   }
 
   return NextResponse.json(data)
@@ -38,24 +46,32 @@ export async function PUT(
 ) {
   const { id } = await context.params
   const body = await request.json()
-  const tenantId = await getTenantIdFromJWT()
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  if (!tenantId) {
-    return NextResponse.json({ error: 'Tenant ID missing' }, { status: 401 })
+  if (!user) {
+    return NextResponse.json({ error: 'Auth session missing' }, { status: 401 })
   }
 
-  const supabase = await createServerSupabaseClient()
+  const userMetadataTenantId =
+    typeof user.user_metadata?.tenant_id === 'string'
+      ? user.user_metadata.tenant_id
+      : null;
+  const resolvedTenantId = userMetadataTenantId || user.id;
+  const tenantCandidates = Array.from(new Set([resolvedTenantId, user.id]));
 
   const { data, error } = await supabase
     .from('invoices')
     .update(body)
     .eq('id', id)
-    .eq('tenant_id', tenantId)
+    .in('tenant_id', tenantCandidates)
     .select()
-    .single()
+    .maybeSingle()
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error || !data) {
+    return NextResponse.json({ error: error?.message || 'Invoice not found' }, { status: 404 })
   }
 
   return NextResponse.json(data)
@@ -66,19 +82,27 @@ export async function DELETE(
   context: { params: Promise<Params> }
 ) {
   const { id } = await context.params
-  const tenantId = await getTenantIdFromJWT()
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  if (!tenantId) {
-    return NextResponse.json({ error: 'Tenant ID missing' }, { status: 401 })
+  if (!user) {
+    return NextResponse.json({ error: 'Auth session missing' }, { status: 401 })
   }
 
-  const supabase = await createServerSupabaseClient()
+  const userMetadataTenantId =
+    typeof user.user_metadata?.tenant_id === 'string'
+      ? user.user_metadata.tenant_id
+      : null;
+  const resolvedTenantId = userMetadataTenantId || user.id;
+  const tenantCandidates = Array.from(new Set([resolvedTenantId, user.id]));
 
   const { error } = await supabase
     .from('invoices')
     .delete()
     .eq('id', id)
-    .eq('tenant_id', tenantId)
+    .in('tenant_id', tenantCandidates)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

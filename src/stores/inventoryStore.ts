@@ -387,7 +387,9 @@ export const useInventoryStore = create<InventoryState>((set, get) => {
           }
         }
       } catch (error: any) {
-        set({ error: error.message || 'Failed to add stock movement' });
+        const message = error?.message || 'Failed to add stock movement';
+        set({ error: message });
+        throw new Error(message);
       }
     },
 

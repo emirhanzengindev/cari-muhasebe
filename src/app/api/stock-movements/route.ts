@@ -179,7 +179,28 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (movementInsertError) {
-        return Response.json({ error: movementInsertError.message }, { status: 400 });
+        // Retry once with auth user id as tenant_id for mixed-tenant legacy rows.
+        const { data: retryMovementRow, error: retryInsertError } = await supabase
+          .from('stock_movements')
+          .insert({
+            product_id: movementData.productId,
+            movement_type: normalizedMovementType,
+            quantity: numericQuantity,
+            description: movementData.description || null,
+            warehouse_id: movementData.warehouseId || null,
+            price: movementData.price || null,
+            tenant_id: user.id,
+          })
+          .select('*')
+          .maybeSingle();
+
+        if (retryInsertError) {
+          return Response.json({ error: retryInsertError.message }, { status: 400 });
+        }
+
+        return Response.json(
+          retryMovementRow ?? { success: true, message: 'Stock movement applied successfully (retry path)' }
+        );
       }
 
       return Response.json(
