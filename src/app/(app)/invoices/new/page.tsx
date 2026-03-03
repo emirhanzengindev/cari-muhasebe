@@ -155,9 +155,9 @@ export default function NewInvoice() {
       );
 
       router.push("/invoices");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Fatura oluşturulamadı");
+      setError(err?.message || "Fatura oluşturulamadı");
     }
   };
 

@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { Invoice } from '@/types';
-import { useTenantStore } from '@/lib/tenantStore';
 import { getSupabaseBrowser } from '../lib/supabase';
 
 const toDate = (value: unknown): Date => {
@@ -31,12 +30,6 @@ const normalizeInvoice = (invoice: any): Invoice => ({
 
 // Helper function to make API requests
 const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
-  const tenantId = useTenantStore.getState().tenantId;
-  
-  if (!tenantId) {
-    return null;
-  }
-  
   // Get Supabase session token
   const supabase = getSupabaseBrowser();
   const { data: { session } } = await supabase.auth.getSession();

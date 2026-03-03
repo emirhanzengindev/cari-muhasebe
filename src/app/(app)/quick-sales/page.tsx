@@ -159,8 +159,8 @@ export default function QuickSales() {
       
       // Redirect to invoice details page
       router.push(`/invoices/${newInvoice.id}`);
-    } catch (error) {
-      alert("Satış tamamlanamadı ve fatura oluşturulamadı. Lütfen tekrar deneyin.");
+    } catch (error: any) {
+      alert(error?.message || "Satış tamamlanamadı ve fatura oluşturulamadı. Lütfen tekrar deneyin.");
       console.error("Error creating invoice:", error);
     }
   };
