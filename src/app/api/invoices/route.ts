@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
       console.error('MISSING REQUIRED FIELD: invoice_number');
       return Response.json({ error: 'Invoice number is required' }, { status: 400 });
     }
-    if (!invoiceWithTenant.account_id) {
+    if (!invoiceWithTenant.account_id && !invoiceWithTenant.current_account_id) {
       return Response.json({ error: 'Account is required' }, { status: 400 });
     }
     if (invoiceWithTenant.total_amount === undefined || invoiceWithTenant.total_amount === null) {
@@ -161,7 +161,6 @@ export async function POST(request: NextRequest) {
       const requiredColumns = new Set([
         'invoice_number',
         'invoice_type',
-        'account_id',
         'date',
         'total_amount',
         'tenant_id',
@@ -189,6 +188,15 @@ export async function POST(request: NextRequest) {
           getMissingColumnName(error.hint);
 
         if (missingColumn && missingColumn in insertPayload) {
+          // Accept either account_id or current_account_id depending on live schema.
+          if (missingColumn === 'account_id' && 'current_account_id' in insertPayload) {
+            delete insertPayload.account_id;
+            continue;
+          }
+          if (missingColumn === 'current_account_id' && 'account_id' in insertPayload) {
+            delete insertPayload.current_account_id;
+            continue;
+          }
           if (requiredColumns.has(missingColumn)) {
             break;
           }

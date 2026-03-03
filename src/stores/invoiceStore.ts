@@ -13,7 +13,7 @@ const normalizeInvoice = (invoice: any): Invoice => ({
   ...invoice,
   invoiceNumber: invoice?.invoiceNumber ?? invoice?.invoice_number ?? '',
   invoiceType: invoice?.invoiceType ?? invoice?.invoice_type ?? 'SALES',
-  accountId: invoice?.accountId ?? invoice?.account_id ?? '',
+  accountId: invoice?.accountId ?? invoice?.account_id ?? invoice?.current_account_id ?? '',
   totalAmount: Number(invoice?.totalAmount ?? invoice?.total_amount ?? 0),
   subtotal: Number(invoice?.subtotal ?? 0),
   discount: Number(invoice?.discount ?? 0),
