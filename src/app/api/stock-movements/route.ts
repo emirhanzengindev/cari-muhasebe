@@ -9,9 +9,23 @@ const resolveStockValue = (product: any): number => {
     product?.stock_quantity ??
     product?.stock ??
     product?.quantity ??
+    product?.qty ??
+    product?.amount ??
+    product?.inventory ??
     0;
   const parsed = Number(raw);
   return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const detectStockColumn = (product: any): string | null => {
+  const candidates = ['stock_quantity', 'stock', 'quantity', 'qty', 'amount', 'inventory'];
+  for (const key of candidates) {
+    if (Object.prototype.hasOwnProperty.call(product || {}, key)) {
+      const value = Number(product?.[key]);
+      if (Number.isFinite(value)) return key;
+    }
+  }
+  return null;
 };
 
 export async function GET(request: NextRequest) {
@@ -200,10 +214,19 @@ export async function POST(request: NextRequest) {
             ? currentStock - numericQuantity
             : currentStock + numericQuantity;
 
-        const updatePayloadCandidates = [
+        const detectedStockColumn = detectStockColumn(product);
+        const updatePayloadCandidates: Record<string, unknown>[] = [];
+        if (detectedStockColumn) {
+          updatePayloadCandidates.push({
+            [detectedStockColumn]: nextStock,
+            updated_at: new Date().toISOString(),
+          });
+        }
+        updatePayloadCandidates.push(
           { stock_quantity: nextStock, updated_at: new Date().toISOString() },
           { stock: nextStock, updated_at: new Date().toISOString() },
-        ];
+          { quantity: nextStock, updated_at: new Date().toISOString() },
+        );
         let stockUpdateError: any = null;
         for (const payload of updatePayloadCandidates) {
           const { error: candidateError } = await client
