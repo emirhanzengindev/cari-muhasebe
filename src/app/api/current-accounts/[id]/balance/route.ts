@@ -28,14 +28,22 @@ async function handleBalanceUpdate(
     const tenantCandidates = Array.from(new Set([resolvedTenantId, user.id]));
 
     // First fetch current balance so we can support delta updates with `amount`.
+    // Do not pre-filter by tenant_id here; RLS + explicit checks below determine access.
     const { data: account, error: accountError } = await supabase
       .from('current_accounts')
-      .select('id, balance')
+      .select('id, balance, tenant_id, user_id')
       .eq('id', id)
-      .in('tenant_id', tenantCandidates)
       .maybeSingle();
 
     if (accountError || !account) {
+      return NextResponse.json({ error: 'Account not found' }, { status: 404 });
+    }
+
+    const hasAccess =
+      account.user_id === user.id ||
+      tenantCandidates.includes(String(account.tenant_id));
+
+    if (!hasAccess) {
       return NextResponse.json({ error: 'Account not found' }, { status: 404 });
     }
 
@@ -60,7 +68,6 @@ async function handleBalanceUpdate(
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .in('tenant_id', tenantCandidates)
       .select()
       .maybeSingle();
 

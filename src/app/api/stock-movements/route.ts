@@ -133,7 +133,6 @@ export async function POST(request: NextRequest) {
         .from('products')
         .select('id, stock_quantity')
         .eq('id', movementData.productId)
-        .in('tenant_id', tenantCandidates)
         .maybeSingle();
 
       if (productError || !product) {
@@ -159,8 +158,7 @@ export async function POST(request: NextRequest) {
           stock_quantity: nextStock,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', movementData.productId)
-        .in('tenant_id', tenantCandidates);
+        .eq('id', movementData.productId);
 
       if (stockUpdateError) {
         return Response.json({ error: stockUpdateError.message }, { status: 400 });
