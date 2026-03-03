@@ -3,6 +3,27 @@ import { Invoice } from '@/types';
 import { useTenantStore } from '@/lib/tenantStore';
 import { getSupabaseBrowser } from '../lib/supabase';
 
+const toDate = (value: unknown): Date => {
+  if (value instanceof Date) return value;
+  const parsed = new Date(String(value ?? ''));
+  return Number.isNaN(parsed.getTime()) ? new Date(0) : parsed;
+};
+
+const normalizeInvoice = (invoice: any): Invoice => ({
+  ...invoice,
+  invoiceNumber: invoice?.invoiceNumber ?? invoice?.invoice_number ?? '',
+  invoiceType: invoice?.invoiceType ?? invoice?.invoice_type ?? 'SALES',
+  accountId: invoice?.accountId ?? invoice?.account_id ?? '',
+  totalAmount: Number(invoice?.totalAmount ?? invoice?.total_amount ?? 0),
+  subtotal: Number(invoice?.subtotal ?? 0),
+  discount: Number(invoice?.discount ?? 0),
+  vatAmount: Number(invoice?.vatAmount ?? invoice?.vat_amount ?? 0),
+  isDraft: Boolean(invoice?.isDraft ?? invoice?.is_draft ?? false),
+  date: toDate(invoice?.date ?? invoice?.invoice_date),
+  createdAt: toDate(invoice?.createdAt ?? invoice?.created_at),
+  updatedAt: toDate(invoice?.updatedAt ?? invoice?.updated_at),
+});
+
 // Helper function to make API requests
 const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const tenantId = useTenantStore.getState().tenantId;
@@ -88,7 +109,10 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
     try {
       const invoices = await makeApiRequest('/invoices');
       if (invoices !== null) {
-        set({ invoices, loading: false });
+        const normalizedInvoices = Array.isArray(invoices)
+          ? invoices.map((invoice: any) => normalizeInvoice(invoice))
+          : [];
+        set({ invoices: normalizedInvoices, loading: false });
       } else {
         // API call failed, keep invoices as empty array
         set({ invoices: [], loading: false });
@@ -109,12 +133,14 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
         throw new Error('Fatura olusturulamadi. Oturum veya yetki problemi olabilir.');
       }
 
+      const normalizedInvoice = normalizeInvoice(newInvoice);
+
       set((state) => {
-        const updatedInvoices = [...state.invoices, newInvoice];
+        const updatedInvoices = [...state.invoices, normalizedInvoice];
         return { invoices: updatedInvoices };
       });
       
-      return newInvoice;
+      return normalizedInvoice;
     } catch (error: any) {
       const message = error?.message || 'Failed to add invoice';
       set({ error: message });
@@ -130,9 +156,10 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
       });
       
       if (updatedInvoice !== null) {
+        const normalizedInvoice = normalizeInvoice(updatedInvoice);
         set((state) => {
           const updatedInvoices = state.invoices.map((invoice) =>
-            invoice.id === id ? updatedInvoice : invoice
+            invoice.id === id ? normalizedInvoice : invoice
           );
           return { invoices: updatedInvoices };
         });

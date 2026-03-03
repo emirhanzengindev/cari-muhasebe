@@ -30,6 +30,12 @@ export default function Invoices() {
     return matchesSearch;
   }) || [];
 
+  const formatInvoiceDate = (value: unknown) => {
+    const parsed = value instanceof Date ? value : new Date(String(value ?? ""));
+    if (Number.isNaN(parsed.getTime())) return "-";
+    return parsed.toLocaleDateString();
+  };
+
 
   const getAccountName = (accountId: string) => {
     const account = accounts.find(acc => acc.id === accountId);
@@ -178,7 +184,7 @@ export default function Invoices() {
                     <div className="text-sm font-medium text-gray-900">{invoice.invoiceNumber}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {invoice.date.toLocaleDateString()}
+                    {formatInvoiceDate(invoice.date)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {getAccountName(invoice.accountId)}
