@@ -147,34 +147,54 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Invoice number is required' }, { status: 400 });
     }
 
-    const insertPayload = { ...invoiceWithTenant };
-    let data: any = null;
-    let error: any = null;
-    let status: number | null = null;
+    const tryInsertWithColumnPruning = async (payload: Record<string, unknown>) => {
+      const insertPayload = { ...payload };
+      let data: any = null;
+      let error: any = null;
+      let status: number | null = null;
 
-    for (let attempt = 0; attempt < 10; attempt++) {
-      const result = await supabase
-        .from('invoices')
-        .insert([insertPayload])
-        .select()
-        .single();
+      for (let attempt = 0; attempt < 25; attempt++) {
+        const result = await supabase
+          .from('invoices')
+          .insert([insertPayload])
+          .select()
+          .single();
 
-      data = result.data;
-      error = result.error;
-      status = result.status;
+        data = result.data;
+        error = result.error;
+        status = result.status;
 
-      if (!error) break;
+        if (!error) break;
 
-      const missingColumn =
-        getMissingColumnName(error.message) ||
-        getMissingColumnName(error.details) ||
-        getMissingColumnName(error.hint);
-      if (missingColumn && missingColumn in insertPayload) {
-        delete insertPayload[missingColumn];
-        continue;
+        const missingColumn =
+          getMissingColumnName(error.message) ||
+          getMissingColumnName(error.details) ||
+          getMissingColumnName(error.hint);
+
+        if (missingColumn && missingColumn in insertPayload) {
+          delete insertPayload[missingColumn];
+          continue;
+        }
+
+        break;
       }
 
-      break;
+      return { data, error, status };
+    };
+
+    let { data, error, status } = await tryInsertWithColumnPruning(invoiceWithTenant);
+
+    if (error) {
+      const minimalPayload: Record<string, unknown> = {
+        invoice_number: invoiceWithTenant.invoice_number,
+        tenant_id: invoiceWithTenant.tenant_id,
+        created_at: invoiceWithTenant.created_at,
+        updated_at: invoiceWithTenant.updated_at,
+      };
+      const retry = await tryInsertWithColumnPruning(minimalPayload);
+      data = retry.data;
+      error = retry.error;
+      status = retry.status;
     }
 
     if (error && status === 404) {
