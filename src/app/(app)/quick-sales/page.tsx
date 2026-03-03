@@ -47,17 +47,21 @@ export default function QuickSales() {
   const customerAccounts = accounts?.filter(account => account.accountType === "CUSTOMER" && account.isActive) || [];
 
   const filteredProducts = products?.filter(product => {
-    return product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-           (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase())) ||
-           (product.barcode && product.barcode.toLowerCase().includes(searchTerm.toLowerCase()));
+    const q = String(searchTerm ?? "").toLowerCase();
+    const name = String(product?.name ?? "").toLowerCase();
+    const sku = String(product?.sku ?? "").toLowerCase();
+    const barcode = String(product?.barcode ?? "").toLowerCase();
+
+    return name.includes(q) || sku.includes(q) || barcode.includes(q);
   }) || [];
 
   const handleAddByBarcode = (e: React.FormEvent) => {
     e.preventDefault();
     if (!barcodeInput.trim()) return;
+    const targetBarcode = String(barcodeInput ?? "").toLowerCase();
     
     const product = products?.find(p => 
-      p.barcode && p.barcode.toLowerCase() === barcodeInput.toLowerCase()
+      String(p?.barcode ?? "").toLowerCase() === targetBarcode
     );
     
     if (product) {

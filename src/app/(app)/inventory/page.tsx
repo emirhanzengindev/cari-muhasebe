@@ -53,9 +53,11 @@ export default function Inventory() {
   }, [tenantId, fetchProducts, fetchCategories, fetchWarehouses]);
 
   const filteredProducts = products?.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         (product.sku && product.sku.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                         (product.barcode && product.barcode.toLowerCase().includes(searchTerm.toLowerCase()));
+    const q = String(searchTerm ?? "").toLowerCase();
+    const name = String(product?.name ?? "").toLowerCase();
+    const sku = String(product?.sku ?? "").toLowerCase();
+    const barcode = String(product?.barcode ?? "").toLowerCase();
+    const matchesSearch = name.includes(q) || sku.includes(q) || barcode.includes(q);
     
     if (filter === "ALL") return matchesSearch;
     if (filter === "LOW_STOCK") return matchesSearch && Number(product.stockQuantity || product.stock_quantity || 0) <= Number(product.criticalLevel || product.critical_level || 0);
@@ -380,7 +382,7 @@ export default function Inventory() {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {product.color && (
                     <div>
-                      <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: product.color.toLowerCase() }}></span>
+                      <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: String(product.color).toLowerCase() }}></span>
                       {product.color}
                     </div>
                   )}

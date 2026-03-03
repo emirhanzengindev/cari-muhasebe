@@ -18,8 +18,10 @@ export default function Invoices() {
 
   const filteredInvoices = invoices?.filter(invoice => {
     const account = accounts?.find(acc => acc.id === invoice.accountId);
-    const matchesSearch = invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          (account && account.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    const q = String(searchTerm ?? "").toLowerCase();
+    const invoiceNumber = String(invoice?.invoiceNumber ?? "").toLowerCase();
+    const accountName = String(account?.name ?? "").toLowerCase();
+    const matchesSearch = invoiceNumber.includes(q) || accountName.includes(q);
     
     if (filter === "ALL") return matchesSearch;
     if (filter === "SALES") return matchesSearch && invoice.invoiceType === "SALES";
