@@ -232,11 +232,19 @@ export async function POST(request: NextRequest) {
     }
 
     if (error && status === 404) {
-      console.error('Table invoice_items does not exist for insert operation');
-      return Response.json({ error: 'Invoice items table does not exist' }, { status: 500 });
+      console.warn('Table invoice_items does not exist, skipping invoice item insert');
+      return Response.json(null);
     }
     
     if (error) {
+      if (
+        error.code === '42P01' ||
+        (typeof error.message === 'string' &&
+          error.message.toLowerCase().includes('does not exist'))
+      ) {
+        console.warn('Table invoice_items does not exist, skipping invoice item insert');
+        return Response.json(null);
+      }
       console.error('SUPABASE ERROR (POST invoice_items):', error);
       return Response.json({ error: error.message }, { status: 500 });
     }
