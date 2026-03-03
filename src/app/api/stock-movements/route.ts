@@ -28,6 +28,14 @@ const detectStockColumn = (product: any): string | null => {
   return null;
 };
 
+const isMissingColumnErrorMessage = (message: string): boolean => {
+  const msg = String(message || '').toLowerCase();
+  return (
+    (msg.includes('column') && msg.includes('does not exist')) ||
+    (msg.includes('could not find') && msg.includes('column'))
+  );
+};
+
 export async function GET(request: NextRequest) {
   try {
     console.log('DEBUG: GET /api/stock-movements called')
@@ -201,8 +209,9 @@ export async function POST(request: NextRequest) {
           });
         }
 
+        const detectedStockColumn = detectStockColumn(product);
         const currentStock = resolveStockValue(product);
-        if (normalizedMovementType === 'out' && currentStock < numericQuantity) {
+        if (detectedStockColumn && normalizedMovementType === 'out' && currentStock < numericQuantity) {
           return {
             ok: false,
             message: `Insufficient stock. Available: ${currentStock}, Requested: ${numericQuantity}`,
@@ -214,41 +223,44 @@ export async function POST(request: NextRequest) {
             ? currentStock - numericQuantity
             : currentStock + numericQuantity;
 
-        const detectedStockColumn = detectStockColumn(product);
         const updatePayloadCandidates: Record<string, unknown>[] = [];
         if (detectedStockColumn) {
           updatePayloadCandidates.push({
             [detectedStockColumn]: nextStock,
             updated_at: new Date().toISOString(),
           });
+          updatePayloadCandidates.push(
+            { stock_quantity: nextStock, updated_at: new Date().toISOString() },
+            { stock: nextStock, updated_at: new Date().toISOString() },
+            { quantity: nextStock, updated_at: new Date().toISOString() },
+          );
         }
-        updatePayloadCandidates.push(
-          { stock_quantity: nextStock, updated_at: new Date().toISOString() },
-          { stock: nextStock, updated_at: new Date().toISOString() },
-          { quantity: nextStock, updated_at: new Date().toISOString() },
-        );
         let stockUpdateError: any = null;
-        for (const payload of updatePayloadCandidates) {
-          const { error: candidateError } = await client
-            .from('products')
-            .update(payload)
-            .eq('id', normalizedProductId);
-          if (!candidateError) {
-            stockUpdateError = null;
-            break;
+        if (updatePayloadCandidates.length > 0) {
+          for (const payload of updatePayloadCandidates) {
+            const { error: candidateError } = await client
+              .from('products')
+              .update(payload)
+              .eq('id', normalizedProductId);
+            if (!candidateError) {
+              stockUpdateError = null;
+              break;
+            }
+            stockUpdateError = candidateError;
+            if (!isMissingColumnErrorMessage(candidateError.message)) {
+              break;
+            }
           }
-          stockUpdateError = candidateError;
-          const msg = String(candidateError.message || '').toLowerCase();
-          const isMissingColumnError =
-            (msg.includes('column') && msg.includes('does not exist')) ||
-            (msg.includes('could not find') && msg.includes('column'));
-          if (!isMissingColumnError) {
-            break;
-          }
+        } else {
+          console.warn('No stock column detected on product row, skipping stock update');
         }
 
         if (stockUpdateError) {
-          return { ok: false, message: `Stock update failed: ${stockUpdateError.message}` };
+          if (isMissingColumnErrorMessage(stockUpdateError.message)) {
+            console.warn('Skipping stock update due to missing stock column in schema cache');
+          } else {
+            return { ok: false, message: `Stock update failed: ${stockUpdateError.message}` };
+          }
         }
 
         const insertTenantId = product.tenant_id || resolvedTenantId;
