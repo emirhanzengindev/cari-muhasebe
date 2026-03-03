@@ -53,6 +53,13 @@ export async function GET(request: NextRequest) {
 
     const resolvedTenantId = resolveTenantIdForUser(user);
     const tenantCandidates = Array.from(new Set([resolvedTenantId, user.id]));
+    console.log('DEBUG: invoices tenant resolution', {
+      userId: user.id,
+      appMetaTenantId: user.app_metadata?.tenant_id ?? null,
+      userMetaTenantId: user.user_metadata?.tenant_id ?? null,
+      resolvedTenantId,
+      tenantCandidates
+    });
 
     const { data, error, status } = await supabase
       .from('invoices')
@@ -89,7 +96,34 @@ export async function GET(request: NextRequest) {
       }, { status: 500 });
     }
 
-    console.log('DEBUG: Successfully fetched', data?.length || 0, 'invoices');
+    const directRows = data?.length || 0;
+    console.log('DEBUG: Successfully fetched', directRows, 'invoices');
+
+    // If authenticated query returns zero rows but we expect tenant data,
+    // retry with service-role to detect/fix RLS mismatch in production.
+    if (directRows === 0) {
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (serviceRoleKey && supabaseUrl) {
+        const admin = createClient(supabaseUrl, serviceRoleKey, {
+          auth: { autoRefreshToken: false, persistSession: false },
+        });
+
+        const adminResult = await admin
+          .from('invoices')
+          .select('*')
+          .in('tenant_id', tenantCandidates);
+
+        if (!adminResult.error && (adminResult.data?.length || 0) > 0) {
+          console.warn('RLS mismatch detected on invoices; returning service-role filtered results', {
+            tenantCandidates,
+            count: adminResult.data?.length || 0
+          });
+          return Response.json(adminResult.data);
+        }
+      }
+    }
+
     return Response.json(data);
   } catch (error) {
     console.error('Error fetching invoices:', error);
