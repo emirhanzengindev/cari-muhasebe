@@ -69,6 +69,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const movementData = await request.json()
+    const normalizedProductId = String(
+      movementData?.productId ?? movementData?.product_id ?? ''
+    ).trim();
 
     const supabase = await createServerSupabaseClientWithRequest();
 
@@ -83,7 +86,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!movementData.productId || !movementData.movementType || !movementData.quantity) {
+    if (!normalizedProductId || !movementData.movementType || !movementData.quantity) {
       return Response.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -125,7 +128,7 @@ export async function POST(request: NextRequest) {
 
     // Primary path: DB RPC (atomic).
     const { error } = await supabase.rpc('apply_stock_movement', {
-      p_product_id: movementData.productId,
+      p_product_id: normalizedProductId,
       p_quantity: numericQuantity,
       p_movement_type: normalizedMovementType,
       p_description: movementData.description || null,
@@ -140,7 +143,7 @@ export async function POST(request: NextRequest) {
         const { data: product, error: productError } = await client
           .from('products')
           .select('id, stock_quantity, tenant_id')
-          .eq('id', movementData.productId)
+          .eq('id', normalizedProductId)
           .maybeSingle();
 
         if (productError || !product) {
@@ -149,7 +152,8 @@ export async function POST(request: NextRequest) {
 
         if (admin && !tenantCandidates.includes(String(product.tenant_id))) {
           console.warn('STOCK MOVEMENT TENANT MISMATCH:', {
-            productId: movementData.productId,
+            productId: normalizedProductId,
+            normalizedProductId,
             productTenantId: product.tenant_id,
             tenantCandidates,
           });
@@ -174,7 +178,7 @@ export async function POST(request: NextRequest) {
             stock_quantity: nextStock,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', movementData.productId);
+          .eq('id', normalizedProductId);
 
         if (stockUpdateError) {
           return { ok: false, message: stockUpdateError.message };
@@ -184,7 +188,7 @@ export async function POST(request: NextRequest) {
         const { data: movementRow, error: movementInsertError } = await client
           .from('stock_movements')
           .insert({
-            product_id: movementData.productId,
+            product_id: normalizedProductId,
             movement_type: normalizedMovementType,
             quantity: numericQuantity,
             description: movementData.description || null,
