@@ -124,7 +124,11 @@ export async function POST(request: NextRequest) {
     if (invoiceData.date !== undefined) invoiceWithTenant.date = invoiceData.date;
     if (invoiceData.dueDate !== undefined) invoiceWithTenant.due_date = invoiceData.dueDate;
     if (invoiceData.subtotal !== undefined) invoiceWithTenant.subtotal = invoiceData.subtotal;
-    if (invoiceData.totalAmount !== undefined) invoiceWithTenant.total_amount = invoiceData.totalAmount;
+    if (invoiceData.totalAmount !== undefined) {
+      invoiceWithTenant.total_amount = invoiceData.totalAmount;
+      invoiceWithTenant.total = invoiceData.totalAmount;
+      invoiceWithTenant.amount = invoiceData.totalAmount;
+    }
     if (invoiceData.vatAmount !== undefined) invoiceWithTenant.vat_amount = invoiceData.vatAmount;
     if (invoiceData.status !== undefined) invoiceWithTenant.status = invoiceData.status;
     if (invoiceData.notes !== undefined) invoiceWithTenant.notes = invoiceData.notes;
@@ -156,7 +160,11 @@ export async function POST(request: NextRequest) {
     if (!invoiceWithTenant.account_id && !invoiceWithTenant.current_account_id) {
       return Response.json({ error: 'Account is required' }, { status: 400 });
     }
-    if (invoiceWithTenant.total_amount === undefined || invoiceWithTenant.total_amount === null) {
+    if (
+      (invoiceWithTenant.total_amount === undefined || invoiceWithTenant.total_amount === null) &&
+      (invoiceWithTenant.total === undefined || invoiceWithTenant.total === null) &&
+      (invoiceWithTenant.amount === undefined || invoiceWithTenant.amount === null)
+    ) {
       return Response.json({ error: 'Total amount is required' }, { status: 400 });
     }
     if (!invoiceWithTenant.date && !invoiceWithTenant.invoice_date) {
@@ -230,6 +238,18 @@ export async function POST(request: NextRequest) {
           }
           if (missingColumn === 'type' && 'invoice_type' in insertPayload) {
             delete insertPayload.type;
+            continue;
+          }
+          if (missingColumn === 'total_amount' && ('total' in insertPayload || 'amount' in insertPayload)) {
+            delete insertPayload.total_amount;
+            continue;
+          }
+          if (missingColumn === 'total' && ('total_amount' in insertPayload || 'amount' in insertPayload)) {
+            delete insertPayload.total;
+            continue;
+          }
+          if (missingColumn === 'amount' && ('total_amount' in insertPayload || 'total' in insertPayload)) {
+            delete insertPayload.amount;
             continue;
           }
           if (requiredColumns.has(missingColumn)) {
