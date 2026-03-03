@@ -4,6 +4,12 @@ import { NextRequest } from 'next/server';
 import { headers, cookies } from 'next/headers';
 import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
 
+const getMissingColumnName = (message?: string | null) => {
+  if (!message) return null;
+  const match = message.match(/Could not find the '([^']+)' column/i);
+  return match?.[1] ?? null;
+};
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClientWithRequest()
@@ -21,10 +27,17 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const userMetadataTenantId =
+      typeof user.user_metadata?.tenant_id === 'string'
+        ? user.user_metadata.tenant_id
+        : null;
+    const resolvedTenantId = userMetadataTenantId || user.id;
+    const tenantCandidates = Array.from(new Set([resolvedTenantId, user.id]));
+
     const { data, error, status } = await supabase
       .from('invoice_items')
       .select('*')
-      .eq('tenant_id', user.id)  // Filter by authenticated user's tenant ID
+      .in('tenant_id', tenantCandidates)
 
     // If table doesn't exist, return empty array
     if (error && status === 404) {
@@ -80,12 +93,29 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const invoiceItemWithTenant = {
-      ...invoiceItemData,
+    const userMetadataTenantId =
+      typeof user.user_metadata?.tenant_id === 'string'
+        ? user.user_metadata.tenant_id
+        : null;
+    const resolvedTenantId = userMetadataTenantId || user.id;
+
+    const invoiceItemWithTenant: any = {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      tenant_id: user.id  // Add tenant_id from authenticated user
+      tenant_id: resolvedTenantId,
     };
+
+    if (invoiceItemData.invoiceId !== undefined) invoiceItemWithTenant.invoice_id = invoiceItemData.invoiceId;
+    if (invoiceItemData.invoice_id !== undefined) invoiceItemWithTenant.invoice_id = invoiceItemData.invoice_id;
+    if (invoiceItemData.productId !== undefined) invoiceItemWithTenant.product_id = invoiceItemData.productId;
+    if (invoiceItemData.product_id !== undefined) invoiceItemWithTenant.product_id = invoiceItemData.product_id;
+    if (invoiceItemData.quantity !== undefined) invoiceItemWithTenant.quantity = invoiceItemData.quantity;
+    if (invoiceItemData.unitPrice !== undefined) invoiceItemWithTenant.unit_price = invoiceItemData.unitPrice;
+    if (invoiceItemData.unit_price !== undefined) invoiceItemWithTenant.unit_price = invoiceItemData.unit_price;
+    if (invoiceItemData.vatRate !== undefined) invoiceItemWithTenant.vat_rate = invoiceItemData.vatRate;
+    if (invoiceItemData.vat_rate !== undefined) invoiceItemWithTenant.vat_rate = invoiceItemData.vat_rate;
+    if (invoiceItemData.total !== undefined) invoiceItemWithTenant.total = invoiceItemData.total;
+    if (invoiceItemData.currency !== undefined) invoiceItemWithTenant.currency = invoiceItemData.currency;
     
     // Validate required fields
     if (!invoiceItemWithTenant.invoice_id || !invoiceItemWithTenant.product_id) {
@@ -93,11 +123,32 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Invoice ID and Product ID are required' }, { status: 400 });
     }
 
-    const { data, error, status } = await supabase
-      .from('invoice_items')
-      .insert([invoiceItemWithTenant])
-      .select()
-      .single();
+    const insertPayload = { ...invoiceItemWithTenant };
+    let data: any = null;
+    let error: any = null;
+    let status: number | null = null;
+
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const result = await supabase
+        .from('invoice_items')
+        .insert([insertPayload])
+        .select()
+        .single();
+
+      data = result.data;
+      error = result.error;
+      status = result.status;
+
+      if (!error) break;
+
+      const missingColumn = getMissingColumnName(error.message);
+      if (error.code === 'PGRST204' && missingColumn && missingColumn in insertPayload) {
+        delete insertPayload[missingColumn];
+        continue;
+      }
+
+      break;
+    }
 
     if (error && status === 404) {
       console.error('Table invoice_items does not exist for insert operation');

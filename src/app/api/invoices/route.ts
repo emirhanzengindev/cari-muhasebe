@@ -4,6 +4,12 @@ import { NextRequest } from 'next/server';
 import { headers, cookies } from 'next/headers';
 import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
 
+const getMissingColumnName = (message?: string | null) => {
+  if (!message) return null;
+  const match = message.match(/Could not find the '([^']+)' column/i);
+  return match?.[1] ?? null;
+};
+
 export async function GET(request: NextRequest) {
   try {
     console.log('DEBUG: GET /api/invoices called')
@@ -95,17 +101,24 @@ export async function POST(request: NextRequest) {
     
     // Explicitly map each field to ensure no camelCase fields leak through
     if (invoiceData.invoiceNumber !== undefined) invoiceWithTenant.invoice_number = invoiceData.invoiceNumber;
+    if (invoiceData.invoiceType !== undefined) invoiceWithTenant.invoice_type = invoiceData.invoiceType;
     if (invoiceData.currentAccountId !== undefined) invoiceWithTenant.current_account_id = invoiceData.currentAccountId;
+    if (invoiceData.accountId !== undefined) invoiceWithTenant.account_id = invoiceData.accountId;
     if (invoiceData.invoiceDate !== undefined) invoiceWithTenant.invoice_date = invoiceData.invoiceDate;
+    if (invoiceData.date !== undefined) invoiceWithTenant.date = invoiceData.date;
     if (invoiceData.dueDate !== undefined) invoiceWithTenant.due_date = invoiceData.dueDate;
+    if (invoiceData.subtotal !== undefined) invoiceWithTenant.subtotal = invoiceData.subtotal;
     if (invoiceData.totalAmount !== undefined) invoiceWithTenant.total_amount = invoiceData.totalAmount;
+    if (invoiceData.vatAmount !== undefined) invoiceWithTenant.vat_amount = invoiceData.vatAmount;
     if (invoiceData.status !== undefined) invoiceWithTenant.status = invoiceData.status;
     if (invoiceData.notes !== undefined) invoiceWithTenant.notes = invoiceData.notes;
+    if (invoiceData.description !== undefined) invoiceWithTenant.description = invoiceData.description;
     if (invoiceData.taxRate !== undefined) invoiceWithTenant.tax_rate = invoiceData.taxRate;
     if (invoiceData.discount !== undefined) invoiceWithTenant.discount = invoiceData.discount;
     if (invoiceData.paymentTerms !== undefined) invoiceWithTenant.payment_terms = invoiceData.paymentTerms;
     if (invoiceData.currency !== undefined) invoiceWithTenant.currency = invoiceData.currency;
     if (invoiceData.exchangeRate !== undefined) invoiceWithTenant.exchange_rate = invoiceData.exchangeRate;
+    if (invoiceData.isDraft !== undefined) invoiceWithTenant.is_draft = invoiceData.isDraft;
     
     invoiceWithTenant.created_at = new Date().toISOString();
     invoiceWithTenant.updated_at = new Date().toISOString();
@@ -125,11 +138,32 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Invoice number is required' }, { status: 400 });
     }
 
-    const { data, error, status } = await supabase
-      .from('invoices')
-      .insert([invoiceWithTenant])
-      .select()
-      .single();
+    const insertPayload = { ...invoiceWithTenant };
+    let data: any = null;
+    let error: any = null;
+    let status: number | null = null;
+
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const result = await supabase
+        .from('invoices')
+        .insert([insertPayload])
+        .select()
+        .single();
+
+      data = result.data;
+      error = result.error;
+      status = result.status;
+
+      if (!error) break;
+
+      const missingColumn = getMissingColumnName(error.message);
+      if (error.code === 'PGRST204' && missingColumn && missingColumn in insertPayload) {
+        delete insertPayload[missingColumn];
+        continue;
+      }
+
+      break;
+    }
 
     if (error && status === 404) {
       console.error('Table invoices does not exist for insert operation');
