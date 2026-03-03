@@ -72,6 +72,8 @@ export async function POST(request: NextRequest) {
     const normalizedProductId = String(
       movementData?.productId ?? movementData?.product_id ?? ''
     ).trim();
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
     const supabase = await createServerSupabaseClientWithRequest();
 
@@ -91,6 +93,12 @@ export async function POST(request: NextRequest) {
         { error: 'Missing required fields' },
         { status: 400 }
       )
+    }
+    if (!uuidRegex.test(normalizedProductId)) {
+      return Response.json(
+        { error: `Invalid productId format: ${normalizedProductId}` },
+        { status: 400 }
+      );
     }
 
     const numericQuantity = Number(movementData.quantity);
@@ -146,8 +154,18 @@ export async function POST(request: NextRequest) {
           .eq('id', normalizedProductId)
           .maybeSingle();
 
-        if (productError || !product) {
-          return { ok: false, message: 'Product not found' };
+        if (productError) {
+          return {
+            ok: false,
+            message: `Product query failed: ${productError.message}`,
+          };
+        }
+
+        if (!product) {
+          return {
+            ok: false,
+            message: `Product not found for id: ${normalizedProductId}`,
+          };
         }
 
         if (admin && !tenantCandidates.includes(String(product.tenant_id))) {
