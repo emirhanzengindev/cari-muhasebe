@@ -148,7 +148,11 @@ export async function POST(request: NextRequest) {
         }
 
         if (admin && !tenantCandidates.includes(String(product.tenant_id))) {
-          return { ok: false, message: 'Product not found' };
+          console.warn('STOCK MOVEMENT TENANT MISMATCH:', {
+            productId: movementData.productId,
+            productTenantId: product.tenant_id,
+            tenantCandidates,
+          });
         }
 
         const currentStock = Number(product.stock_quantity || 0);
