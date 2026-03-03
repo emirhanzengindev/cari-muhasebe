@@ -1,39 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
+import { createServerSupabaseClient } from '@/lib/supabaseServer';
 
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+async function handleBalanceUpdate(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const { id } = await params;
-    const { balance } = await request.json();
-    const tenantId = await getTenantIdFromJWT();
-    if (!tenantId) {
+    const body = await request.json();
+    const supabase = await createServerSupabaseClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
       return NextResponse.json(
-        { error: 'Tenant ID missing' },
+        { error: 'Auth session missing' },
         { status: 401 }
       );
     }
-    
-    // Validate that tenantId is a proper UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(tenantId)) {
-      console.error('INVALID TENANT ID FORMAT:', tenantId);
+
+    const userMetadataTenantId =
+      typeof user.user_metadata?.tenant_id === 'string'
+        ? user.user_metadata.tenant_id
+        : null;
+    const resolvedTenantId = userMetadataTenantId || user.id;
+    const tenantCandidates = Array.from(new Set([resolvedTenantId, user.id]));
+
+    // First fetch current balance so we can support delta updates with `amount`.
+    const { data: account, error: accountError } = await supabase
+      .from('current_accounts')
+      .select('id, balance')
+      .eq('id', id)
+      .in('tenant_id', tenantCandidates)
+      .single();
+
+    if (accountError || !account) {
+      return NextResponse.json({ error: 'Account not found' }, { status: 404 });
+    }
+
+    let nextBalance: number | null = null;
+    if (typeof body.amount === 'number') {
+      nextBalance = Number(account.balance || 0) + Number(body.amount);
+    } else if (typeof body.balance === 'number') {
+      nextBalance = Number(body.balance);
+    }
+
+    if (nextBalance === null || Number.isNaN(nextBalance)) {
       return NextResponse.json(
-        { error: 'Invalid tenant ID format' },
+        { error: 'Either amount (delta) or balance is required' },
         { status: 400 }
       );
     }
 
-    const supabase = await createServerSupabaseClient();
-
-    // Update the account balance
     const { data, error, status } = await supabase
       .from('current_accounts')
       .update({
-        balance: balance,
-        updated_at: new Date().toISOString()
+        balance: nextBalance,
+        updated_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .eq('tenant_id', tenantId)
+      .in('tenant_id', tenantCandidates)
       .select()
       .single();
 
@@ -60,4 +87,18 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     console.error('Error updating account balance:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
+}
+
+export async function PUT(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  return handleBalanceUpdate(request, context);
+}
+
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  return handleBalanceUpdate(request, context);
 }

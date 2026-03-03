@@ -23,10 +23,17 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const userMetadataTenantId =
+      typeof user.user_metadata?.tenant_id === 'string'
+        ? user.user_metadata.tenant_id
+        : null;
+    const resolvedTenantId = userMetadataTenantId || user.id;
+    const tenantCandidates = Array.from(new Set([resolvedTenantId, user.id]));
+
     const { data, error } = await supabase
       .from('stock_movements')
       .select('*')
-      .eq('tenant_id', user.id)  // Filter by authenticated user's tenant ID
+      .in('tenant_id', tenantCandidates)
 
     if (error) {
       console.error('SUPABASE ERROR:', {
@@ -84,8 +91,9 @@ export async function POST(request: NextRequest) {
     }
     
     // Validate movement type is one of the allowed values
+    const normalizedMovementType = String(movementData.movementType).toLowerCase();
     const validMovementTypes = ['in', 'out'];
-    if (!validMovementTypes.includes(movementData.movementType.toLowerCase())) {
+    if (!validMovementTypes.includes(normalizedMovementType)) {
       return Response.json(
         { error: 'Invalid movement type. Must be "in" or "out"' },
         { status: 400 }
@@ -96,7 +104,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase.rpc('apply_stock_movement', {
       p_product_id: movementData.productId,
       p_quantity: movementData.quantity,
-      p_movement_type: movementData.movementType,
+      p_movement_type: normalizedMovementType,
       p_description: movementData.description || null,
       p_warehouse_id: movementData.warehouseId || null,
       p_price: movementData.price || null
