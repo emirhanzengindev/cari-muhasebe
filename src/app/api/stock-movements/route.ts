@@ -89,6 +89,14 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    const numericQuantity = Number(movementData.quantity);
+    if (!Number.isFinite(numericQuantity) || numericQuantity <= 0) {
+      return Response.json(
+        { error: 'Quantity must be a positive number' },
+        { status: 400 }
+      );
+    }
     
     // Validate movement type is one of the allowed values
     const normalizedMovementType = String(movementData.movementType).toLowerCase();
@@ -100,10 +108,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use RPC function to atomically update stock and create movement record
-    const { data, error } = await supabase.rpc('apply_stock_movement', {
+    const userMetadataTenantId =
+      typeof user.user_metadata?.tenant_id === 'string'
+        ? user.user_metadata.tenant_id
+        : null;
+    const resolvedTenantId = userMetadataTenantId || user.id;
+    const tenantCandidates = Array.from(new Set([resolvedTenantId, user.id]));
+
+    // Primary path: DB RPC (atomic).
+    const { error } = await supabase.rpc('apply_stock_movement', {
       p_product_id: movementData.productId,
-      p_quantity: movementData.quantity,
+      p_quantity: numericQuantity,
       p_movement_type: normalizedMovementType,
       p_description: movementData.description || null,
       p_warehouse_id: movementData.warehouseId || null,
@@ -111,11 +126,70 @@ export async function POST(request: NextRequest) {
     })
 
     if (error) {
-      console.error('SUPABASE RPC ERROR:', error)
-      return Response.json({ error: error.message }, { status: 400 })
+      console.warn('SUPABASE RPC ERROR (falling back to app-level update):', error)
+
+      // Fallback path: keeps compatibility when RPC/RLS tenant assumptions drift.
+      const { data: product, error: productError } = await supabase
+        .from('products')
+        .select('id, stock_quantity')
+        .eq('id', movementData.productId)
+        .in('tenant_id', tenantCandidates)
+        .maybeSingle();
+
+      if (productError || !product) {
+        return Response.json({ error: 'Product not found' }, { status: 400 });
+      }
+
+      const currentStock = Number(product.stock_quantity || 0);
+      if (normalizedMovementType === 'out' && currentStock < numericQuantity) {
+        return Response.json(
+          { error: `Insufficient stock. Available: ${currentStock}, Requested: ${numericQuantity}` },
+          { status: 400 }
+        );
+      }
+
+      const nextStock =
+        normalizedMovementType === 'out'
+          ? currentStock - numericQuantity
+          : currentStock + numericQuantity;
+
+      const { error: stockUpdateError } = await supabase
+        .from('products')
+        .update({
+          stock_quantity: nextStock,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', movementData.productId)
+        .in('tenant_id', tenantCandidates);
+
+      if (stockUpdateError) {
+        return Response.json({ error: stockUpdateError.message }, { status: 400 });
+      }
+
+      const { data: movementRow, error: movementInsertError } = await supabase
+        .from('stock_movements')
+        .insert({
+          product_id: movementData.productId,
+          movement_type: normalizedMovementType,
+          quantity: numericQuantity,
+          description: movementData.description || null,
+          warehouse_id: movementData.warehouseId || null,
+          price: movementData.price || null,
+          tenant_id: resolvedTenantId,
+        })
+        .select('*')
+        .maybeSingle();
+
+      if (movementInsertError) {
+        return Response.json({ error: movementInsertError.message }, { status: 400 });
+      }
+
+      return Response.json(
+        movementRow ?? { success: true, message: 'Stock movement applied successfully (fallback path)' }
+      );
     }
 
-    // Return success response (rpc functions don't return data)
+    // RPC succeeded
     return Response.json({ success: true, message: 'Stock movement applied successfully' })
   } catch (error) {
     console.error('Error creating stock movement:', error)

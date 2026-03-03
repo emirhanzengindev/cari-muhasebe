@@ -33,7 +33,7 @@ async function handleBalanceUpdate(
       .select('id, balance')
       .eq('id', id)
       .in('tenant_id', tenantCandidates)
-      .single();
+      .maybeSingle();
 
     if (accountError || !account) {
       return NextResponse.json({ error: 'Account not found' }, { status: 404 });
@@ -62,9 +62,13 @@ async function handleBalanceUpdate(
       .eq('id', id)
       .in('tenant_id', tenantCandidates)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error && status === 404) {
+    if (!data) {
+      return NextResponse.json({ error: 'Account not found' }, { status: 404 });
+    }
+
+    if (error && (status === 404 || status === 406 || error.code === 'PGRST116')) {
       console.warn('Table current_accounts does not exist or record not found for balance update');
       return NextResponse.json({ error: 'Account not found' }, { status: 404 });
     }
