@@ -45,6 +45,13 @@ export async function PUT(
 ) {
   const { id } = await context.params
   const body = await request.json()
+  const mappedBody = {
+    ...body,
+    ...(body.isActive !== undefined ? { is_active: body.isActive } : {}),
+    ...(body.accountType !== undefined ? { account_type: body.accountType } : {}),
+  };
+  delete (mappedBody as any).isActive;
+  delete (mappedBody as any).accountType;
   const tenantId = await getTenantIdFromJWTWithRequest()
 
   if (!tenantId) {
@@ -55,7 +62,7 @@ export async function PUT(
 
   const { data, error } = await supabase
     .from('current_accounts')
-    .update(body)
+    .update(mappedBody)
     .eq('id', id)
     .eq('tenant_id', tenantId)
     .select()
@@ -74,7 +81,7 @@ export async function PUT(
       console.warn('Attempting update without problematic fields');
       
       // Remove problematic fields and try again
-      const { is_active, account_type, isActive, accountType, ...cleanBody } = body;
+      const { is_active, account_type, isActive, accountType, ...cleanBody } = mappedBody;
       
       const { data: cleanData, error: cleanError } = await supabase
         .from('current_accounts')

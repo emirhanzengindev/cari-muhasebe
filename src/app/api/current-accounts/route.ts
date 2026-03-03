@@ -14,7 +14,13 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.json(data);
+  const mapped = (data || []).map((row: any) => ({
+    ...row,
+    isActive: row.is_active ?? true,
+    accountType: row.account_type ?? "CUSTOMER",
+  }));
+
+  return NextResponse.json(mapped);
 }
 
 // POST /api/current-accounts
@@ -53,5 +59,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.json(data, { status: 201 });
+  const mapped = {
+    ...data,
+    isActive: data?.is_active ?? true,
+    accountType: data?.account_type ?? "CUSTOMER",
+  };
+
+  return NextResponse.json(mapped, { status: 201 });
 }

@@ -3,9 +3,13 @@ import { CurrentAccount } from "@/types";
 import { useTenantStore } from "@/lib/tenantStore";
 import { getSupabaseBrowser } from "@/lib/supabase";
 
-/* =========================
-   API HELPER
-========================= */
+const normalizeAccount = (account: any): CurrentAccount => ({
+  ...account,
+  isActive: account?.isActive ?? account?.is_active ?? true,
+  accountType: account?.accountType ?? account?.account_type ?? "CUSTOMER",
+  balance: Number(account?.balance ?? 0),
+});
+
 const makeApiRequest = async (
   endpoint: string,
   options: RequestInit = {}
@@ -42,9 +46,6 @@ const makeApiRequest = async (
   return res.json();
 };
 
-/* =========================
-   STORE
-========================= */
 interface CurrentAccountState {
   accounts: CurrentAccount[];
   loading: boolean;
@@ -56,89 +57,76 @@ interface CurrentAccountState {
   ) => Promise<void>;
   deleteAccount: (id: string) => Promise<void>;
   toggleAccountStatus: (id: string) => Promise<void>;
-
-  // ✅ EKSİK OLAN BUYDU
-  updateAccountBalance: (
-    accountId: string,
-    amount: number
-  ) => Promise<void>;
+  updateAccountBalance: (accountId: string, amount: number) => Promise<void>;
 }
 
-export const useCurrentAccountsStore =
-  create<CurrentAccountState>((set, get) => ({
-    accounts: [],
-    loading: false,
-    error: null,
+export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) => ({
+  accounts: [],
+  loading: false,
+  error: null,
 
-    fetchAccounts: async () => {
-      set({ loading: true });
-      try {
-        const data = await makeApiRequest("/current-accounts");
-        set({ accounts: data ?? [], loading: false });
-      } catch {
-        set({ error: "Hesaplar alınamadı", loading: false });
-      }
-    },
+  fetchAccounts: async () => {
+    set({ loading: true, error: null });
+    try {
+      const data = await makeApiRequest("/current-accounts");
+      const normalized = Array.isArray(data)
+        ? data.map((item: any) => normalizeAccount(item))
+        : [];
+      set({ accounts: normalized, loading: false });
+    } catch {
+      set({ error: "Hesaplar alinamadi", loading: false });
+    }
+  },
 
-    addAccount: async (account) => {
-      const created = await makeApiRequest("/current-accounts", {
-        method: "POST",
-        body: JSON.stringify(account),
-      });
-      if (!created) return;
+  addAccount: async (account) => {
+    const created = await makeApiRequest("/current-accounts", {
+      method: "POST",
+      body: JSON.stringify(account),
+    });
+    if (!created) return;
 
-      set((state) => ({
-        accounts: [created, ...state.accounts],
-      }));
-    },
+    set((state) => ({
+      accounts: [normalizeAccount(created), ...state.accounts],
+    }));
+  },
 
-    deleteAccount: async (id) => {
-      await makeApiRequest(`/current-accounts/${id}`, {
-        method: "DELETE",
-      });
-      set((state) => ({
-        accounts: state.accounts.filter((a) => a.id !== id),
-      }));
-    },
+  deleteAccount: async (id) => {
+    await makeApiRequest(`/current-accounts/${id}`, {
+      method: "DELETE",
+    });
+    set((state) => ({
+      accounts: state.accounts.filter((a) => a.id !== id),
+    }));
+  },
 
-    toggleAccountStatus: async (id) => {
-      const acc = get().accounts.find((a) => a.id === id);
-      if (!acc) return;
+  toggleAccountStatus: async (id) => {
+    const acc = get().accounts.find((a) => a.id === id);
+    if (!acc) return;
 
-      const updated = await makeApiRequest(
-        `/current-accounts/${id}`,
-        {
+    const updated = await makeApiRequest(`/current-accounts/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ isActive: !acc.isActive }),
+    });
 
-          method: "PUT",
-          body: JSON.stringify({ isActive: !acc.isActive }),
-        }
-      );
+    if (!updated) return;
 
-      set((state) => ({
-        accounts: state.accounts.map((a) =>
-          a.id === id ? updated : a
-        ),
-      }));
-    },
-//tekrar yenilme 
-    /* =========================
-       ✅ BAKİYE GÜNCELLEME
-    ========================= */
-    updateAccountBalance: async (accountId, amount) => {
-      const updated = await makeApiRequest(
-        `/current-accounts/${accountId}/balance`,
-        {
-          method: "PATCH",
-          body: JSON.stringify({ amount }),
-        }
-      );
+    set((state) => ({
+      accounts: state.accounts.map((a) => (a.id === id ? normalizeAccount(updated) : a)),
+    }));
+  },
 
-      if (!updated) return;
+  updateAccountBalance: async (accountId, amount) => {
+    const updated = await makeApiRequest(`/current-accounts/${accountId}/balance`, {
+      method: "PATCH",
+      body: JSON.stringify({ amount }),
+    });
 
-      set((state) => ({
-        accounts: state.accounts.map((a) =>
-          a.id === accountId ? updated : a
-        ),
-      }));
-    },
-  }));
+    if (!updated) return;
+
+    set((state) => ({
+      accounts: state.accounts.map((a) =>
+        a.id === accountId ? normalizeAccount(updated) : a
+      ),
+    }));
+  },
+}));
