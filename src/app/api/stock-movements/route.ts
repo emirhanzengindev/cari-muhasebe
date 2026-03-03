@@ -4,6 +4,16 @@ import { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
 
+const resolveStockValue = (product: any): number => {
+  const raw =
+    product?.stock_quantity ??
+    product?.stock ??
+    product?.quantity ??
+    0;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
 export async function GET(request: NextRequest) {
   try {
     console.log('DEBUG: GET /api/stock-movements called')
@@ -150,7 +160,7 @@ export async function POST(request: NextRequest) {
       const applyFallback = async (client: any) => {
         const { data: product, error: productError } = await client
           .from('products')
-          .select('id, stock_quantity, tenant_id')
+          .select('*')
           .eq('id', normalizedProductId)
           .maybeSingle();
 
@@ -177,7 +187,7 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        const currentStock = Number(product.stock_quantity || 0);
+        const currentStock = resolveStockValue(product);
         if (normalizedMovementType === 'out' && currentStock < numericQuantity) {
           return {
             ok: false,
@@ -190,16 +200,29 @@ export async function POST(request: NextRequest) {
             ? currentStock - numericQuantity
             : currentStock + numericQuantity;
 
-        const { error: stockUpdateError } = await client
-          .from('products')
-          .update({
-            stock_quantity: nextStock,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', normalizedProductId);
+        const updatePayloadCandidates = [
+          { stock_quantity: nextStock, updated_at: new Date().toISOString() },
+          { stock: nextStock, updated_at: new Date().toISOString() },
+        ];
+        let stockUpdateError: any = null;
+        for (const payload of updatePayloadCandidates) {
+          const { error: candidateError } = await client
+            .from('products')
+            .update(payload)
+            .eq('id', normalizedProductId);
+          if (!candidateError) {
+            stockUpdateError = null;
+            break;
+          }
+          stockUpdateError = candidateError;
+          const msg = String(candidateError.message || '').toLowerCase();
+          if (!msg.includes('column') || !msg.includes('does not exist')) {
+            break;
+          }
+        }
 
         if (stockUpdateError) {
-          return { ok: false, message: stockUpdateError.message };
+          return { ok: false, message: `Stock update failed: ${stockUpdateError.message}` };
         }
 
         const insertTenantId = product.tenant_id || resolvedTenantId;
