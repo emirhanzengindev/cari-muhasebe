@@ -32,6 +32,7 @@ export default function InvoiceDetailPage() {
   const [accountName, setAccountName] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -93,6 +94,7 @@ export default function InvoiceDetailPage() {
   const handleDownloadPdf = async () => {
     if (!invoice) return;
     setDownloading(true);
+    setPdfError(null);
     try {
       const itemRes = await fetch("/api/invoice-items", { credentials: "include" });
       const itemBody = itemRes.ok ? await itemRes.json() : [];
@@ -121,7 +123,8 @@ export default function InvoiceDetailPage() {
         invoiceItems
       );
     } catch (err) {
-      setError("PDF olusturulamadi");
+      console.error("Invoice PDF error:", err);
+      setPdfError("PDF olusturulamadi");
     } finally {
       setDownloading(false);
     }
@@ -138,6 +141,7 @@ export default function InvoiceDetailPage() {
         <div><strong>Tarih:</strong> {invoice?.date ? new Date(invoice.date).toLocaleDateString() : "-"}</div>
         <div><strong>Aciklama:</strong> {invoice?.description || "-"}</div>
       </div>
+      {pdfError && <p className="mt-4 text-red-600 text-sm">{pdfError}</p>}
       <div className="mt-6 flex gap-4">
         <button
           onClick={handleDownloadPdf}

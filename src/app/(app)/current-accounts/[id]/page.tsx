@@ -25,6 +25,7 @@ export default function CurrentAccountDetailPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  const [pdfError, setPdfError] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -75,6 +76,7 @@ export default function CurrentAccountDetailPage() {
   const handleDownloadStatement = async () => {
     if (!account) return;
     setDownloading(true);
+    setPdfError("");
     try {
       await downloadAccountStatementPdf(
         {
@@ -94,8 +96,9 @@ export default function CurrentAccountDetailPage() {
           amount: Number(tx.amount ?? 0),
         }))
       );
-    } catch {
-      setError("Cari ekstre PDF olusturulamadi.");
+    } catch (err) {
+      console.error("Account statement PDF error:", err);
+      setPdfError("Cari ekstre PDF olusturulamadi.");
     } finally {
       setDownloading(false);
     }
@@ -135,6 +138,7 @@ export default function CurrentAccountDetailPage() {
         <p><strong>Durum:</strong> {account.isActive ? "Aktif" : "Pasif"}</p>
         <p><strong>Tur:</strong> {account.accountType || "-"}</p>
       </div>
+      {pdfError && <p className="text-red-600 text-sm">{pdfError}</p>}
     </div>
   );
 }

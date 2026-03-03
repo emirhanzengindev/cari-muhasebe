@@ -68,7 +68,8 @@ export const downloadInvoicePdf = async (
   items: InvoiceItemPdfRow[]
 ) => {
   const { jsPDF } = await import("jspdf");
-  await import("jspdf-autotable");
+  const autoTableModule = await import("jspdf-autotable");
+  const autoTable = (autoTableModule as any).default || (autoTableModule as any).autoTable;
 
   const doc = new jsPDF();
 
@@ -80,7 +81,7 @@ export const downloadInvoicePdf = async (
   doc.text(`Tarih: ${trDate(invoice.date)}`, 14, 40);
   doc.text(`Musteri/Tedarikci: ${sanitize(invoice.accountName || "-")}`, 14, 46);
 
-  (doc as any).autoTable({
+  autoTable(doc, {
     startY: 54,
     head: [["Urun/Hizmet", "Miktar", "Birim Fiyat", "Tutar"]],
     body: (items || []).map((row) => [
@@ -110,7 +111,8 @@ export const downloadAccountStatementPdf = async (
   transactions: TransactionPdfRow[]
 ) => {
   const { jsPDF } = await import("jspdf");
-  await import("jspdf-autotable");
+  const autoTableModule = await import("jspdf-autotable");
+  const autoTable = (autoTableModule as any).default || (autoTableModule as any).autoTable;
 
   const doc = new jsPDF();
 
@@ -124,7 +126,7 @@ export const downloadAccountStatementPdf = async (
   doc.text(`Tur: ${sanitize(account.accountType || "-")}`, 14, 52);
   doc.text(`Bakiye: ${trMoney(account.balance)}`, 14, 58);
 
-  (doc as any).autoTable({
+  autoTable(doc, {
     startY: 66,
     head: [["Tarih", "Islem Tipi", "Aciklama", "Tutar"]],
     body: (transactions || []).map((t) => [
