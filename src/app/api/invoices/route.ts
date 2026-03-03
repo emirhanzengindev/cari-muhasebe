@@ -23,10 +23,17 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const userMetadataTenantId =
+      typeof user.user_metadata?.tenant_id === 'string'
+        ? user.user_metadata.tenant_id
+        : null;
+    const resolvedTenantId = userMetadataTenantId || user.id;
+    const tenantCandidates = Array.from(new Set([resolvedTenantId, user.id]));
+
     const { data, error, status } = await supabase
       .from('invoices')
       .select('*')
-      .eq('tenant_id', user.id)  // Filter by authenticated user's tenant ID
+      .in('tenant_id', tenantCandidates)
 
     // If table doesn't exist, return empty array
     if (error && status === 404) {
@@ -103,8 +110,14 @@ export async function POST(request: NextRequest) {
     invoiceWithTenant.created_at = new Date().toISOString();
     invoiceWithTenant.updated_at = new Date().toISOString();
     
-    // Add tenant_id from authenticated user
-    invoiceWithTenant.tenant_id = user.id;
+    const userMetadataTenantId =
+      typeof user.user_metadata?.tenant_id === 'string'
+        ? user.user_metadata.tenant_id
+        : null;
+    const resolvedTenantId = userMetadataTenantId || user.id;
+
+    // Add tenant_id from authenticated user/tenant context
+    invoiceWithTenant.tenant_id = resolvedTenantId;
     
     // Validate required fields
     if (!invoiceWithTenant.invoice_number) {
