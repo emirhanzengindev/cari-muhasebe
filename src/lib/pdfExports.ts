@@ -50,10 +50,11 @@ const trDate = (value?: string) => {
   return d.toLocaleDateString("tr-TR");
 };
 
-const trMoney = (value?: number) =>
-  new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(
-    Number(value ?? 0)
-  );
+const trNumber = (value?: number) =>
+  new Intl.NumberFormat("tr-TR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(value ?? 0));
 
 const sanitize = (input?: string) =>
   String(input ?? "")
@@ -113,8 +114,8 @@ export const downloadInvoicePdf = async (
       String(idx + 1),
       sanitize(row.productName || "Kalem"),
       String(row.quantity ?? 0),
-      trMoney(row.unitPrice),
-      trMoney(row.total),
+      trNumber(row.unitPrice),
+      trNumber(row.total),
     ]),
     styles: { fontSize: 9, cellPadding: 2 },
     headStyles: { fillColor: [32, 88, 152], textColor: 255 },
@@ -126,11 +127,11 @@ export const downloadInvoicePdf = async (
   doc.setDrawColor(200, 200, 200);
   doc.rect(120, finalY + 4, 76, 34);
   doc.setFontSize(10);
-  doc.text(`Ara Toplam: ${trMoney(invoice.subtotal)}`, 124, finalY + 12);
-  doc.text(`Indirim: ${trMoney(invoice.discount)}`, 124, finalY + 18);
-  doc.text(`KDV: ${trMoney(invoice.vatAmount)}`, 124, finalY + 24);
+  doc.text(`Ara Toplam: ${trNumber(invoice.subtotal)}`, 124, finalY + 12);
+  doc.text(`Indirim: ${trNumber(invoice.discount)}`, 124, finalY + 18);
+  doc.text(`KDV: ${trNumber(invoice.vatAmount)}`, 124, finalY + 24);
   doc.setFontSize(11);
-  doc.text(`Genel Toplam: ${trMoney(invoice.totalAmount)}`, 124, finalY + 31);
+  doc.text(`Genel Toplam: ${trNumber(invoice.totalAmount)}`, 124, finalY + 31);
 
   doc.setFontSize(8);
   doc.setTextColor(100);
@@ -187,16 +188,16 @@ export const downloadAccountStatementPdf = async (
       sanitize(tx.productName || "-"),
       String(tx.quantity ?? "-"),
       sanitize(tx.documentType || tx.type || "-"),
-      debit ? trMoney(debit) : "-",
-      credit ? trMoney(credit) : "-",
-      trMoney(running),
+      debit ? trNumber(debit) : "-",
+      credit ? trNumber(credit) : "-",
+      trNumber(running),
     ];
   });
 
   const statementRows =
     body.length > 0
       ? body
-      : [["-", "-", "Hareket bulunamadi", "-", "-", "-", "-", "-", trMoney(account.balance)]];
+      : [["-", "-", "Hareket bulunamadi", "-", "-", "-", "-", "-", trNumber(account.balance)]];
 
   autoTable(doc, {
     startY: 70,
@@ -219,9 +220,9 @@ export const downloadAccountStatementPdf = async (
 
   const finalY = (doc as any).lastAutoTable?.finalY ?? 95;
   const endingBalance = running !== 0 ? running : Number(account.balance ?? 0);
-  doc.setFontSize(12);
+  doc.setFontSize(9);
   doc.text(
-    `Toplam Bakiye (USD): ${trMoney(endingBalance)}`,
+    `Toplam Bakiye: ${trNumber(endingBalance)}`,
     196,
     finalY + 16,
     { align: "right" }
