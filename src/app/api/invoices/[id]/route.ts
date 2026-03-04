@@ -121,6 +121,20 @@ const selectInvoiceForDelete = async (client: any, id: string) => {
   return result;
 };
 
+const isMissingInvoiceItemsTableError = (error: any) => {
+  const message = String(error?.message || "").toLowerCase();
+  const details = String(error?.details || "").toLowerCase();
+  const code = String(error?.code || "").toUpperCase();
+
+  return (
+    code === "42P01" ||
+    code === "PGRST205" ||
+    message.includes("public.invoice_items") ||
+    message.includes("invoice_items") && message.includes("schema cache") ||
+    details.includes("public.invoice_items")
+  );
+};
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<Params> }
@@ -244,10 +258,10 @@ export async function DELETE(
 
   const tryDeleteInvoiceItems = async (client: any) => {
     const snake = await client.from('invoice_items').delete().eq('invoice_id', id);
-    if (!snake.error || snake.error.code === '42P01') return { ok: true, error: null };
+    if (!snake.error || isMissingInvoiceItemsTableError(snake.error)) return { ok: true, error: null };
     if (snake.error.code === '42703') {
       const camel = await client.from('invoice_items').delete().eq('invoiceId', id);
-      if (!camel.error || camel.error.code === '42P01') return { ok: true, error: null };
+      if (!camel.error || isMissingInvoiceItemsTableError(camel.error)) return { ok: true, error: null };
       return { ok: false, error: camel.error };
     }
     return { ok: false, error: snake.error };
