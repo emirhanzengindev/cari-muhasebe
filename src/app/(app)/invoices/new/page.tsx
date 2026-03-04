@@ -29,8 +29,8 @@ export default function NewInvoice() {
   const [currency, setCurrency] =
     useState<"TRY" | "USD">("USD");
   const [items, setItems] = useState<
-    Array<{ productId: string; quantity: number; unitPrice: number }>
-  >([{ productId: "", quantity: 1, unitPrice: 0 }]);
+    Array<{ productId: string; unit: string; quantity: number; unitPrice: number }>
+  >([{ productId: "", unit: "metre", quantity: 1, unitPrice: 0 }]);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -49,7 +49,7 @@ export default function NewInvoice() {
 
   const updateItem = (
     index: number,
-    field: "productId" | "quantity" | "unitPrice",
+    field: "productId" | "unit" | "quantity" | "unitPrice",
     value: string | number
   ) => {
     setItems((prev) =>
@@ -62,8 +62,19 @@ export default function NewInvoice() {
   const addItemRow = () => {
     setItems((prev) => [
       ...prev,
-      { productId: "", quantity: 1, unitPrice: 0 },
+      { productId: "", unit: "metre", quantity: 1, unitPrice: 0 },
     ]);
+  };
+
+  const handleProductChange = (index: number, productId: string) => {
+    const selected = products.find((p) => p.id === productId);
+    const defaultUnit = String(selected?.unit || "metre");
+
+    setItems((prev) =>
+      prev.map((item, i) =>
+        i === index ? { ...item, productId, unit: defaultUnit } : item
+      )
+    );
   };
 
   const removeItemRow = (index: number) => {
@@ -122,6 +133,7 @@ export default function NewInvoice() {
         await addInvoiceItem({
           invoiceId: invoice.id,
           productId: item.productId,
+          unit: item.unit || "metre",
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           vatRate: 0,
@@ -269,18 +281,14 @@ export default function NewInvoice() {
               key={index}
               className="grid grid-cols-1 md:grid-cols-12 gap-3 border rounded p-3"
             >
-              <div className="md:col-span-6">
+              <div className="md:col-span-5">
                 <label className="block text-sm mb-1">
                   Urun
                 </label>
                 <select
                   value={item.productId}
                   onChange={(e) =>
-                    updateItem(
-                      index,
-                      "productId",
-                      e.target.value
-                    )
+                    handleProductChange(index, e.target.value)
                   }
                   className="w-full border rounded px-3 py-2"
                 >
@@ -297,6 +305,20 @@ export default function NewInvoice() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm mb-1">
+                  Birim
+                </label>
+                <input
+                  type="text"
+                  value={item.unit}
+                  onChange={(e) =>
+                    updateItem(index, "unit", e.target.value || "metre")
+                  }
+                  className="w-full border rounded px-3 py-2"
+                />
               </div>
 
               <div className="md:col-span-2">
@@ -318,7 +340,7 @@ export default function NewInvoice() {
                 />
               </div>
 
-              <div className="md:col-span-3">
+              <div className="md:col-span-2">
                 <label className="block text-sm mb-1">
                   Birim Fiyat
                 </label>

@@ -111,8 +111,10 @@ export default function CurrentAccountDetailPage() {
       const products = productRes.ok ? await productRes.json() : [];
 
       const productNameById = new Map<string, string>();
+      const productUnitById = new Map<string, string>();
       for (const p of Array.isArray(products) ? products : []) {
         productNameById.set(String(p.id), String(p.name || p.product_name || "-"));
+        productUnitById.set(String(p.id), String(p.unit || "metre"));
       }
 
       const accountInvoices = (Array.isArray(invoices) ? invoices : []).filter((inv: any) => {
@@ -133,12 +135,14 @@ export default function CurrentAccountDetailPage() {
 
         if (invItems.length === 0) {
           const total = mapAmount(inv.total_amount ?? inv.total ?? inv.amount);
+          const fallbackProduct = invDesc && invDesc !== "-" ? invDesc : "-";
           return [{
             date: invDate,
             invoiceNo: invNo,
             description: invDesc,
-            productName: "-",
-            quantity: 0,
+            productName: fallbackProduct,
+            unit: fallbackProduct === "-" ? "-" : "metre",
+            quantity: fallbackProduct === "-" ? 0 : Number(inv.quantity ?? 1),
             documentType: "Fatura",
             debit: invType === "SALES" ? total : 0,
             credit: invType === "PURCHASE" ? total : 0,
@@ -148,11 +152,13 @@ export default function CurrentAccountDetailPage() {
         return invItems.map((it: any) => {
           const lineTotal = mapAmount(it.total ?? (Number(it.quantity ?? 0) * Number(it.unit_price ?? it.unitPrice ?? 0)));
           const pid = String(it.product_id || it.productId || "");
+          const unit = String(it.unit || it.unit_name || productUnitById.get(pid) || "metre");
           return {
             date: invDate,
             invoiceNo: invNo,
             description: invDesc,
             productName: productNameById.get(pid) || pid || "-",
+            unit,
             quantity: Number(it.quantity ?? 0),
             documentType: "Fatura",
             debit: invType === "SALES" ? lineTotal : 0,
@@ -170,6 +176,7 @@ export default function CurrentAccountDetailPage() {
           invoiceNo: "-",
           description: tx.description || "-",
           productName: "-",
+          unit: "-",
           quantity: 0,
           documentType: "Islem",
           debit: isCredit ? 0 : amount,
@@ -187,6 +194,7 @@ export default function CurrentAccountDetailPage() {
           invoiceNo: mv.document_no || "-",
           description: mv.description || "-",
           productName: "-",
+          unit: "-",
           quantity: 0,
           documentType: "Tahsilat/Odeme",
           debit: isCredit ? 0 : amount,

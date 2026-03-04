@@ -37,6 +37,7 @@ type AccountStatementPdfRow = {
   type?: string;
   description?: string;
   productName?: string;
+  unit?: string;
   quantity?: number;
   documentType?: string;
   debit?: number;
@@ -186,6 +187,7 @@ export const downloadAccountStatementPdf = async (
       sanitize(tx.invoiceNo || "-"),
       sanitize(tx.description || "-"),
       sanitize(tx.productName || "-"),
+      sanitize(tx.unit || "-"),
       String(tx.quantity ?? "-"),
       sanitize(tx.documentType || tx.type || "-"),
       debit ? trNumber(debit) : "-",
@@ -197,7 +199,7 @@ export const downloadAccountStatementPdf = async (
   const statementRows =
     body.length > 0
       ? body
-      : [["-", "-", "Hareket bulunamadi", "-", "-", "-", "-", "-", trNumber(account.balance)]];
+      : [["-", "-", "Hareket bulunamadi", "-", "-", "-", "-", "-", "-", trNumber(account.balance)]];
 
   autoTable(doc, {
     startY: 70,
@@ -206,6 +208,7 @@ export const downloadAccountStatementPdf = async (
       "Fatura No",
       "Aciklama",
       "Urun",
+      "Birim",
       "Miktar",
       "Evrak Turu",
       "Borc",

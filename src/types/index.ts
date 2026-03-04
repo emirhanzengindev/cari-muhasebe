@@ -118,6 +118,7 @@ export interface InvoiceItem {
   id: string;
   invoiceId: string;
   productId: string;
+  unit?: string;
   quantity: number;
   unitPrice: number;
   vatRate: number;

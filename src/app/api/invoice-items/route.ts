@@ -120,6 +120,7 @@ export async function POST(request: NextRequest) {
     if (invoiceItemData.productId !== undefined) invoiceItemWithTenant.product_id = invoiceItemData.productId;
     if (invoiceItemData.product_id !== undefined) invoiceItemWithTenant.product_id = invoiceItemData.product_id;
     if (invoiceItemData.quantity !== undefined) invoiceItemWithTenant.quantity = invoiceItemData.quantity;
+    if (invoiceItemData.unit !== undefined) invoiceItemWithTenant.unit = invoiceItemData.unit;
     if (invoiceItemData.unitPrice !== undefined) invoiceItemWithTenant.unit_price = invoiceItemData.unitPrice;
     if (invoiceItemData.unit_price !== undefined) invoiceItemWithTenant.unit_price = invoiceItemData.unit_price;
     if (invoiceItemData.vatRate !== undefined) invoiceItemWithTenant.vat_rate = invoiceItemData.vatRate;
