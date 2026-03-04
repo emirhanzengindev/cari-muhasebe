@@ -47,7 +47,13 @@ export default function SignIn() {
       return;
     }
 
-    if (data.session) router.push("/");
+    if (data.session) {
+      // Force a full navigation so middleware sees the fresh auth cookies immediately.
+      window.location.assign("/");
+      return;
+    }
+
+    setError("Oturum olusturulamadi. Lutfen tekrar deneyin.");
     setLoading(false);
   };
 
