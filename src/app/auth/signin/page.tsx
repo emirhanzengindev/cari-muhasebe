@@ -58,7 +58,7 @@ export default function SignIn() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8">
-        <h2 className="text-center text-3xl font-bold">Hesabına giriş yap</h2>
+        <h2 className="text-center text-3xl font-bold text-gray-900">Hesabına giriş yap</h2>
 
         {error && <div className="bg-red-50 text-red-700 p-3 rounded">{error}</div>}
 
@@ -69,7 +69,7 @@ export default function SignIn() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border p-2 rounded"
+            className="w-full border p-2 rounded bg-white text-gray-900 placeholder-gray-500"
           />
 
           <input
@@ -78,7 +78,7 @@ export default function SignIn() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border p-2 rounded"
+            className="w-full border p-2 rounded bg-white text-gray-900 placeholder-gray-500"
           />
 
           <button
@@ -90,7 +90,7 @@ export default function SignIn() {
           </button>
         </form>
 
-        <p className="text-center text-sm">
+        <p className="text-center text-sm text-gray-700">
           Hesabın yok mu?{" "}
           <Link href="/auth/signup" className="text-blue-600">
             Kayıt ol
