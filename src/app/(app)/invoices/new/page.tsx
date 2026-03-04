@@ -107,10 +107,8 @@ export default function NewInvoice() {
     try {
       const subtotal = calculateSubtotal();
       const totalAmount = calculateTotal();
-      const invoiceNumber = `INV-${Date.now()}`;
-
       const invoice = await addInvoice({
-        invoiceNumber,
+        invoiceNumber: "",
         invoiceType,
         date: new Date(invoiceDate),
         accountId: selectedAccount,
@@ -150,7 +148,7 @@ export default function NewInvoice() {
           price: item.unitPrice,
           description:
             description ||
-            `${invoiceType === "SALES" ? "Satış" : "Alış"} faturası ${invoiceNumber}`,
+            `${invoiceType === "SALES" ? "Satış" : "Alış"} faturası ${invoice.invoiceNumber}`,
           tenantId,
         });
       }
@@ -252,12 +250,12 @@ export default function NewInvoice() {
           <label className="block text-sm mb-1">
             Aciklama
           </label>
-          <textarea
+          <input
+            type="text"
             value={description}
             onChange={(e) =>
               setDescription(e.target.value)
             }
-            rows={3}
             className="w-full border rounded px-3 py-2"
           />
         </div>

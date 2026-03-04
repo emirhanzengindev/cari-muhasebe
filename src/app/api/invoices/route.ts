@@ -32,6 +32,41 @@ const resolveTenantIdForUser = (user: any): string => {
   return appMetaTenantId || userMetaTenantId || user.id;
 };
 
+const getNextSequentialInvoiceNumber = async (
+  client: any,
+  tenantCandidates: string[]
+): Promise<string> => {
+  const { data, error } = await client
+    .from("invoices")
+    .select("*")
+    .in("tenant_id", tenantCandidates);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  let max = 0;
+  for (const row of data || []) {
+    const candidates = [
+      row?.invoice_number,
+      row?.invoice_no,
+      row?.number,
+      row?.invoiceNumber,
+    ];
+
+    for (const candidate of candidates) {
+      const raw = String(candidate ?? "").trim();
+      if (!/^\d+$/.test(raw)) continue;
+      const parsed = Number.parseInt(raw, 10);
+      if (Number.isFinite(parsed) && parsed > max) {
+        max = parsed;
+      }
+    }
+  }
+
+  return String(max + 1);
+};
+
 export async function GET(request: NextRequest) {
   try {
     console.log('DEBUG: GET /api/invoices called')
@@ -152,11 +187,6 @@ export async function POST(request: NextRequest) {
     const invoiceWithTenant: any = {};
     
     // Explicitly map each field to ensure no camelCase fields leak through
-    if (invoiceData.invoiceNumber !== undefined) {
-      invoiceWithTenant.invoice_number = invoiceData.invoiceNumber;
-      invoiceWithTenant.invoice_no = invoiceData.invoiceNumber;
-      invoiceWithTenant.number = invoiceData.invoiceNumber;
-    }
     if (invoiceData.invoiceType !== undefined) {
       invoiceWithTenant.invoice_type = invoiceData.invoiceType;
       invoiceWithTenant.type = invoiceData.invoiceType;
@@ -187,15 +217,19 @@ export async function POST(request: NextRequest) {
     invoiceWithTenant.updated_at = new Date().toISOString();
     
     const resolvedTenantId = resolveTenantIdForUser(user);
+    const tenantCandidates = Array.from(new Set([resolvedTenantId, user.id]));
 
     // Add tenant_id from authenticated user/tenant context
     invoiceWithTenant.tenant_id = resolvedTenantId;
+    const generatedInvoiceNumber = await getNextSequentialInvoiceNumber(
+      supabase,
+      tenantCandidates
+    );
+    invoiceWithTenant.invoice_number = generatedInvoiceNumber;
+    invoiceWithTenant.invoice_no = generatedInvoiceNumber;
+    invoiceWithTenant.number = generatedInvoiceNumber;
     
     // Validate required fields
-    if (!invoiceWithTenant.invoice_number && !invoiceWithTenant.invoice_no && !invoiceWithTenant.number) {
-      console.error('MISSING REQUIRED FIELD: invoice_number');
-      return Response.json({ error: 'Invoice number is required' }, { status: 400 });
-    }
     if (!invoiceWithTenant.account_id && !invoiceWithTenant.current_account_id) {
       return Response.json({ error: 'Account is required' }, { status: 400 });
     }
