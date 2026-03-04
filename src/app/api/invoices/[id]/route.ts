@@ -281,8 +281,19 @@ export async function DELETE(
   if (primaryDelete.deleted) {
     return NextResponse.json({ success: true });
   }
+
+  // If tenant filter misses a legacy row, try one more delete by id only.
+  // RLS still applies for authenticated client, so this is safe.
   if (primaryDelete.notFound) {
-    return NextResponse.json({ error: primaryDelete.error?.message }, { status: 404 });
+    const relaxedDelete = await supabase
+      .from('invoices')
+      .delete()
+      .eq('id', id)
+      .select('id');
+
+    if (!relaxedDelete.error && Array.isArray(relaxedDelete.data) && relaxedDelete.data.length > 0) {
+      return NextResponse.json({ success: true });
+    }
   }
 
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
