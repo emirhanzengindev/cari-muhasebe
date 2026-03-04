@@ -211,89 +211,53 @@ export async function DELETE(
 
   const resolvedTenantId = resolveTenantIdForUser(user);
   const tenantCandidates = Array.from(new Set([resolvedTenantId, user.id]));
-
-  const deleteInvoiceRow = async (client: any) => {
-    const invoiceDelete = await client
-      .from('invoices')
-      .delete()
-      .eq('id', id)
-      .in('tenant_id', tenantCandidates)
-      .select('id');
-
-    if (invoiceDelete.error) {
-      return {
-        deleted: false,
-        fkConflict: invoiceDelete.error.code === '23503',
-        notFound: false,
-        error: invoiceDelete.error,
-      };
+  const tryDeleteInvoice = async (client: any, withTenantFilter: boolean) => {
+    let query = client.from('invoices').delete().eq('id', id);
+    if (withTenantFilter) {
+      query = query.in('tenant_id', tenantCandidates);
     }
+    const result = await query.select('id');
 
-    const deletedRows = Array.isArray(invoiceDelete.data) ? invoiceDelete.data.length : 0;
-    if (deletedRows === 0) {
-      return {
-        deleted: false,
-        fkConflict: false,
-        notFound: true,
-        error: { message: 'Invoice could not be deleted (no matching row or permission).' },
-      };
-    }
-
-    return { deleted: true, fkConflict: false, notFound: false, error: null };
+    return {
+      error: result.error,
+      fkConflict: result.error?.code === '23503',
+      deletedRows: Array.isArray(result.data) ? result.data.length : 0,
+    };
   };
 
-  const deleteInvoiceItems = async (client: any) => {
-    const bySnakeCase = await client.from('invoice_items').delete().eq('invoice_id', id);
-    if (!bySnakeCase.error) return { ok: true, error: null };
-    if (bySnakeCase.error.code === '42P01') return { ok: true, error: null }; // table missing
-    if (bySnakeCase.error.code === '42703') {
-      // fallback when schema uses camelCase or different naming
-      const byCamelCase = await client.from('invoice_items').delete().eq('invoiceId', id);
-      if (!byCamelCase.error || byCamelCase.error.code === '42P01') {
-        return { ok: true, error: null };
-      }
-      return { ok: false, error: byCamelCase.error };
+  const tryDeleteInvoiceItems = async (client: any) => {
+    const snake = await client.from('invoice_items').delete().eq('invoice_id', id);
+    if (!snake.error || snake.error.code === '42P01') return { ok: true, error: null };
+    if (snake.error.code === '42703') {
+      const camel = await client.from('invoice_items').delete().eq('invoiceId', id);
+      if (!camel.error || camel.error.code === '42P01') return { ok: true, error: null };
+      return { ok: false, error: camel.error };
     }
-    return { ok: false, error: bySnakeCase.error };
+    return { ok: false, error: snake.error };
   };
 
-  const deleteWithClient = async (client: any) => {
-    let invoiceDelete = await deleteInvoiceRow(client);
-    if (invoiceDelete.deleted) return invoiceDelete;
-
-    if (invoiceDelete.fkConflict) {
-      const itemDelete = await deleteInvoiceItems(client);
-      if (!itemDelete.ok) {
-        return {
-          deleted: false,
-          fkConflict: false,
-          notFound: false,
-          error: itemDelete.error,
-        };
-      }
-      invoiceDelete = await deleteInvoiceRow(client);
-    }
-
-    return invoiceDelete;
-  };
-
-  const primaryDelete = await deleteWithClient(supabase);
-  if (primaryDelete.deleted) {
+  // 1) Authenticated delete with tenant filter.
+  let primary = await tryDeleteInvoice(supabase, true);
+  if (!primary.error && primary.deletedRows > 0) {
     return NextResponse.json({ success: true });
   }
 
-  // If tenant filter misses a legacy row, try one more delete by id only.
-  // RLS still applies for authenticated client, so this is safe.
-  if (primaryDelete.notFound) {
-    const relaxedDelete = await supabase
-      .from('invoices')
-      .delete()
-      .eq('id', id)
-      .select('id');
-
-    if (!relaxedDelete.error && Array.isArray(relaxedDelete.data) && relaxedDelete.data.length > 0) {
+  // 2) If FK blocks delete, remove items then retry.
+  if (primary.fkConflict) {
+    const itemDelete = await tryDeleteInvoiceItems(supabase);
+    if (!itemDelete.ok) {
+      return NextResponse.json({ error: itemDelete.error?.message || 'Invoice deletion failed' }, { status: 500 });
+    }
+    primary = await tryDeleteInvoice(supabase, true);
+    if (!primary.error && primary.deletedRows > 0) {
       return NextResponse.json({ success: true });
     }
+  }
+
+  // 3) Relaxed authenticated delete (RLS still applies).
+  const relaxed = await tryDeleteInvoice(supabase, false);
+  if (!relaxed.error && relaxed.deletedRows > 0) {
+    return NextResponse.json({ success: true });
   }
 
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -324,12 +288,15 @@ export async function DELETE(
       if (linkedAccountId) {
         const accountCheck = await admin
           .from('current_accounts')
-          .select('id')
+          .select('id, tenant_id, user_id')
           .eq('id', linkedAccountId)
-          .or(`tenant_id.in.(${tenantCandidates.join(',')}),user_id.eq.${user.id}`)
-          .limit(1)
           .maybeSingle();
-        authorizedByAccount = !!accountCheck.data && !accountCheck.error;
+        if (!accountCheck.error && accountCheck.data) {
+          const accountTenantId = String(accountCheck.data.tenant_id || '');
+          const accountUserId = String(accountCheck.data.user_id || '');
+          authorizedByAccount =
+            tenantCandidates.includes(accountTenantId) || accountUserId === user.id;
+        }
       }
     }
 
@@ -340,16 +307,22 @@ export async function DELETE(
       );
     }
 
-    const adminDelete = await deleteWithClient(admin);
-    if (adminDelete.deleted) return NextResponse.json({ success: true });
-    if (adminDelete.notFound) {
-      return NextResponse.json({ error: adminDelete.error?.message }, { status: 404 });
+    const adminItemDelete = await tryDeleteInvoiceItems(admin);
+    if (!adminItemDelete.ok) {
+      return NextResponse.json({ error: adminItemDelete.error?.message || 'Invoice deletion failed' }, { status: 500 });
+    }
+
+    const adminDelete = await tryDeleteInvoice(admin, false);
+    if (!adminDelete.error && adminDelete.deletedRows > 0) return NextResponse.json({ success: true });
+    if (!adminDelete.error && adminDelete.deletedRows === 0) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
     return NextResponse.json({ error: adminDelete.error?.message || 'Invoice deletion failed' }, { status: 500 });
   }
 
-  return NextResponse.json(
-    { error: primaryDelete.error?.message || 'Invoice deletion failed' },
-    { status: 500 }
-  )
+  const fallbackError =
+    primary.error?.message ||
+    relaxed.error?.message ||
+    'Invoice could not be deleted (no matching row or permission).';
+  return NextResponse.json({ error: fallbackError }, { status: 404 })
 }
