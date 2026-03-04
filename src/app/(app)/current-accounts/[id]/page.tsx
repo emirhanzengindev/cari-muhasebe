@@ -181,7 +181,7 @@ export default function CurrentAccountDetailPage() {
         const amount = Math.abs(Number(mv.amount ?? mv.signed_amount ?? 0));
         const direction = Number(mv.direction ?? 0);
         const mvType = String(mv.movement_type || "").toUpperCase();
-        const isCredit = direction < 0 || mvType === "COLLECTION";
+        const isCredit = direction < 0 || mvType === "COLLECTION" || mvType === "PAYMENT";
         return {
           date: mv.document_date || mv.created_at,
           invoiceNo: mv.document_no || "-",
@@ -255,7 +255,7 @@ export default function CurrentAccountDetailPage() {
       setSavingCollection(true);
       await addCollection(account.id, {
         movementType: collectionType,
-        direction: collectionType === "COLLECTION" ? -1 : 1,
+        direction: -1,
         amount: collectionAmount,
         documentDate: collectionDate,
         documentNo: collectionDocumentNo || undefined,

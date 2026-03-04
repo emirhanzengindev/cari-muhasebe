@@ -150,7 +150,7 @@ export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) =>
       movementType === "COLLECTION"
         ? -1
         : movementType === "PAYMENT"
-          ? 1
+          ? -1
           : payload.direction;
 
     const result = await makeApiRequest(`/current-accounts/${accountId}/collections`, {

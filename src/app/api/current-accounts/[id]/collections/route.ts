@@ -38,7 +38,7 @@ const normalizeMatchPayload = (matches: unknown) => {
 const resolveDirection = (movementType: string, direction?: number) => {
   // Never trust client-provided direction for fixed movement types.
   if (movementType === "COLLECTION") return -1;
-  if (movementType === "PAYMENT") return 1;
+  if (movementType === "PAYMENT") return -1;
   if (movementType === "ADJUSTMENT" && (direction === 1 || direction === -1)) {
     return direction;
   }
