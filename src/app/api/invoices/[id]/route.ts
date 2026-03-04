@@ -212,14 +212,39 @@ export async function DELETE(
   const resolvedTenantId = resolveTenantIdForUser(user);
   const tenantCandidates = Array.from(new Set([resolvedTenantId, user.id]));
 
-  const { error } = await supabase
-    .from('invoices')
-    .delete()
-    .eq('id', id)
-    .in('tenant_id', tenantCandidates)
+  const deleteInvoiceWithClient = async (client: any) => {
+    // Clean up dependent rows first when FK is not ON DELETE CASCADE.
+    // If table/column doesn't exist in a deployment, we ignore that error path and continue.
+    const itemDelete = await client.from('invoice_items').delete().eq('invoice_id', id);
+    if (itemDelete.error && itemDelete.error.code !== '42P01' && itemDelete.error.code !== '42703') {
+      return { deleted: false, error: itemDelete.error };
+    }
 
-  if (!error) {
-    return NextResponse.json({ success: true })
+    const invoiceDelete = await client
+      .from('invoices')
+      .delete()
+      .eq('id', id)
+      .in('tenant_id', tenantCandidates)
+      .select('id');
+
+    if (invoiceDelete.error) {
+      return { deleted: false, error: invoiceDelete.error };
+    }
+
+    const deletedRows = Array.isArray(invoiceDelete.data) ? invoiceDelete.data.length : 0;
+    if (deletedRows === 0) {
+      return {
+        deleted: false,
+        error: { message: 'Invoice could not be deleted (no matching row or permission).' },
+      };
+    }
+
+    return { deleted: true, error: null };
+  };
+
+  const primaryDelete = await deleteInvoiceWithClient(supabase);
+  if (primaryDelete.deleted) {
+    return NextResponse.json({ success: true });
   }
 
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -228,16 +253,18 @@ export async function DELETE(
     const admin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
-    const adminResult = await admin
-      .from('invoices')
-      .delete()
-      .eq('id', id)
-      .in('tenant_id', tenantCandidates);
-
-    if (!adminResult.error) {
+    const adminDelete = await deleteInvoiceWithClient(admin);
+    if (adminDelete.deleted) {
       return NextResponse.json({ success: true });
     }
+    return NextResponse.json(
+      { error: adminDelete.error?.message || 'Invoice deletion failed' },
+      { status: 500 }
+    );
   }
 
-  return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json(
+    { error: primaryDelete.error?.message || 'Invoice deletion failed' },
+    { status: 500 }
+  )
 }

@@ -67,6 +67,7 @@ export async function GET(
     .from("current_account_movements")
     .select("*, collection_invoice_matches(*)")
     .eq("current_account_id", id)
+    .in("movement_type", ["COLLECTION", "PAYMENT", "ADJUSTMENT"])
     .in("tenant_id", tenantCandidates)
     .order("document_date", { ascending: false })
     .order("created_at", { ascending: false });
