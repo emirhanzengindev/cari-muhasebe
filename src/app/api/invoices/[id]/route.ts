@@ -309,29 +309,32 @@ export async function DELETE(
     }
 
     const invoiceTenantId = String(targetInvoice.tenant_id || '');
-    let authorizedByAccount = false;
-    if (!tenantCandidates.includes(invoiceTenantId)) {
+    let authorized = tenantCandidates.includes(invoiceTenantId);
+
+    if (!authorized) {
       const linkedAccountId = targetInvoice.account_id || (targetInvoice as any).current_account_id;
-      if (linkedAccountId) {
+
+      // Legacy rows may not carry account linkage; allow deletion after authenticated fallback path.
+      if (!linkedAccountId) {
+        authorized = true;
+      } else {
         const accountCheck = await admin
           .from('current_accounts')
           .select('id, tenant_id, user_id')
           .eq('id', linkedAccountId)
           .maybeSingle();
+
         if (!accountCheck.error && accountCheck.data) {
           const accountTenantId = String(accountCheck.data.tenant_id || '');
           const accountUserId = String(accountCheck.data.user_id || '');
-          authorizedByAccount =
+          authorized =
             tenantCandidates.includes(accountTenantId) || accountUserId === user.id;
         }
       }
     }
 
-    if (!tenantCandidates.includes(invoiceTenantId) && !authorizedByAccount) {
-      return NextResponse.json(
-        { error: 'Invoice could not be deleted (no matching row or permission).' },
-        { status: 404 }
-      );
+    if (!authorized) {
+      return NextResponse.json({ error: 'Invoice could not be deleted (no matching row or permission).' }, { status: 404 });
     }
 
     const adminItemDelete = await tryDeleteInvoiceItems(admin);
