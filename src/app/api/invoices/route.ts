@@ -333,6 +333,58 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
+    const accountId =
+      (data?.account_id as string | undefined) ||
+      (data?.current_account_id as string | undefined) ||
+      (invoiceWithTenant.account_id as string | undefined) ||
+      (invoiceWithTenant.current_account_id as string | undefined);
+    const rawTotal =
+      data?.total_amount ??
+      data?.total ??
+      data?.amount ??
+      invoiceWithTenant.total_amount ??
+      invoiceWithTenant.total ??
+      invoiceWithTenant.amount;
+    const totalAmount = Number(rawTotal ?? 0);
+    const invoiceType =
+      String(
+        data?.invoice_type ??
+          data?.type ??
+          invoiceWithTenant.invoice_type ??
+          invoiceWithTenant.type ??
+          "SALES"
+      ).toUpperCase();
+    const movementDirection = invoiceType === "SALES" ? 1 : -1;
+
+    if (accountId && Number.isFinite(totalAmount) && totalAmount > 0) {
+      const movementDescription =
+        invoiceWithTenant.description ||
+        `Invoice ${data?.invoice_number || data?.invoice_no || data?.number || ""}`.trim();
+
+      const { error: movementError } = await supabase.rpc("record_current_account_movement", {
+        p_current_account_id: accountId,
+        p_movement_type: "INVOICE",
+        p_amount: totalAmount,
+        p_direction: movementDirection,
+        p_currency: data?.currency || invoiceWithTenant.currency || "TRY",
+        p_document_no:
+          data?.invoice_number || data?.invoice_no || data?.number || invoiceWithTenant.invoice_number || null,
+        p_document_date: data?.date || data?.invoice_date || invoiceWithTenant.date || invoiceWithTenant.invoice_date || null,
+        p_description: movementDescription,
+        p_invoice_id: data?.id || null,
+        p_matches: [],
+      });
+
+      if (movementError) {
+        await supabase.from("invoices").delete().eq("id", data?.id);
+        console.error("INVOICE MOVEMENT ERROR (POST invoices):", movementError);
+        return Response.json(
+          { error: `Invoice recorded but account movement failed: ${movementError.message}` },
+          { status: 500 }
+        );
+      }
+    }
+
     return Response.json(data);
   } catch (error) {
     console.error('Error creating invoice:', error);

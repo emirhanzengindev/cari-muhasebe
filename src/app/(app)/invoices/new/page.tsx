@@ -13,7 +13,7 @@ export default function NewInvoice() {
 
   const { addInvoice } = useInvoiceStore();
   const { addInvoiceItem } = useInvoiceItemStore();
-  const { accounts, fetchAccounts, updateAccountBalance } =
+  const { accounts, fetchAccounts } =
     useCurrentAccountsStore();
   const { products, fetchProducts, addStockMovement } =
     useInventoryStore();
@@ -144,16 +144,6 @@ export default function NewInvoice() {
       }
 
       // ✅ BAKİYE GÜNCELLEME (DOĞRU HALİ)
-      const balanceChange =
-        invoiceType === "SALES"
-          ? totalAmount
-          : -totalAmount;
-
-      await updateAccountBalance(
-        selectedAccount,
-        balanceChange
-      );
-
       router.push("/invoices");
     } catch (err: any) {
       console.error(err);

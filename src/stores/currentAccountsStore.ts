@@ -58,6 +58,20 @@ interface CurrentAccountState {
   deleteAccount: (id: string) => Promise<void>;
   toggleAccountStatus: (id: string) => Promise<void>;
   updateAccountBalance: (accountId: string, amount: number) => Promise<void>;
+  addCollection: (
+    accountId: string,
+    payload: {
+      amount: number;
+      movementType?: "COLLECTION" | "PAYMENT" | "ADJUSTMENT";
+      direction?: 1 | -1;
+      currency?: "TRY" | "USD";
+      description?: string;
+      documentNo?: string;
+      documentDate?: string;
+      invoiceId?: string;
+      matches?: Array<{ invoiceId: string; amount: number }>;
+    }
+  ) => Promise<void>;
 }
 
 export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) => ({
@@ -126,6 +140,21 @@ export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) =>
     set((state) => ({
       accounts: state.accounts.map((a) =>
         a.id === accountId ? normalizeAccount(updated) : a
+      ),
+    }));
+  },
+
+  addCollection: async (accountId, payload) => {
+    const result = await makeApiRequest(`/current-accounts/${accountId}/collections`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+
+    if (!result?.account) return;
+
+    set((state) => ({
+      accounts: state.accounts.map((a) =>
+        a.id === accountId ? normalizeAccount(result.account) : a
       ),
     }));
   },
