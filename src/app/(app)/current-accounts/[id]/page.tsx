@@ -45,8 +45,12 @@ export default function CurrentAccountDetailPage() {
         const txRes = await fetch("/api/transactions", { credentials: "include" });
         const txBody = txRes.ok ? await txRes.json() : [];
         const accountTx = (Array.isArray(txBody) ? txBody : []).filter((tx: any) => {
-          const txAccountId = tx.account_id || tx.accountId;
-          return txAccountId === params.id;
+          const txAccountId =
+            tx.account_id ||
+            tx.accountId ||
+            tx.current_account_id ||
+            tx.currentAccountId;
+          return String(txAccountId || "") === String(params.id || "");
         });
         setTransactions(accountTx);
       } catch {

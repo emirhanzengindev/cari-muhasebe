@@ -169,10 +169,15 @@ export const downloadAccountStatementPdf = async (
     ];
   });
 
+  const statementRows =
+    body.length > 0
+      ? body
+      : [["-", "-", "Hareket bulunamadi", "-", "-", trMoney(account.balance)]];
+
   autoTable(doc, {
     startY: 70,
     head: [["Tarih", "Islem", "Aciklama", "Borc", "Alacak", "Bakiye"]],
-    body,
+    body: statementRows,
     styles: { fontSize: 8.5, cellPadding: 2 },
     headStyles: { fillColor: [26, 142, 89], textColor: 255 },
     theme: "grid",
