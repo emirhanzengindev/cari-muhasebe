@@ -255,6 +255,7 @@ export default function CurrentAccountDetailPage() {
       setSavingCollection(true);
       await addCollection(account.id, {
         movementType: collectionType,
+        direction: collectionType === "COLLECTION" ? -1 : 1,
         amount: collectionAmount,
         documentDate: collectionDate,
         documentNo: collectionDocumentNo || undefined,

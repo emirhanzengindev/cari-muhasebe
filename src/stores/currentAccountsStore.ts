@@ -145,9 +145,21 @@ export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) =>
   },
 
   addCollection: async (accountId, payload) => {
+    const movementType = payload.movementType ?? "COLLECTION";
+    const normalizedDirection =
+      movementType === "COLLECTION"
+        ? -1
+        : movementType === "PAYMENT"
+          ? 1
+          : payload.direction;
+
     const result = await makeApiRequest(`/current-accounts/${accountId}/collections`, {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        ...payload,
+        movementType,
+        direction: normalizedDirection,
+      }),
     });
 
     if (!result?.account) return;
