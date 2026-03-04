@@ -14,8 +14,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #ffffff;
+    --foreground: #171717;
   }
 }
 
@@ -47,6 +47,11 @@ body {
 /* Force all white/semi-transparent white text utility classes to render black. */
 [class*="text-white"] {
   color: #000 !important;
+}
+
+/* Make dashboard meta texts readable on white cards/backgrounds. */
+.text-muted-foreground {
+  color: #4b5563 !important;
 }
 
 
