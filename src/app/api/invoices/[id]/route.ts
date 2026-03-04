@@ -104,6 +104,23 @@ const updateWithColumnPruning = async (
   return { data, error };
 };
 
+const selectInvoiceForDelete = async (client: any, id: string) => {
+  const trySelect = async (selectExpr: string) =>
+    client.from('invoices').select(selectExpr).eq('id', id).maybeSingle();
+
+  let result = await trySelect('id, tenant_id, account_id, current_account_id');
+
+  if (
+    result.error?.code === '42703' ||
+    (typeof result.error?.message === 'string' &&
+      result.error.message.toLowerCase().includes('current_account_id'))
+  ) {
+    result = await trySelect('id, tenant_id, account_id');
+  }
+
+  return result;
+};
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<Params> }
@@ -268,11 +285,7 @@ export async function DELETE(
     });
 
     // Legacy data can have mismatched tenant_id. Validate ownership with a strict admin check.
-    const { data: targetInvoice, error: targetError } = await admin
-      .from('invoices')
-      .select('id, tenant_id, account_id, current_account_id')
-      .eq('id', id)
-      .maybeSingle();
+    const { data: targetInvoice, error: targetError } = await selectInvoiceForDelete(admin, id);
 
     if (targetError) {
       return NextResponse.json({ error: targetError.message }, { status: 500 });
@@ -284,7 +297,7 @@ export async function DELETE(
     const invoiceTenantId = String(targetInvoice.tenant_id || '');
     let authorizedByAccount = false;
     if (!tenantCandidates.includes(invoiceTenantId)) {
-      const linkedAccountId = targetInvoice.account_id || targetInvoice.current_account_id;
+      const linkedAccountId = targetInvoice.account_id || (targetInvoice as any).current_account_id;
       if (linkedAccountId) {
         const accountCheck = await admin
           .from('current_accounts')
