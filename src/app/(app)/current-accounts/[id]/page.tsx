@@ -82,6 +82,85 @@ export default function CurrentAccountDetailPage() {
     setDownloading(true);
     setPdfError("");
     try {
+      const [invRes, itemRes, productRes] = await Promise.all([
+        fetch("/api/invoices", { credentials: "include" }),
+        fetch("/api/invoice-items", { credentials: "include" }),
+        fetch("/api/products", { credentials: "include" }),
+      ]);
+
+      const invoices = invRes.ok ? await invRes.json() : [];
+      const invoiceItems = itemRes.ok ? await itemRes.json() : [];
+      const products = productRes.ok ? await productRes.json() : [];
+
+      const productNameById = new Map<string, string>();
+      for (const p of Array.isArray(products) ? products : []) {
+        productNameById.set(String(p.id), String(p.name || p.product_name || "-"));
+      }
+
+      const accountInvoices = (Array.isArray(invoices) ? invoices : []).filter((inv: any) => {
+        const invAccountId = inv.account_id || inv.current_account_id || inv.accountId || inv.currentAccountId;
+        return String(invAccountId || "") === String(account.id);
+      });
+
+      const invoiceRows = accountInvoices.flatMap((inv: any) => {
+        const invItems = (Array.isArray(invoiceItems) ? invoiceItems : []).filter(
+          (it: any) => String(it.invoice_id || it.invoiceId || "") === String(inv.id)
+        );
+
+        const invType = String(inv.invoice_type || inv.type || "SALES").toUpperCase();
+        const mapAmount = (v: any) => Number(v ?? 0);
+        const invDate = inv.date || inv.invoice_date || inv.created_at;
+        const invNo = inv.invoice_number || inv.invoice_no || inv.number || "-";
+        const invDesc = inv.description || "-";
+
+        if (invItems.length === 0) {
+          const total = mapAmount(inv.total_amount ?? inv.total ?? inv.amount);
+          return [{
+            date: invDate,
+            invoiceNo: invNo,
+            description: invDesc,
+            productName: "-",
+            quantity: 0,
+            documentType: "Fatura",
+            debit: invType === "SALES" ? total : 0,
+            credit: invType === "PURCHASE" ? total : 0,
+          }];
+        }
+
+        return invItems.map((it: any) => {
+          const lineTotal = mapAmount(it.total ?? (Number(it.quantity ?? 0) * Number(it.unit_price ?? it.unitPrice ?? 0)));
+          const pid = String(it.product_id || it.productId || "");
+          return {
+            date: invDate,
+            invoiceNo: invNo,
+            description: invDesc,
+            productName: productNameById.get(pid) || pid || "-",
+            quantity: Number(it.quantity ?? 0),
+            documentType: "Fatura",
+            debit: invType === "SALES" ? lineTotal : 0,
+            credit: invType === "PURCHASE" ? lineTotal : 0,
+          };
+        });
+      });
+
+      const transactionRows = (Array.isArray(transactions) ? transactions : []).map((tx: any) => {
+        const amount = Math.abs(Number(tx.amount ?? 0));
+        const txType = String(tx.transaction_type || tx.transactionType || "").toUpperCase();
+        const isCredit = txType.includes("PAYMENT") || txType.includes("ODEME");
+        return {
+          date: tx.date || tx.created_at,
+          invoiceNo: "-",
+          description: tx.description || "-",
+          productName: "-",
+          quantity: 0,
+          documentType: "Islem",
+          debit: isCredit ? 0 : amount,
+          credit: isCredit ? amount : 0,
+        };
+      });
+
+      const statementRows = [...invoiceRows, ...transactionRows];
+
       await downloadAccountStatementPdf(
         {
           id: account.id,
@@ -93,12 +172,7 @@ export default function CurrentAccountDetailPage() {
           accountType: account.accountType || "",
           balance: Number(account.balance ?? 0),
         },
-        transactions.map((tx: any) => ({
-          date: tx.date || tx.created_at,
-          type: tx.transaction_type || tx.transactionType,
-          description: tx.description || "",
-          amount: Number(tx.amount ?? 0),
-        }))
+        statementRows as any
       );
     } catch (err) {
       console.error("Account statement PDF error:", err);

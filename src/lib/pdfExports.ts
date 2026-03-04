@@ -31,11 +31,16 @@ type AccountPdfData = {
   balance?: number;
 };
 
-type TransactionPdfRow = {
+type AccountStatementPdfRow = {
   date?: string;
+  invoiceNo?: string;
   type?: string;
   description?: string;
-  amount?: number;
+  productName?: string;
+  quantity?: number;
+  documentType?: string;
+  debit?: number;
+  credit?: number;
 };
 
 const trDate = (value?: string) => {
@@ -136,35 +141,54 @@ export const downloadInvoicePdf = async (
 
 export const downloadAccountStatementPdf = async (
   account: AccountPdfData,
-  transactions: TransactionPdfRow[]
+  rows: AccountStatementPdfRow[]
 ) => {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
 
-  drawHeader(doc, "CARI HESAP EKSTRESI", sanitize(account.name));
+  const normalizedRows = Array.isArray(rows) ? rows : [];
+  const datedRows = normalizedRows
+    .map((r) => ({ ...r, _d: r.date ? new Date(r.date) : null }))
+    .sort((a, b) => {
+      const at = a._d?.getTime() ?? Number.MAX_SAFE_INTEGER;
+      const bt = b._d?.getTime() ?? Number.MAX_SAFE_INTEGER;
+      return at - bt;
+    });
 
+  const today = trDate(new Date().toISOString());
+  const minDate = datedRows.find((x) => x._d && !Number.isNaN(x._d.getTime()))?._d;
+  const maxDate = [...datedRows]
+    .reverse()
+    .find((x) => x._d && !Number.isNaN(x._d.getTime()))?._d;
+  const rangeText =
+    minDate && maxDate
+      ? `${minDate.toLocaleDateString("tr-TR")} - ${maxDate.toLocaleDateString("tr-TR")}`
+      : `${today} - ${today}`;
+
+  doc.setFontSize(12);
+  doc.text("CARI EKSTRE", 105, 18, { align: "center" });
   doc.setFontSize(10);
-  doc.text(`Cari Adi: ${sanitize(account.name)}`, 14, 44);
-  doc.text(`Telefon: ${sanitize(account.phone || "-")}`, 14, 50);
-  doc.text(`Vergi Dairesi/No: ${sanitize(account.taxOffice || "-")} / ${sanitize(account.taxNumber || "-")}`, 14, 56);
-  doc.text(`Tur: ${sanitize(account.accountType || "-")}`, 14, 62);
+  doc.text(`Tarih: ${today}`, 105, 25, { align: "center" });
+  doc.setFontSize(10);
+  doc.text("Hesap Bilgileri:", 25, 40);
+  doc.text(`Unvan: ${sanitize(account.name)}`, 25, 50);
+  doc.text(`Tarih Araligi: ${sanitize(rangeText)}`, 25, 60);
 
   let running = 0;
-  const body = (transactions || []).map((tx) => {
-    const amount = Number(tx.amount ?? 0);
-    const upperType = String(tx.type || "").toUpperCase();
-    const isPayment = upperType.includes("PAYMENT") || upperType.includes("ODEME") || amount < 0;
-
-    const borc = isPayment ? 0 : Math.abs(amount);
-    const alacak = isPayment ? Math.abs(amount) : 0;
-    running += borc - alacak;
+  const body = (datedRows || []).map((tx) => {
+    const debit = Number(tx.debit ?? 0);
+    const credit = Number(tx.credit ?? 0);
+    running += debit - credit;
 
     return [
       trDate(tx.date),
-      sanitize(tx.type || "-"),
+      sanitize(tx.invoiceNo || "-"),
       sanitize(tx.description || "-"),
-      borc ? trMoney(borc) : "-",
-      alacak ? trMoney(alacak) : "-",
+      sanitize(tx.productName || "-"),
+      String(tx.quantity ?? "-"),
+      sanitize(tx.documentType || tx.type || "-"),
+      debit ? trMoney(debit) : "-",
+      credit ? trMoney(credit) : "-",
       trMoney(running),
     ];
   });
@@ -172,26 +196,36 @@ export const downloadAccountStatementPdf = async (
   const statementRows =
     body.length > 0
       ? body
-      : [["-", "-", "Hareket bulunamadi", "-", "-", trMoney(account.balance)]];
+      : [["-", "-", "Hareket bulunamadi", "-", "-", "-", "-", "-", trMoney(account.balance)]];
 
   autoTable(doc, {
     startY: 70,
-    head: [["Tarih", "Islem", "Aciklama", "Borc", "Alacak", "Bakiye"]],
+    head: [[
+      "Tarih",
+      "Fatura No",
+      "Aciklama",
+      "Urun",
+      "Miktar",
+      "Evrak Turu",
+      "Borc",
+      "Alacak",
+      "Kalan",
+    ]],
     body: statementRows,
-    styles: { fontSize: 8.5, cellPadding: 2 },
-    headStyles: { fillColor: [26, 142, 89], textColor: 255 },
+    styles: { fontSize: 8, cellPadding: 1.8 },
+    headStyles: { fillColor: [210, 210, 210], textColor: 0 },
     theme: "grid",
   });
 
   const finalY = (doc as any).lastAutoTable?.finalY ?? 95;
-  doc.setDrawColor(200, 200, 200);
-  doc.rect(120, finalY + 5, 76, 18);
-  doc.setFontSize(11);
-  doc.text(`Guncel Bakiye: ${trMoney(account.balance)}`, 124, finalY + 16);
-
-  doc.setFontSize(8);
-  doc.setTextColor(100);
-  doc.text("Bu ekstre bilgi amaclidir.", 14, 288);
+  const endingBalance = running !== 0 ? running : Number(account.balance ?? 0);
+  doc.setFontSize(12);
+  doc.text(
+    `Toplam Bakiye (USD): ${trMoney(endingBalance)}`,
+    196,
+    finalY + 16,
+    { align: "right" }
+  );
 
   doc.save(`cari-ekstre-${sanitize(account.name || account.id)}.pdf`);
 };
