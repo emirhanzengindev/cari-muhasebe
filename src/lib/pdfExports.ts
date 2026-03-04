@@ -216,8 +216,20 @@ export const downloadAccountStatementPdf = async (
       "Kalan",
     ]],
     body: statementRows,
-    styles: { fontSize: 8, cellPadding: 1.8 },
+    styles: { fontSize: 8, cellPadding: 1.8, overflow: "ellipsize" },
     headStyles: { fillColor: [210, 210, 210], textColor: 0 },
+    columnStyles: {
+      0: { cellWidth: 18 }, // Tarih
+      1: { cellWidth: 18 }, // Fatura No (daraltildi)
+      2: { cellWidth: 38 }, // Aciklama (genisletildi)
+      3: { cellWidth: 24 }, // Urun
+      4: { cellWidth: 12 }, // Birim
+      5: { cellWidth: 10 }, // Miktar
+      6: { cellWidth: 20 }, // Evrak Turu
+      7: { cellWidth: 14 }, // Borc
+      8: { cellWidth: 14 }, // Alacak
+      9: { cellWidth: 14 }, // Kalan
+    },
     theme: "grid",
   });
 
