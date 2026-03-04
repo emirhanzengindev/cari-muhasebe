@@ -212,14 +212,7 @@ export async function DELETE(
   const resolvedTenantId = resolveTenantIdForUser(user);
   const tenantCandidates = Array.from(new Set([resolvedTenantId, user.id]));
 
-  const deleteInvoiceWithClient = async (client: any) => {
-    // Clean up dependent rows first when FK is not ON DELETE CASCADE.
-    // If table/column doesn't exist in a deployment, we ignore that error path and continue.
-    const itemDelete = await client.from('invoice_items').delete().eq('invoice_id', id);
-    if (itemDelete.error && itemDelete.error.code !== '42P01' && itemDelete.error.code !== '42703') {
-      return { deleted: false, error: itemDelete.error };
-    }
-
+  const deleteInvoiceRow = async (client: any) => {
     const invoiceDelete = await client
       .from('invoices')
       .delete()
@@ -228,23 +221,68 @@ export async function DELETE(
       .select('id');
 
     if (invoiceDelete.error) {
-      return { deleted: false, error: invoiceDelete.error };
+      return {
+        deleted: false,
+        fkConflict: invoiceDelete.error.code === '23503',
+        notFound: false,
+        error: invoiceDelete.error,
+      };
     }
 
     const deletedRows = Array.isArray(invoiceDelete.data) ? invoiceDelete.data.length : 0;
     if (deletedRows === 0) {
       return {
         deleted: false,
+        fkConflict: false,
+        notFound: true,
         error: { message: 'Invoice could not be deleted (no matching row or permission).' },
       };
     }
 
-    return { deleted: true, error: null };
+    return { deleted: true, fkConflict: false, notFound: false, error: null };
   };
 
-  const primaryDelete = await deleteInvoiceWithClient(supabase);
+  const deleteInvoiceItems = async (client: any) => {
+    const bySnakeCase = await client.from('invoice_items').delete().eq('invoice_id', id);
+    if (!bySnakeCase.error) return { ok: true, error: null };
+    if (bySnakeCase.error.code === '42P01') return { ok: true, error: null }; // table missing
+    if (bySnakeCase.error.code === '42703') {
+      // fallback when schema uses camelCase or different naming
+      const byCamelCase = await client.from('invoice_items').delete().eq('invoiceId', id);
+      if (!byCamelCase.error || byCamelCase.error.code === '42P01') {
+        return { ok: true, error: null };
+      }
+      return { ok: false, error: byCamelCase.error };
+    }
+    return { ok: false, error: bySnakeCase.error };
+  };
+
+  const deleteWithClient = async (client: any) => {
+    let invoiceDelete = await deleteInvoiceRow(client);
+    if (invoiceDelete.deleted) return invoiceDelete;
+
+    if (invoiceDelete.fkConflict) {
+      const itemDelete = await deleteInvoiceItems(client);
+      if (!itemDelete.ok) {
+        return {
+          deleted: false,
+          fkConflict: false,
+          notFound: false,
+          error: itemDelete.error,
+        };
+      }
+      invoiceDelete = await deleteInvoiceRow(client);
+    }
+
+    return invoiceDelete;
+  };
+
+  const primaryDelete = await deleteWithClient(supabase);
   if (primaryDelete.deleted) {
     return NextResponse.json({ success: true });
+  }
+  if (primaryDelete.notFound) {
+    return NextResponse.json({ error: primaryDelete.error?.message }, { status: 404 });
   }
 
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -253,9 +291,12 @@ export async function DELETE(
     const admin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
-    const adminDelete = await deleteInvoiceWithClient(admin);
+    const adminDelete = await deleteWithClient(admin);
     if (adminDelete.deleted) {
       return NextResponse.json({ success: true });
+    }
+    if (adminDelete.notFound) {
+      return NextResponse.json({ error: adminDelete.error?.message }, { status: 404 });
     }
     return NextResponse.json(
       { error: adminDelete.error?.message || 'Invoice deletion failed' },

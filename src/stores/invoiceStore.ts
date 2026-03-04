@@ -181,8 +181,10 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
           return { invoices: updatedInvoices };
         });
       }
-    } catch (error) {
-      set({ error: 'Failed to delete invoice' });
+    } catch (error: any) {
+      const message = error?.message || 'Failed to delete invoice';
+      set({ error: message });
+      throw new Error(message);
     }
   },
 
