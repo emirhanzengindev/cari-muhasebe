@@ -6,6 +6,19 @@ import { useInventoryStore } from "@/stores/inventoryStore";
 import { useTenantStore } from "@/lib/tenantStore";
 import { useRouter } from "next/navigation";
 
+type ImportFailure = {
+  row: number;
+  reason: string;
+  value?: string;
+};
+
+type ImportResult = {
+  totalRows: number;
+  importedCount: number;
+  failedCount: number;
+  failures: ImportFailure[];
+};
+
 export default function Inventory() {
   const router = useRouter();
   const { products, categories, warehouses, loading, error, fetchProducts, fetchCategories, fetchWarehouses, addProduct, addCategory, addWarehouse } = useInventoryStore();
@@ -39,6 +52,11 @@ export default function Inventory() {
   const [productFormError, setProductFormError] = useState("");
   const [productFormSuccess, setProductFormSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImportingProducts, setIsImportingProducts] = useState(false);
+  const [productImportError, setProductImportError] = useState<string | null>(null);
+  const [productImportResult, setProductImportResult] = useState<ImportResult | null>(null);
+  const [productImportMode, setProductImportMode] = useState<"insert" | "upsert">("insert");
+  const productImportInputRef = useRef<HTMLInputElement | null>(null);
   const didInitialLoadRef = useRef(false);
 
   const tenantId = useTenantStore(state => state.tenantId);
@@ -220,6 +238,66 @@ export default function Inventory() {
     }
   };
 
+  const downloadProductTemplate = () => {
+    const csv = [
+      "name,sku,barcode,category_name,warehouse_name,buy_price,sell_price,vat_rate,stock_quantity,critical_level,min_stock_level,unit,width,weight,color,size,description,is_active",
+      "Ornek Urun,SKU-001,8680000000001,Kumaslar,Ana Depo,95.5,129.9,20,50,5,3,metre,150,240,Lacivert,Standart,Ornek urun satiri,true",
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "urun-import-sablon.csv";
+    link.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const triggerProductImport = () => {
+    productImportInputRef.current?.click();
+  };
+
+  const handleProductImportFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+    if (!/\.(xlsx|xls)$/i.test(file.name)) {
+      setProductImportError("Yalnizca .xlsx veya .xls dosyalari yukleyin.");
+      return;
+    }
+
+    setIsImportingProducts(true);
+    setProductImportError(null);
+    setProductImportResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("mode", productImportMode);
+
+      const response = await fetch("/api/products/import", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.error || "Urun import sirasinda hata olustu.");
+      }
+
+      setProductImportResult(payload as ImportResult);
+      await fetchProducts();
+    } catch (err) {
+      setProductImportError(
+        err instanceof Error ? err.message : "Urun import sirasinda hata olustu."
+      );
+    } finally {
+      setIsImportingProducts(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="py-6 flex justify-center items-center h-64">
@@ -257,7 +335,35 @@ export default function Inventory() {
           <h1 className="text-2xl font-bold text-gray-900">Stok Yönetimi</h1>
           <p className="mt-1 text-sm text-gray-500">Ürünlerinizi, kategorilerinizi ve depolarınızı yönetin</p>
         </div>
-        <div className="mt-4 sm:mt-0 flex space-x-3">
+        <div className="mt-4 sm:mt-0 flex flex-wrap gap-3">
+          <input
+            ref={productImportInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            className="hidden"
+            onChange={handleProductImportFileChange}
+          />
+          <button
+            onClick={downloadProductTemplate}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Urun Sablonu Indir
+          </button>
+          <select
+            value={productImportMode}
+            onChange={(e) => setProductImportMode(e.target.value as "insert" | "upsert")}
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700"
+          >
+            <option value="insert">Yalniz Ekle</option>
+            <option value="upsert">Varsa Guncelle</option>
+          </select>
+          <button
+            onClick={triggerProductImport}
+            disabled={isImportingProducts}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+          >
+            {isImportingProducts ? "Import Ediliyor..." : "Excel Yukle"}
+          </button>
           <button 
             onClick={() => setShowManageCategoriesModal(true)}
             className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -278,6 +384,45 @@ export default function Inventory() {
           </button>
         </div>
       </div>
+
+      {productImportError && (
+        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {productImportError}
+        </div>
+      )}
+
+      {productImportResult && (
+        <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4">
+          <p className="text-sm text-green-800">
+            Toplam satir: <strong>{productImportResult.totalRows}</strong> | Basarili:{" "}
+            <strong>{productImportResult.importedCount}</strong> | Hatali:{" "}
+            <strong>{productImportResult.failedCount}</strong>
+          </p>
+
+          {productImportResult.failures.length > 0 && (
+            <div className="mt-3 overflow-x-auto">
+              <table className="min-w-full text-left text-xs text-red-900">
+                <thead>
+                  <tr>
+                    <th className="px-2 py-1">Satir</th>
+                    <th className="px-2 py-1">Deger</th>
+                    <th className="px-2 py-1">Hata</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {productImportResult.failures.slice(0, 25).map((failure, idx) => (
+                    <tr key={`${failure.row}-${idx}`} className="border-t border-red-100">
+                      <td className="px-2 py-1">{failure.row}</td>
+                      <td className="px-2 py-1">{failure.value || "-"}</td>
+                      <td className="px-2 py-1">{failure.reason}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Filters and Search */}
       <div className="mb-6 bg-white p-4 rounded-lg shadow">
