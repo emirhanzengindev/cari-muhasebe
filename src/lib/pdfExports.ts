@@ -1,4 +1,4 @@
-import autoTable from "jspdf-autotable";
+ï»¿import autoTable from "jspdf-autotable";
 
 type InvoicePdfData = {
   id: string;
@@ -52,18 +52,18 @@ const trMoney = (value?: number) =>
 
 const sanitize = (input?: string) =>
   String(input ?? "")
-    .replace(/Ý/g, "I")
-    .replace(/ý/g, "i")
-    .replace(/Ð/g, "G")
-    .replace(/ð/g, "g")
-    .replace(/Ü/g, "U")
-    .replace(/ü/g, "u")
-    .replace(/Þ/g, "S")
-    .replace(/þ/g, "s")
-    .replace(/Ö/g, "O")
-    .replace(/ö/g, "o")
-    .replace(/Ç/g, "C")
-    .replace(/ç/g, "c");
+    .replace(/Ä°/g, "I")
+    .replace(/Ä±/g, "i")
+    .replace(/Äž/g, "G")
+    .replace(/ÄŸ/g, "g")
+    .replace(/Ãœ/g, "U")
+    .replace(/Ã¼/g, "u")
+    .replace(/Åž/g, "S")
+    .replace(/ÅŸ/g, "s")
+    .replace(/Ã–/g, "O")
+    .replace(/Ã¶/g, "o")
+    .replace(/Ã‡/g, "C")
+    .replace(/Ã§/g, "c");
 
 const drawHeader = (doc: any, title: string, subtitle?: string) => {
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -190,3 +190,4 @@ export const downloadAccountStatementPdf = async (
 
   doc.save(`cari-ekstre-${sanitize(account.name || account.id)}.pdf`);
 };
+
