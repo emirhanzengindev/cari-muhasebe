@@ -291,17 +291,50 @@ export async function DELETE(
     const admin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
-    const adminDelete = await deleteWithClient(admin);
-    if (adminDelete.deleted) {
-      return NextResponse.json({ success: true });
+
+    // Legacy data can have mismatched tenant_id. Validate ownership with a strict admin check.
+    const { data: targetInvoice, error: targetError } = await admin
+      .from('invoices')
+      .select('id, tenant_id, account_id, current_account_id')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (targetError) {
+      return NextResponse.json({ error: targetError.message }, { status: 500 });
     }
+    if (!targetInvoice) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+    }
+
+    const invoiceTenantId = String(targetInvoice.tenant_id || '');
+    let authorizedByAccount = false;
+    if (!tenantCandidates.includes(invoiceTenantId)) {
+      const linkedAccountId = targetInvoice.account_id || targetInvoice.current_account_id;
+      if (linkedAccountId) {
+        const accountCheck = await admin
+          .from('current_accounts')
+          .select('id')
+          .eq('id', linkedAccountId)
+          .or(`tenant_id.in.(${tenantCandidates.join(',')}),user_id.eq.${user.id}`)
+          .limit(1)
+          .maybeSingle();
+        authorizedByAccount = !!accountCheck.data && !accountCheck.error;
+      }
+    }
+
+    if (!tenantCandidates.includes(invoiceTenantId) && !authorizedByAccount) {
+      return NextResponse.json(
+        { error: 'Invoice could not be deleted (no matching row or permission).' },
+        { status: 404 }
+      );
+    }
+
+    const adminDelete = await deleteWithClient(admin);
+    if (adminDelete.deleted) return NextResponse.json({ success: true });
     if (adminDelete.notFound) {
       return NextResponse.json({ error: adminDelete.error?.message }, { status: 404 });
     }
-    return NextResponse.json(
-      { error: adminDelete.error?.message || 'Invoice deletion failed' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: adminDelete.error?.message || 'Invoice deletion failed' }, { status: 500 });
   }
 
   return NextResponse.json(

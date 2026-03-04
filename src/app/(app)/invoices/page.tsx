@@ -219,9 +219,13 @@ export default function Invoices() {
                         Düzenle
                       </Link>
                       <button 
-                        onClick={() => {
+                        onClick={async () => {
                           if (confirm("Bu faturayı silmek istediğinize emin misiniz?")) {
-                            deleteInvoice(invoice.id);
+                            try {
+                              await deleteInvoice(invoice.id);
+                            } catch (err: any) {
+                              alert(err?.message || "Fatura silinirken hata olustu.");
+                            }
                           }
                         }}
                         className="text-red-600 hover:text-red-900 text-sm"
@@ -275,3 +279,5 @@ export default function Invoices() {
     </div>
   );
 }
+
+
