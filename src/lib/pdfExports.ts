@@ -1,3 +1,5 @@
+import autoTable from "jspdf-autotable";
+
 type InvoicePdfData = {
   id: string;
   invoiceNumber: string;
@@ -50,58 +52,84 @@ const trMoney = (value?: number) =>
 
 const sanitize = (input?: string) =>
   String(input ?? "")
-    .replace(/Ä°/g, "I")
-    .replace(/Ä±/g, "i")
-    .replace(/Äž/g, "G")
-    .replace(/ÄŸ/g, "g")
-    .replace(/Ãœ/g, "U")
-    .replace(/Ã¼/g, "u")
-    .replace(/Åž/g, "S")
-    .replace(/ÅŸ/g, "s")
-    .replace(/Ã–/g, "O")
-    .replace(/Ã¶/g, "o")
-    .replace(/Ã‡/g, "C")
-    .replace(/Ã§/g, "c");
+    .replace(/Ý/g, "I")
+    .replace(/ý/g, "i")
+    .replace(/Ð/g, "G")
+    .replace(/ð/g, "g")
+    .replace(/Ü/g, "U")
+    .replace(/ü/g, "u")
+    .replace(/Þ/g, "S")
+    .replace(/þ/g, "s")
+    .replace(/Ö/g, "O")
+    .replace(/ö/g, "o")
+    .replace(/Ç/g, "C")
+    .replace(/ç/g, "c");
+
+const drawHeader = (doc: any, title: string, subtitle?: string) => {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  doc.setFillColor(25, 57, 102);
+  doc.rect(0, 0, pageWidth, 34, "F");
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16);
+  doc.text(sanitize(title), 14, 14);
+
+  doc.setFontSize(9);
+  doc.text("ON MUHASEBE", 14, 21);
+  doc.text(`Olusturma Tarihi: ${trDate(new Date().toISOString())}`, 14, 27);
+
+  if (subtitle) {
+    doc.setFontSize(9);
+    doc.text(sanitize(subtitle), pageWidth - 14, 21, { align: "right" });
+  }
+
+  doc.setTextColor(20, 20, 20);
+};
 
 export const downloadInvoicePdf = async (
   invoice: InvoicePdfData,
   items: InvoiceItemPdfRow[]
 ) => {
   const { jsPDF } = await import("jspdf");
-  const autoTableModule = await import("jspdf-autotable");
-  const autoTable = (autoTableModule as any).default || (autoTableModule as any).autoTable;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
 
-  const doc = new jsPDF();
+  drawHeader(doc, "FATURA", `No: ${sanitize(invoice.invoiceNumber)}`);
 
-  doc.setFontSize(18);
-  doc.text("FATURA", 14, 18);
   doc.setFontSize(10);
-  doc.text(`Fatura No: ${sanitize(invoice.invoiceNumber)}`, 14, 28);
-  doc.text(`Fatura Tipi: ${sanitize(invoice.invoiceType)}`, 14, 34);
-  doc.text(`Tarih: ${trDate(invoice.date)}`, 14, 40);
-  doc.text(`Musteri/Tedarikci: ${sanitize(invoice.accountName || "-")}`, 14, 46);
+  doc.text(`Musteri/Tedarikci: ${sanitize(invoice.accountName || "-")}`, 14, 44);
+  doc.text(`Fatura Tipi: ${sanitize(invoice.invoiceType)}`, 14, 50);
+  doc.text(`Fatura Tarihi: ${trDate(invoice.date)}`, 14, 56);
+  doc.text(`Aciklama: ${sanitize(invoice.description || "-")}`, 14, 62);
 
   autoTable(doc, {
-    startY: 54,
-    head: [["Urun/Hizmet", "Miktar", "Birim Fiyat", "Tutar"]],
-    body: (items || []).map((row) => [
-      sanitize(row.productName || "-"),
+    startY: 70,
+    head: [["#", "Urun/Hizmet", "Miktar", "Birim Fiyat", "Tutar"]],
+    body: (items || []).map((row, idx) => [
+      String(idx + 1),
+      sanitize(row.productName || "Kalem"),
       String(row.quantity ?? 0),
       trMoney(row.unitPrice),
       trMoney(row.total),
     ]),
-    styles: { fontSize: 9 },
-    headStyles: { fillColor: [41, 128, 185] },
+    styles: { fontSize: 9, cellPadding: 2 },
+    headStyles: { fillColor: [32, 88, 152], textColor: 255 },
+    theme: "grid",
   });
 
-  const finalY = (doc as any).lastAutoTable?.finalY ?? 70;
-  doc.text(`Ara Toplam: ${trMoney(invoice.subtotal)}`, 140, finalY + 10);
-  doc.text(`Indirim: ${trMoney(invoice.discount)}`, 140, finalY + 16);
-  doc.text(`KDV: ${trMoney(invoice.vatAmount)}`, 140, finalY + 22);
-  doc.setFontSize(12);
-  doc.text(`Genel Toplam: ${trMoney(invoice.totalAmount)}`, 140, finalY + 30);
+  const finalY = (doc as any).lastAutoTable?.finalY ?? 90;
+
+  doc.setDrawColor(200, 200, 200);
+  doc.rect(120, finalY + 4, 76, 34);
   doc.setFontSize(10);
-  doc.text(`Aciklama: ${sanitize(invoice.description || "-")}`, 14, finalY + 24);
+  doc.text(`Ara Toplam: ${trMoney(invoice.subtotal)}`, 124, finalY + 12);
+  doc.text(`Indirim: ${trMoney(invoice.discount)}`, 124, finalY + 18);
+  doc.text(`KDV: ${trMoney(invoice.vatAmount)}`, 124, finalY + 24);
+  doc.setFontSize(11);
+  doc.text(`Genel Toplam: ${trMoney(invoice.totalAmount)}`, 124, finalY + 31);
+
+  doc.setFontSize(8);
+  doc.setTextColor(100);
+  doc.text("Bu belge elektronik olarak olusturulmustur.", 14, 288);
 
   doc.save(`invoice-${sanitize(invoice.invoiceNumber || invoice.id)}.pdf`);
 };
@@ -111,37 +139,54 @@ export const downloadAccountStatementPdf = async (
   transactions: TransactionPdfRow[]
 ) => {
   const { jsPDF } = await import("jspdf");
-  const autoTableModule = await import("jspdf-autotable");
-  const autoTable = (autoTableModule as any).default || (autoTableModule as any).autoTable;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
 
-  const doc = new jsPDF();
+  drawHeader(doc, "CARI HESAP EKSTRESI", sanitize(account.name));
 
-  doc.setFontSize(16);
-  doc.text("CARI HESAP EKSTRESI", 14, 18);
   doc.setFontSize(10);
-  doc.text(`Hesap: ${sanitize(account.name)}`, 14, 28);
-  doc.text(`Telefon: ${sanitize(account.phone || "-")}`, 14, 34);
-  doc.text(`Vergi No: ${sanitize(account.taxNumber || "-")}`, 14, 40);
-  doc.text(`Vergi Dairesi: ${sanitize(account.taxOffice || "-")}`, 14, 46);
-  doc.text(`Tur: ${sanitize(account.accountType || "-")}`, 14, 52);
-  doc.text(`Bakiye: ${trMoney(account.balance)}`, 14, 58);
+  doc.text(`Cari Adi: ${sanitize(account.name)}`, 14, 44);
+  doc.text(`Telefon: ${sanitize(account.phone || "-")}`, 14, 50);
+  doc.text(`Vergi Dairesi/No: ${sanitize(account.taxOffice || "-")} / ${sanitize(account.taxNumber || "-")}`, 14, 56);
+  doc.text(`Tur: ${sanitize(account.accountType || "-")}`, 14, 62);
 
-  autoTable(doc, {
-    startY: 66,
-    head: [["Tarih", "Islem Tipi", "Aciklama", "Tutar"]],
-    body: (transactions || []).map((t) => [
-      trDate(t.date),
-      sanitize(t.type || "-"),
-      sanitize(t.description || "-"),
-      trMoney(t.amount),
-    ]),
-    styles: { fontSize: 9 },
-    headStyles: { fillColor: [39, 174, 96] },
+  let running = 0;
+  const body = (transactions || []).map((tx) => {
+    const amount = Number(tx.amount ?? 0);
+    const upperType = String(tx.type || "").toUpperCase();
+    const isPayment = upperType.includes("PAYMENT") || upperType.includes("ODEME") || amount < 0;
+
+    const borc = isPayment ? 0 : Math.abs(amount);
+    const alacak = isPayment ? Math.abs(amount) : 0;
+    running += borc - alacak;
+
+    return [
+      trDate(tx.date),
+      sanitize(tx.type || "-"),
+      sanitize(tx.description || "-"),
+      borc ? trMoney(borc) : "-",
+      alacak ? trMoney(alacak) : "-",
+      trMoney(running),
+    ];
   });
 
-  const finalY = (doc as any).lastAutoTable?.finalY ?? 80;
+  autoTable(doc, {
+    startY: 70,
+    head: [["Tarih", "Islem", "Aciklama", "Borc", "Alacak", "Bakiye"]],
+    body,
+    styles: { fontSize: 8.5, cellPadding: 2 },
+    headStyles: { fillColor: [26, 142, 89], textColor: 255 },
+    theme: "grid",
+  });
+
+  const finalY = (doc as any).lastAutoTable?.finalY ?? 95;
+  doc.setDrawColor(200, 200, 200);
+  doc.rect(120, finalY + 5, 76, 18);
   doc.setFontSize(11);
-  doc.text(`Guncel Bakiye: ${trMoney(account.balance)}`, 14, finalY + 12);
+  doc.text(`Guncel Bakiye: ${trMoney(account.balance)}`, 124, finalY + 16);
+
+  doc.setFontSize(8);
+  doc.setTextColor(100);
+  doc.text("Bu ekstre bilgi amaclidir.", 14, 288);
 
   doc.save(`cari-ekstre-${sanitize(account.name || account.id)}.pdf`);
 };
