@@ -273,6 +273,121 @@ export default function Dashboard() {
           </div>
         </section>
 
+        {/* Product Visuals Section */}
+        <section className="py-16 bg-gradient-to-b from-slate-50 to-white">
+          <div className="container mx-auto px-4">
+            <div className="mb-10 text-center">
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                Uygulamadan Gercek Moduller
+              </h2>
+              <p className="text-gray-700 max-w-3xl mx-auto">
+                Cari hesap, stok, fatura ve finans akislarinizi tek panelde yonetebilirsiniz.
+                Asagidaki bolumler gunluk is akislarina gore tasarlandi.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <article className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <img
+                  src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1200&q=80"
+                  alt="Finans ve raporlama gostergeleri"
+                  className="h-48 w-full object-cover"
+                  loading="lazy"
+                />
+                <div className="p-5">
+                  <h3 className="text-lg font-semibold text-gray-900">Cari ve Finans Takibi</h3>
+                  <p className="mt-2 text-sm text-gray-700">
+                    Tahsilat, odeme, bakiye hareketleri ve borc-alacak dengesini anlik takip edin.
+                  </p>
+                </div>
+              </article>
+
+              <article className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <img
+                  src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=80"
+                  alt="Depo ve stok yonetimi"
+                  className="h-48 w-full object-cover"
+                  loading="lazy"
+                />
+                <div className="p-5">
+                  <h3 className="text-lg font-semibold text-gray-900">Stok ve Depo Yonetimi</h3>
+                  <p className="mt-2 text-sm text-gray-700">
+                    Urun stoklari, kritik seviye uyarilari ve depo bazli takip tek ekranda.
+                  </p>
+                </div>
+              </article>
+
+              <article className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <img
+                  src="https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1200&q=80"
+                  alt="Satis ve fatura surecleri"
+                  className="h-48 w-full object-cover"
+                  loading="lazy"
+                />
+                <div className="p-5">
+                  <h3 className="text-lg font-semibold text-gray-900">Satis ve Fatura Sureci</h3>
+                  <p className="mt-2 text-sm text-gray-700">
+                    Hizli satis, otomatik fatura olusturma ve belge takibini hizlandirin.
+                  </p>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        {/* Workflow Section */}
+        <section className="bg-white py-16">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900">
+                  Is Akisiniz Icin Net Bir Yapi
+                </h2>
+                <p className="mt-4 text-gray-700">
+                  Sistemi sadece veri tutmak icin degil, gunluk operasyonu hizlandirmak icin
+                  kullaniyorsunuz. Bu nedenle moduller birbiriyle baglantili calisir.
+                </p>
+                <ul className="mt-6 space-y-3">
+                  <li className="flex items-start">
+                    <CheckCircle className="h-5 w-5 text-green-600 mr-2 mt-0.5" />
+                    <span className="text-gray-800">Cari hareketleri otomatik bakiye etkisi olusturur.</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-5 w-5 text-green-600 mr-2 mt-0.5" />
+                    <span className="text-gray-800">Satis islemleri stok miktarini aninda gunceller.</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="h-5 w-5 text-green-600 mr-2 mt-0.5" />
+                    <span className="text-gray-800">Raporlama ekranlari gunluk kararlar icin hazir veri sunar.</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-slate-50 p-6 shadow-sm">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-xl bg-white border border-gray-200 p-4">
+                    <p className="text-xs text-gray-600">Aylik Satis</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-2">TRY 124.560</p>
+                    <p className="text-xs text-green-700 mt-1">+18%</p>
+                  </div>
+                  <div className="rounded-xl bg-white border border-gray-200 p-4">
+                    <p className="text-xs text-gray-600">Bekleyen Tahsilat</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-2">TRY 32.400</p>
+                    <p className="text-xs text-amber-700 mt-1">12 cari hesap</p>
+                  </div>
+                  <div className="rounded-xl bg-white border border-gray-200 p-4 col-span-2">
+                    <p className="text-xs text-gray-600 mb-2">Kritik Stok Uyarisi</p>
+                    <div className="h-2 rounded bg-gray-200 overflow-hidden">
+                      <div className="h-2 w-2/3 bg-rose-500"></div>
+                    </div>
+                    <p className="text-xs text-gray-700 mt-2">7 urun kritik seviyenin altinda</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* CTA Section */}
         <section className="bg-blue-600 py-16">
           <div className="container mx-auto px-4 text-center">
