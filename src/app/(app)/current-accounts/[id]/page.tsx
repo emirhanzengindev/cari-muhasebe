@@ -109,6 +109,24 @@ export default function CurrentAccountDetailPage() {
       const invoices = invRes.ok ? await invRes.json() : [];
       const invoiceItems = itemRes.ok ? await itemRes.json() : [];
       const products = productRes.ok ? await productRes.json() : [];
+      const normalizedInvoiceItems = Array.isArray(invoiceItems) ? invoiceItems : [];
+
+      const toStr = (...values: any[]) => {
+        for (const value of values) {
+          if (value !== undefined && value !== null) {
+            const str = String(value).trim();
+            if (str) return str;
+          }
+        }
+        return "";
+      };
+      const toNum = (...values: any[]) => {
+        for (const value of values) {
+          const n = Number(value);
+          if (Number.isFinite(n)) return n;
+        }
+        return 0;
+      };
 
       const productNameById = new Map<string, string>();
       const productUnitById = new Map<string, string>();
@@ -123,9 +141,15 @@ export default function CurrentAccountDetailPage() {
       });
 
       const invoiceRows = accountInvoices.flatMap((inv: any) => {
-        const invItems = (Array.isArray(invoiceItems) ? invoiceItems : []).filter(
-          (it: any) => String(it.invoice_id || it.invoiceId || "") === String(inv.id)
-        );
+        const invItems = normalizedInvoiceItems.filter((it: any) => {
+          const itemInvoiceId = toStr(
+            it.invoice_id,
+            it.invoiceId,
+            it.fatura_id,
+            it.faturaId
+          );
+          return itemInvoiceId === String(inv.id);
+        });
 
         const invType = String(inv.invoice_type || inv.type || "SALES").toUpperCase();
         const mapAmount = (v: any) => Number(v ?? 0);
@@ -136,13 +160,15 @@ export default function CurrentAccountDetailPage() {
         if (invItems.length === 0) {
           const total = mapAmount(inv.total_amount ?? inv.total ?? inv.amount);
           const fallbackProduct = invDesc && invDesc !== "-" ? invDesc : "-";
+          const fallbackUnit = toStr(inv.unit, inv.unit_name) || (fallbackProduct === "-" ? "-" : "metre");
+          const fallbackQty = toNum(inv.quantity, inv.qty, inv.amount_quantity);
           return [{
             date: invDate,
             invoiceNo: invNo,
             description: invDesc,
             productName: fallbackProduct,
-            unit: fallbackProduct === "-" ? "-" : "metre",
-            quantity: fallbackProduct === "-" ? 0 : Number(inv.quantity ?? 1),
+            unit: fallbackUnit,
+            quantity: fallbackQty > 0 ? fallbackQty : (fallbackProduct === "-" ? 0 : 1),
             documentType: "Fatura",
             debit: invType === "SALES" ? total : 0,
             credit: invType === "PURCHASE" ? total : 0,
@@ -151,15 +177,22 @@ export default function CurrentAccountDetailPage() {
 
         return invItems.map((it: any) => {
           const lineTotal = mapAmount(it.total ?? (Number(it.quantity ?? 0) * Number(it.unit_price ?? it.unitPrice ?? 0)));
-          const pid = String(it.product_id || it.productId || "");
-          const unit = String(it.unit || it.unit_name || productUnitById.get(pid) || "metre");
+          const pid = toStr(it.product_id, it.productId, it.urun_id, it.urunId);
+          const unit = toStr(it.unit, it.unit_name, productUnitById.get(pid)) || "metre";
+          const productName = toStr(
+            it.product_name,
+            it.productName,
+            it.name,
+            productNameById.get(pid),
+            pid
+          ) || "-";
           return {
             date: invDate,
             invoiceNo: invNo,
             description: invDesc,
-            productName: productNameById.get(pid) || pid || "-",
+            productName,
             unit,
-            quantity: Number(it.quantity ?? 0),
+            quantity: toNum(it.quantity, it.qty, it.amount_quantity),
             documentType: "Fatura",
             debit: invType === "SALES" ? lineTotal : 0,
             credit: invType === "PURCHASE" ? lineTotal : 0,

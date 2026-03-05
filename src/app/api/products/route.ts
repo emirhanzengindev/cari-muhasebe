@@ -5,6 +5,19 @@ import { createClient } from '@supabase/supabase-js';
 import { headers, cookies } from 'next/headers';
 import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
 
+const resolveTenantIdForUser = (user: any): string => {
+  const appMetaTenantId =
+    typeof user?.app_metadata?.tenant_id === 'string'
+      ? user.app_metadata.tenant_id
+      : null;
+  const userMetaTenantId =
+    typeof user?.user_metadata?.tenant_id === 'string'
+      ? user.user_metadata.tenant_id
+      : null;
+
+  return appMetaTenantId || userMetaTenantId || user.id;
+};
+
 async function logRlsFallbackEvent(
   adminClient: any,
   payload: {
@@ -54,11 +67,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const userMetadataTenantId =
-      typeof user.user_metadata?.tenant_id === 'string'
-        ? user.user_metadata.tenant_id
-        : null;
-    const resolvedTenantId = userMetadataTenantId || user.id;
+    const resolvedTenantId = resolveTenantIdForUser(user);
 
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -169,11 +178,7 @@ export async function POST(request: NextRequest) {
     productWithTenant.created_at = new Date().toISOString();
     productWithTenant.updated_at = new Date().toISOString();
     
-    const userMetadataTenantId =
-      typeof user.user_metadata?.tenant_id === 'string'
-        ? user.user_metadata.tenant_id
-        : null;
-    const resolvedTenantId = userMetadataTenantId || user.id;
+    const resolvedTenantId = resolveTenantIdForUser(user);
 
     productWithTenant.tenant_id = resolvedTenantId;
     

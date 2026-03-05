@@ -96,12 +96,26 @@ export default function InvoiceDetailPage() {
     setDownloading(true);
     setPdfError(null);
     try {
-      const itemRes = await fetch("/api/invoice-items", { credentials: "include" });
+      const [itemRes, productRes] = await Promise.all([
+        fetch("/api/invoice-items", { credentials: "include" }),
+        fetch("/api/products", { credentials: "include" }),
+      ]);
       const itemBody = itemRes.ok ? await itemRes.json() : [];
+      const productBody = productRes.ok ? await productRes.json() : [];
+      const productNameById = new Map<string, string>();
+      for (const p of Array.isArray(productBody) ? productBody : []) {
+        productNameById.set(String(p.id), String(p.name || p.product_name || ""));
+      }
       const invoiceItems = (Array.isArray(itemBody) ? itemBody : [])
-        .filter((x: any) => (x.invoice_id || x.invoiceId) === invoice.id)
+        .filter((x: any) => String(x.invoice_id || x.invoiceId || "") === String(invoice.id))
         .map((x: any) => ({
-          productName: x.product_name || x.name || x.product_id || "Kalem",
+          productName:
+            x.product_name ||
+            x.productName ||
+            x.name ||
+            productNameById.get(String(x.product_id || x.productId || "")) ||
+            x.product_id ||
+            "Kalem",
           quantity: Number(x.quantity ?? 0),
           unitPrice: Number(x.unit_price ?? x.unitPrice ?? 0),
           total: Number(x.total ?? 0),

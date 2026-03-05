@@ -9,7 +9,8 @@
     "dev": "next dev",
     "build": "npx prisma generate && next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "repair:invoice-items": "tsx scripts/repair-invoice-items.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

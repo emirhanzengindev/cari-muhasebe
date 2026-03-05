@@ -20,6 +20,19 @@ const getMissingColumnName = (message?: string | null) => {
   return null;
 };
 
+const resolveTenantIdForUser = (user: any): string => {
+  const appMetaTenantId =
+    typeof user?.app_metadata?.tenant_id === 'string'
+      ? user.app_metadata.tenant_id
+      : null;
+  const userMetaTenantId =
+    typeof user?.user_metadata?.tenant_id === 'string'
+      ? user.user_metadata.tenant_id
+      : null;
+
+  return appMetaTenantId || userMetaTenantId || user.id;
+};
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClientWithRequest()
@@ -37,11 +50,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const userMetadataTenantId =
-      typeof user.user_metadata?.tenant_id === 'string'
-        ? user.user_metadata.tenant_id
-        : null;
-    const resolvedTenantId = userMetadataTenantId || user.id;
+    const resolvedTenantId = resolveTenantIdForUser(user);
     const tenantCandidates = Array.from(new Set([resolvedTenantId, user.id]));
 
     const { data, error, status } = await supabase
@@ -103,11 +112,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const userMetadataTenantId =
-      typeof user.user_metadata?.tenant_id === 'string'
-        ? user.user_metadata.tenant_id
-        : null;
-    const resolvedTenantId = userMetadataTenantId || user.id;
+    const resolvedTenantId = resolveTenantIdForUser(user);
 
     const invoiceItemWithTenant: any = {
       created_at: new Date().toISOString(),
