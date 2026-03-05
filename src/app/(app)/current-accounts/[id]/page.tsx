@@ -139,20 +139,17 @@ export default function CurrentAccountDetailPage() {
       }
 
       const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const movementsByInvoiceNo = new Map<string, any[]>();
-      for (const mv of normalizedStockMovements) {
-        const description = String(mv.description || "");
-        if (!description) continue;
-        const movementType = String(mv.movement_type || "").toLowerCase();
-        if (movementType !== "in" && movementType !== "out") continue;
-        const numbers = description.match(/INV-\d{4}-\d+/gi) || [];
-        for (const no of numbers) {
-          const key = no.trim();
-          const existing = movementsByInvoiceNo.get(key) || [];
-          existing.push(mv);
-          movementsByInvoiceNo.set(key, existing);
-        }
-      }
+      const hasInvoiceRefInDescription = (description: string, invoiceNo: string, invoiceId: string) => {
+        const text = String(description || "");
+        if (!text) return false;
+        if (invoiceId && text.includes(invoiceId)) return true;
+        if (!invoiceNo || invoiceNo === "-") return false;
+
+        const escapedNo = escapeRegExp(invoiceNo);
+        const prefixedPattern = new RegExp(`\\b(?:fatura|invoice)[^\\n\\r]*?#?\\s*${escapedNo}\\b`, "i");
+        const plainPattern = new RegExp(`(^|[^A-Za-z0-9-])#?${escapedNo}([^A-Za-z0-9-]|$)`, "i");
+        return prefixedPattern.test(text) || plainPattern.test(text);
+      };
 
       const accountInvoices = (Array.isArray(invoices) ? invoices : []).filter((inv: any) => {
         const invAccountId = inv.account_id || inv.current_account_id || inv.accountId || inv.currentAccountId;
@@ -177,9 +174,15 @@ export default function CurrentAccountDetailPage() {
         const invDesc = inv.description || "-";
 
         if (invItems.length === 0) {
-          const matchedMovements = (movementsByInvoiceNo.get(String(invNo)) || []).filter((mv: any) => {
+          const matchedMovements = normalizedStockMovements.filter((mv: any) => {
             const mvType = String(mv.movement_type || "").toLowerCase();
-            return invType === "PURCHASE" ? mvType === "in" : mvType === "out";
+            const typeMatch = invType === "PURCHASE" ? mvType === "in" : mvType === "out";
+            if (!typeMatch) return false;
+            return hasInvoiceRefInDescription(
+              String(mv.description || ""),
+              String(invNo),
+              String(inv.id || "")
+            );
           });
 
           if (matchedMovements.length > 0) {
