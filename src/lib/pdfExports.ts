@@ -220,8 +220,8 @@ export const downloadAccountStatementPdf = async (
     headStyles: { fillColor: [210, 210, 210], textColor: 0 },
     columnStyles: {
       0: { cellWidth: 18 }, // Tarih
-      1: { cellWidth: 18 }, // Fatura No (daraltildi)
-      2: { cellWidth: 38 }, // Aciklama (genisletildi)
+      1: { cellWidth: 12 }, // Fatura No (daha da daraltildi)
+      2: { cellWidth: 44 }, // Aciklama (genisletildi)
       3: { cellWidth: 24 }, // Urun
       4: { cellWidth: 12 }, // Birim
       5: { cellWidth: 10 }, // Miktar

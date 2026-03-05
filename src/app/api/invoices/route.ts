@@ -41,12 +41,33 @@ const getNextSequentialInvoiceNumber = async (
     .select("*")
     .in("tenant_id", tenantCandidates);
 
-  if (error) {
-    throw new Error(error.message);
+  let rows = data || [];
+
+  // RLS sebebiyle okunamayan tenant verileri icin service-role fallback
+  if (error || rows.length === 0) {
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+    if (serviceRoleKey && supabaseUrl) {
+      const admin = createClient(supabaseUrl, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+
+      const adminResult = await admin
+        .from("invoices")
+        .select("*")
+        .in("tenant_id", tenantCandidates);
+
+      if (!adminResult.error) {
+        rows = adminResult.data || [];
+      }
+    } else if (error) {
+      throw new Error(error.message);
+    }
   }
 
   let max = 0;
-  for (const row of data || []) {
+  for (const row of rows) {
     const candidates = [
       row?.invoice_number,
       row?.invoice_no,

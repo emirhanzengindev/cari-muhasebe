@@ -69,10 +69,21 @@ export default function NewInvoice() {
   const handleProductChange = (index: number, productId: string) => {
     const selected = products.find((p) => p.id === productId);
     const defaultUnit = String(selected?.unit || "metre");
+    const defaultUnitPrice =
+      invoiceType === "SALES"
+        ? Number(selected?.sellPrice ?? selected?.sell_price ?? 0)
+        : Number(selected?.buyPrice ?? selected?.buy_price ?? 0);
 
     setItems((prev) =>
       prev.map((item, i) =>
-        i === index ? { ...item, productId, unit: defaultUnit } : item
+        i === index
+          ? {
+              ...item,
+              productId,
+              unit: defaultUnit,
+              unitPrice: Number.isFinite(defaultUnitPrice) ? defaultUnitPrice : 0,
+            }
+          : item
       )
     );
   };
