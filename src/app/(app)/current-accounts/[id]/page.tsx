@@ -100,16 +100,19 @@ export default function CurrentAccountDetailPage() {
     setDownloading(true);
     setPdfError("");
     try {
-      const [invRes, itemRes, productRes] = await Promise.all([
+      const [invRes, itemRes, productRes, movementRes] = await Promise.all([
         fetch("/api/invoices", { credentials: "include" }),
         fetch("/api/invoice-items", { credentials: "include" }),
         fetch("/api/products", { credentials: "include" }),
+        fetch("/api/stock-movements", { credentials: "include" }),
       ]);
 
       const invoices = invRes.ok ? await invRes.json() : [];
       const invoiceItems = itemRes.ok ? await itemRes.json() : [];
       const products = productRes.ok ? await productRes.json() : [];
+      const stockMovements = movementRes.ok ? await movementRes.json() : [];
       const normalizedInvoiceItems = Array.isArray(invoiceItems) ? invoiceItems : [];
+      const normalizedStockMovements = Array.isArray(stockMovements) ? stockMovements : [];
 
       const toStr = (...values: any[]) => {
         for (const value of values) {
@@ -135,6 +138,22 @@ export default function CurrentAccountDetailPage() {
         productUnitById.set(String(p.id), String(p.unit || "metre"));
       }
 
+      const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const movementsByInvoiceNo = new Map<string, any[]>();
+      for (const mv of normalizedStockMovements) {
+        const description = String(mv.description || "");
+        if (!description) continue;
+        const movementType = String(mv.movement_type || "").toLowerCase();
+        if (movementType !== "in" && movementType !== "out") continue;
+        const numbers = description.match(/INV-\d{4}-\d+/gi) || [];
+        for (const no of numbers) {
+          const key = no.trim();
+          const existing = movementsByInvoiceNo.get(key) || [];
+          existing.push(mv);
+          movementsByInvoiceNo.set(key, existing);
+        }
+      }
+
       const accountInvoices = (Array.isArray(invoices) ? invoices : []).filter((inv: any) => {
         const invAccountId = inv.account_id || inv.current_account_id || inv.accountId || inv.currentAccountId;
         return String(invAccountId || "") === String(account.id);
@@ -158,17 +177,39 @@ export default function CurrentAccountDetailPage() {
         const invDesc = inv.description || "-";
 
         if (invItems.length === 0) {
+          const matchedMovements = (movementsByInvoiceNo.get(String(invNo)) || []).filter((mv: any) => {
+            const mvType = String(mv.movement_type || "").toLowerCase();
+            return invType === "PURCHASE" ? mvType === "in" : mvType === "out";
+          });
+
+          if (matchedMovements.length > 0) {
+            return matchedMovements.map((mv: any) => {
+              const pid = toStr(mv.product_id, mv.productId);
+              const quantity = Math.abs(toNum(mv.quantity, 0));
+              const unitPrice = toNum(mv.price, mv.unit_price, mv.unitPrice);
+              const lineTotal = quantity * unitPrice;
+              return {
+                date: invDate,
+                invoiceNo: invNo,
+                description: invDesc,
+                productName: toStr(productNameById.get(pid), pid) || "-",
+                unit: toStr(productUnitById.get(pid), "metre"),
+                quantity,
+                documentType: "Fatura",
+                debit: invType === "SALES" ? lineTotal : 0,
+                credit: invType === "PURCHASE" ? lineTotal : 0,
+              };
+            });
+          }
+
           const total = mapAmount(inv.total_amount ?? inv.total ?? inv.amount);
-          const fallbackProduct = invDesc && invDesc !== "-" ? invDesc : "-";
-          const fallbackUnit = toStr(inv.unit, inv.unit_name) || (fallbackProduct === "-" ? "-" : "metre");
-          const fallbackQty = toNum(inv.quantity, inv.qty, inv.amount_quantity);
           return [{
             date: invDate,
             invoiceNo: invNo,
             description: invDesc,
-            productName: fallbackProduct,
-            unit: fallbackUnit,
-            quantity: fallbackQty > 0 ? fallbackQty : (fallbackProduct === "-" ? 0 : 1),
+            productName: "-",
+            unit: "-",
+            quantity: 0,
             documentType: "Fatura",
             debit: invType === "SALES" ? total : 0,
             credit: invType === "PURCHASE" ? total : 0,
