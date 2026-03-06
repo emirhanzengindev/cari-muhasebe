@@ -40,6 +40,7 @@ type AccountStatementPdfRow = {
   unit?: string;
   quantity?: number;
   unitPrice?: number;
+  currency?: string;
   documentType?: string;
   debit?: number;
   credit?: number;
@@ -182,6 +183,7 @@ export const downloadAccountStatementPdf = async (
     const debit = Number(tx.debit ?? 0);
     const credit = Number(tx.credit ?? 0);
     running += debit - credit;
+    const currencySymbol = tx.currency === "USD" ? "$" : "₺";
 
     return [
       trDate(tx.date),
@@ -191,6 +193,7 @@ export const downloadAccountStatementPdf = async (
       sanitize(tx.unit || "-"),
       String(tx.quantity ?? "-"),
       tx.unitPrice !== undefined && tx.unitPrice !== null ? trNumber(tx.unitPrice) : "-",
+      tx.currency ? currencySymbol : "-",
       sanitize(tx.documentType || tx.type || "-"),
       debit ? trNumber(debit) : "-",
       credit ? trNumber(credit) : "-",
@@ -213,6 +216,7 @@ export const downloadAccountStatementPdf = async (
       "Birim",
       "Miktar",
       "Fiyat",
+      "Para",
       "Evrak Turu",
       "Borc",
       "Alacak",
@@ -229,10 +233,11 @@ export const downloadAccountStatementPdf = async (
       4: { cellWidth: 12 }, // Birim
       5: { cellWidth: 10 }, // Miktar
       6: { cellWidth: 14 }, // Fiyat
-      7: { cellWidth: 20 }, // Evrak Turu
-      8: { cellWidth: 14 }, // Borc
-      9: { cellWidth: 14 }, // Alacak
-      10: { cellWidth: 14 }, // Kalan
+      7: { cellWidth: 10 }, // Para
+      8: { cellWidth: 20 }, // Evrak Turu
+      9: { cellWidth: 14 }, // Borc
+      10: { cellWidth: 14 }, // Alacak
+      11: { cellWidth: 14 }, // Kalan
     },
     theme: "grid",
   });

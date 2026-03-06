@@ -54,7 +54,7 @@ export default function NewInvoice() {
   ) => {
     setItems((prev) =>
       prev.map((item, i) =>
-        i === index ? { ...item, [field]: value } : item
+        i === index ? { ...item, [field]: field === "quantity" || field === "unitPrice" ? Number(String(value).replace(",", ".")) : value } : item
       )
     );
   };
@@ -336,7 +336,8 @@ export default function NewInvoice() {
                 </label>
                 <input
                   type="number"
-                  min={1}
+                  min={0}
+                  step="0.01"
                   value={item.quantity}
                   onChange={(e) =>
                     updateItem(
