@@ -439,7 +439,28 @@ export async function POST(request: NextRequest) {
         );
       }
     }
+if (invoiceData.items && Array.isArray(invoiceData.items)) {
+  const items = invoiceData.items;
 
+  const { error: itemsError } = await supabase
+    .from("invoice_items")
+    .insert(
+      items.map((item: any) => ({
+        invoice_id: data.id,
+        product_id: item.product_id,
+        product_name: item.product_name,
+        unit: item.unit,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total: item.quantity * item.unit_price,
+        tenant_id: resolvedTenantId,
+      }))
+    );
+
+  if (itemsError) {
+    console.error("INVOICE ITEMS ERROR:", itemsError);
+  }
+}
     return Response.json(data);
   } catch (error) {
     console.error('Error creating invoice:', error);
