@@ -34,7 +34,8 @@ const resolveTenantIdForUser = (user: any): string => {
 
 const getNextSequentialInvoiceNumber = async (
   client: any,
-  tenantCandidates: string[]
+  tenantCandidates: string[],
+  accountId?: string
 ): Promise<string> => {
   const { data, error } = await client
     .from("invoices")
@@ -66,6 +67,14 @@ const getNextSequentialInvoiceNumber = async (
     }
   }
 
+  // Filter by account if provided (for per-account sequential numbering)
+  if (accountId) {
+    rows = rows.filter((row: any) => {
+      const rowAccountId = row.account_id || row.current_account_id || row.accountId || row.currentAccountId;
+      return String(rowAccountId || "") === String(accountId);
+    });
+  }
+
   let max = 0;
   for (const row of rows) {
     const candidates = [
@@ -77,10 +86,11 @@ const getNextSequentialInvoiceNumber = async (
 
     for (const candidate of candidates) {
       const raw = String(candidate ?? "").trim();
-      if (!/^\d+$/.test(raw)) continue;
-      const parsed = Number.parseInt(raw, 10);
-      if (Number.isFinite(parsed) && parsed > max) {
-        max = parsed;
+      if (/^\d+$/.test(raw)) {
+        const parsed = Number.parseInt(raw, 10);
+        if (Number.isFinite(parsed) && parsed > max) {
+          max = parsed;
+        }
       }
     }
   }
@@ -242,9 +252,13 @@ export async function POST(request: NextRequest) {
 
     // Add tenant_id from authenticated user/tenant context
     invoiceWithTenant.tenant_id = resolvedTenantId;
+    
+    // Generate sequential invoice number per account
+    const targetAccountId = invoiceWithTenant.account_id || invoiceWithTenant.current_account_id;
     const generatedInvoiceNumber = await getNextSequentialInvoiceNumber(
       supabase,
-      tenantCandidates
+      tenantCandidates,
+      targetAccountId
     );
     invoiceWithTenant.invoice_number = generatedInvoiceNumber;
     invoiceWithTenant.invoice_no = generatedInvoiceNumber;

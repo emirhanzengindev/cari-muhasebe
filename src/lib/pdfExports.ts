@@ -174,9 +174,9 @@ export const downloadAccountStatementPdf = async (
   doc.setFontSize(10);
   doc.text(`Tarih: ${today}`, 105, 25, { align: "center" });
   doc.setFontSize(10);
-  doc.text("Hesap Bilgileri:", 25, 40);
-  doc.text(`Unvan: ${sanitize(account.name)}`, 25, 50);
-  doc.text(`Tarih Araligi: ${sanitize(rangeText)}`, 25, 60);
+  doc.text("Hesap Bilgileri:", 14, 40);
+  doc.text(`Unvan: ${sanitize(account.name)}`, 14, 50);
+  doc.text(`Tarih Araligi: ${sanitize(rangeText)}`, 14, 60);
 
   let running = 0;
   const body = (datedRows || []).map((tx) => {
@@ -223,23 +223,24 @@ export const downloadAccountStatementPdf = async (
       "Kalan",
     ]],
     body: statementRows,
-    styles: { fontSize: 8, cellPadding: 1.8, overflow: "ellipsize" },
+    styles: { fontSize: 7, cellPadding: 1.5, overflow: "ellipsize" },
     headStyles: { fillColor: [210, 210, 210], textColor: 0 },
     columnStyles: {
-      0: { cellWidth: 18 }, // Tarih
-      1: { cellWidth: 12 }, // Fatura No (daha da daraltildi)
-      2: { cellWidth: 44 }, // Aciklama (genisletildi)
-      3: { cellWidth: 24 }, // Urun
-      4: { cellWidth: 12 }, // Birim
-      5: { cellWidth: 10 }, // Miktar
-      6: { cellWidth: 14 }, // Fiyat
-      7: { cellWidth: 10 }, // Para
-      8: { cellWidth: 20 }, // Evrak Turu
-      9: { cellWidth: 14 }, // Borc
-      10: { cellWidth: 14 }, // Alacak
-      11: { cellWidth: 14 }, // Kalan
+      0: { cellWidth: 16 }, // Tarih
+      1: { cellWidth: 14 }, // Fatura No
+      2: { cellWidth: 38 }, // Aciklama
+      3: { cellWidth: 20 }, // Urun
+      4: { cellWidth: 10 }, // Birim
+      5: { cellWidth: 9 },  // Miktar
+      6: { cellWidth: 12 }, // Fiyat
+      7: { cellWidth: 8 },  // Para
+      8: { cellWidth: 18 }, // Evrak Turu
+      9: { cellWidth: 13 }, // Borc
+      10: { cellWidth: 13 }, // Alacak
+      11: { cellWidth: 13 }, // Kalan
     },
     theme: "grid",
+    margin: { left: 10, right: 10 },
   });
 
   const finalY = (doc as any).lastAutoTable?.finalY ?? 95;
