@@ -191,7 +191,7 @@ export const downloadAccountStatementPdf = async (
       sanitize(tx.description || "-"),
       sanitize(tx.productName || "-"),
       sanitize(tx.unit || "-"),
-      String(tx.quantity ?? "-"),
+      tx.quantity !== undefined && tx.quantity !== null ? trNumber(tx.quantity) : "-",
       tx.unitPrice !== undefined && tx.unitPrice !== null ? trNumber(tx.unitPrice) : "-",
       tx.currency ? currencySymbol : "-",
       sanitize(tx.documentType || tx.type || "-"),
@@ -228,11 +228,11 @@ export const downloadAccountStatementPdf = async (
     columnStyles: {
       0: { cellWidth: 16 }, // Tarih
       1: { cellWidth: 14 }, // Fatura No
-      2: { cellWidth: 38 }, // Aciklama
-      3: { cellWidth: 20 }, // Urun
+      2: { cellWidth: 30 }, // Aciklama (kisaltildi)
+      3: { cellWidth: 22 }, // Urun
       4: { cellWidth: 10 }, // Birim
-      5: { cellWidth: 9 },  // Miktar
-      6: { cellWidth: 12 }, // Fiyat
+      5: { cellWidth: 11 }, // Miktar (tam gorsun)
+      6: { cellWidth: 14 }, // Fiyat (tam gorsun)
       7: { cellWidth: 8 },  // Para
       8: { cellWidth: 18 }, // Evrak Turu
       9: { cellWidth: 13 }, // Borc
