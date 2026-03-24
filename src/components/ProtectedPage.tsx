@@ -24,7 +24,7 @@ export default function ProtectedPage({
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) {
-        router.replace("/signin");
+        router.replace("/auth/signin");
       } else {
         setLoading(false);
       }
