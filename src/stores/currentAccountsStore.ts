@@ -40,7 +40,17 @@ const makeApiRequest = async (
   });
 
   if (!res.ok) {
-    throw new Error(await res.text());
+    const rawBody = await res.text();
+    let message = rawBody;
+
+    try {
+      const parsedBody = JSON.parse(rawBody);
+      message = parsedBody?.error || parsedBody?.message || rawBody;
+    } catch {
+      // Keep the plain response text when the API does not return JSON.
+    }
+
+    throw new Error(message || `API request failed: ${res.status}`);
   }
 
   return res.json();
@@ -72,6 +82,7 @@ interface CurrentAccountState {
       matches?: Array<{ invoiceId: string; amount: number }>;
     }
   ) => Promise<void>;
+  deleteCollection: (accountId: string, movementId: string) => Promise<void>;
 }
 
 export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) => ({
@@ -161,6 +172,21 @@ export const useCurrentAccountsStore = create<CurrentAccountState>((set, get) =>
         direction: normalizedDirection,
       }),
     });
+
+    if (!result?.account) return;
+
+    set((state) => ({
+      accounts: state.accounts.map((a) =>
+        a.id === accountId ? normalizeAccount(result.account) : a
+      ),
+    }));
+  },
+
+  deleteCollection: async (accountId, movementId) => {
+    const result = await makeApiRequest(
+      `/current-accounts/${accountId}/collections/${movementId}`,
+      { method: "DELETE" }
+    );
 
     if (!result?.account) return;
 

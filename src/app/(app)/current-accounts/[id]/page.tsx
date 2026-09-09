@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { downloadAccountStatementPdf } from "@/lib/pdfExports";
 import { useCurrentAccountsStore } from "@/stores/currentAccountsStore";
+import { Trash2 } from "lucide-react";
 
 type Account = {
   id: string;
@@ -22,7 +23,7 @@ type Account = {
 export default function CurrentAccountDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { addCollection } = useCurrentAccountsStore();
+  const { addCollection, deleteCollection } = useCurrentAccountsStore();
   const [account, setAccount] = useState<Account | null>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [movements, setMovements] = useState<any[]>([]);
@@ -34,6 +35,8 @@ export default function CurrentAccountDetailPage() {
   const [savingCollection, setSavingCollection] = useState(false);
   const [collectionError, setCollectionError] = useState("");
   const [collectionSuccess, setCollectionSuccess] = useState("");
+  const [movementToDelete, setMovementToDelete] = useState<any | null>(null);
+  const [deletingMovementId, setDeletingMovementId] = useState<string | null>(null);
   const [collectionType, setCollectionType] = useState<"COLLECTION" | "PAYMENT">("COLLECTION");
   const [collectionAmount, setCollectionAmount] = useState(0);
   const [collectionDate, setCollectionDate] = useState(new Date().toISOString().split("T")[0]);
@@ -367,6 +370,24 @@ export default function CurrentAccountDetailPage() {
     }
   };
 
+  const handleDeleteMovement = async () => {
+    if (!movementToDelete?.id || !account?.id) return;
+
+    setCollectionError("");
+
+    try {
+      setDeletingMovementId(movementToDelete.id);
+      await deleteCollection(account.id, movementToDelete.id);
+      await refreshAccountData();
+      setMovementToDelete(null);
+      setCollectionSuccess("Tahsilat başarıyla silindi.");
+    } catch (err: any) {
+      setCollectionError(err?.message || "Tahsilat silinemedi.");
+    } finally {
+      setDeletingMovementId(null);
+    }
+  };
+
   return (
     <div className="py-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -413,6 +434,118 @@ export default function CurrentAccountDetailPage() {
       </div>
       {collectionSuccess && <p className="text-green-700 text-sm">{collectionSuccess}</p>}
       {pdfError && <p className="text-red-600 text-sm">{pdfError}</p>}
+
+      <div className="bg-white shadow rounded p-4">
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <h2 className="text-lg font-semibold">Tahsilat/Odeme Hareketleri</h2>
+          <span className="text-sm text-gray-500">{movements.length} kayıt</span>
+        </div>
+
+        {movements.length === 0 ? (
+          <p className="text-sm text-gray-500">Henüz tahsilat veya ödeme kaydı bulunmuyor.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-gray-500">
+                  <th className="px-3 py-2 font-medium">Tür</th>
+                  <th className="px-3 py-2 font-medium">Tarih</th>
+                  <th className="px-3 py-2 font-medium">Tutar</th>
+                  <th className="px-3 py-2 font-medium">Açıklama</th>
+                  <th className="px-3 py-2 text-right font-medium">İşlem</th>
+                </tr>
+              </thead>
+              <tbody>
+                {movements.map((movement) => (
+                  <tr key={movement.id} className="border-b last:border-b-0">
+                    <td className="px-3 py-3">
+                      {movement.movement_type === "COLLECTION" ? "Tahsilat" : movement.movement_type === "PAYMENT" ? "Ödeme" : "Düzeltme"}
+                    </td>
+                    <td className="px-3 py-3">
+                      {movement.document_date
+                        ? new Date(movement.document_date).toLocaleDateString("tr-TR")
+                        : "-"}
+                    </td>
+                    <td className="px-3 py-3 font-medium">
+                      {Number(movement.amount ?? 0).toLocaleString("tr-TR", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })} {movement.currency || "TRY"}
+                    </td>
+                    <td className="px-3 py-3 text-gray-600">{movement.description || "-"}</td>
+                    <td className="px-3 py-3 text-right">
+                      <button
+                        type="button"
+                        title="Tahsilatı sil"
+                        aria-label="Tahsilatı sil"
+                        onClick={() => {
+                          setCollectionError("");
+                          setCollectionSuccess("");
+                          setMovementToDelete(movement);
+                        }}
+                        disabled={deletingMovementId !== null}
+                        className="inline-flex items-center gap-1 rounded border border-red-200 px-2 py-1 text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Trash2 size={15} />
+                        Sil
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {movementToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-collection-title"
+            className="w-full max-w-md rounded bg-white p-5 space-y-4"
+          >
+            <div>
+              <h2 id="delete-collection-title" className="text-lg font-semibold">
+                Bu tahsilatı silmek istediğinize emin misiniz?
+              </h2>
+              <p className="mt-2 text-sm text-gray-600">
+                Tutar: {Number(movementToDelete.amount ?? 0).toLocaleString("tr-TR", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })} {movementToDelete.currency || "TRY"}
+              </p>
+              <p className="text-sm text-gray-600">
+                Tarih: {movementToDelete.document_date
+                  ? new Date(movementToDelete.document_date).toLocaleDateString("tr-TR")
+                  : "-"}
+              </p>
+            </div>
+
+            {collectionError && <p className="text-red-600 text-sm">{collectionError}</p>}
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setMovementToDelete(null)}
+                className="px-3 py-2 rounded border"
+                disabled={deletingMovementId !== null}
+              >
+                İptal
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteMovement}
+                disabled={deletingMovementId !== null}
+                className="px-3 py-2 rounded bg-red-600 text-white disabled:opacity-60"
+              >
+                {deletingMovementId ? "Siliniyor..." : "Evet, sil"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showCollectionModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
