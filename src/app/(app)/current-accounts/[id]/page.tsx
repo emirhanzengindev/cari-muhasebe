@@ -26,6 +26,7 @@ export default function CurrentAccountDetailPage() {
   const { addCollection, deleteCollection } = useCurrentAccountsStore();
   const [account, setAccount] = useState<Account | null>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [accountInvoices, setAccountInvoices] = useState<any[]>([]);
   const [movements, setMovements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
@@ -69,6 +70,18 @@ export default function CurrentAccountDetailPage() {
         });
         setTransactions(accountTx);
 
+        const invoiceRes = await fetch("/api/invoices", { credentials: "include" });
+        const invoiceBody = invoiceRes.ok ? await invoiceRes.json() : [];
+        const accountInvoiceRows = (Array.isArray(invoiceBody) ? invoiceBody : []).filter((invoice: any) => {
+          const invoiceAccountId =
+            invoice.account_id ||
+            invoice.current_account_id ||
+            invoice.accountId ||
+            invoice.currentAccountId;
+          return String(invoiceAccountId || "") === String(params.id || "");
+        });
+        setAccountInvoices(accountInvoiceRows);
+
         const mvRes = await fetch(`/api/current-accounts/${params.id}/collections`, {
           credentials: "include",
         });
@@ -97,6 +110,21 @@ export default function CurrentAccountDetailPage() {
       </div>
     );
   }
+
+  const openInvoices = accountInvoices.filter((invoice) => {
+    const status = String(invoice.status || "").toUpperCase();
+    return !invoice.is_draft && !["PAID", "CANCELLED", "CANCELED"].includes(status);
+  });
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const overdueInvoices = openInvoices.filter((invoice) => {
+    const rawDueDate = invoice.due_date || invoice.dueDate;
+    if (!rawDueDate) return false;
+    const dueDate = new Date(String(rawDueDate));
+    return Number.isFinite(dueDate.getTime()) && dueDate < today;
+  });
+  const invoiceTotal = (invoice: any) =>
+    Number(invoice.total_amount ?? invoice.total ?? invoice.amount ?? 0) || 0;
 
   const handleDownloadStatement = async () => {
     if (!account) return;
@@ -434,6 +462,31 @@ export default function CurrentAccountDetailPage() {
       </div>
       {collectionSuccess && <p className="text-green-700 text-sm">{collectionSuccess}</p>}
       {pdfError && <p className="text-red-600 text-sm">{pdfError}</p>}
+
+      <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_10px_30px_rgba(28,55,75,0.05)]">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Vade durumu</h2>
+            <p className="mt-1 text-sm text-[var(--muted)]">Bu cariye ait açık faturaların kısa özeti.</p>
+          </div>
+          <Link href="/invoices" className="text-sm font-semibold text-[var(--brand)] hover:text-[var(--brand-strong)]">Faturalara git</Link>
+        </div>
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-xl bg-[var(--surface-muted)] p-4"><p className="text-xs text-[var(--muted)]">Açık fatura</p><p className="mt-1 text-xl font-bold">{openInvoices.length}</p></div>
+          <div className="rounded-xl bg-[#fff3f1] p-4"><p className="text-xs text-[var(--muted)]">Vadesi geçen</p><p className="mt-1 text-xl font-bold text-red-700">{overdueInvoices.length}</p></div>
+          <div className="rounded-xl bg-[#f4fbf8] p-4"><p className="text-xs text-[var(--muted)]">Açık toplam</p><p className="mt-1 text-xl font-bold text-[var(--success)]">{openInvoices.reduce((sum, invoice) => sum + invoiceTotal(invoice), 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TRY</p></div>
+        </div>
+        {overdueInvoices.length > 0 && (
+          <div className="mt-4 space-y-2">
+            {overdueInvoices.slice(0, 3).map((invoice) => (
+              <div key={invoice.id} className="flex items-center justify-between rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm">
+                <span>{invoice.invoice_number || invoice.invoice_no || "Fatura"}</span>
+                <span className="font-semibold text-red-700">{invoiceTotal(invoice).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TRY</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="bg-white shadow rounded p-4">
         <div className="flex items-center justify-between gap-3 mb-4">
