@@ -196,7 +196,7 @@ export default function Reports() {
                       {report.productName || "Ürün"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {report.productId || "-"}
+                      {report.sku || "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {report.quantitySold ?? 0}

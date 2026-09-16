@@ -71,48 +71,63 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // In a real implementation, this would query the database with proper aggregations
     switch(reportType) {
       case 'sales-by-product': {
-        // Define type for invoice items
-        type InvoiceItemRow = {
-          product_id: string;
-          products: { name: string } | null;
-          quantity: number;
-          price: number;
-          total_price: number;
-        };
-        
-        // Query products and their sales data
-        const { data: invoiceItems } = await supabase
+        const { data: salesInvoices, error: invoiceError } = await supabase
+          .from('invoices')
+          .select('id, invoice_type, type, is_draft')
+          .in('tenant_id', tenantCandidates);
+
+        if (invoiceError) throw invoiceError;
+
+        const salesInvoiceIds = (salesInvoices || [])
+          .filter((invoice: any) => {
+            const type = String(invoice.invoice_type || invoice.type || 'SALES').toUpperCase();
+            return !invoice.is_draft && ['SALES', 'SALE'].includes(type);
+          })
+          .map((invoice: any) => invoice.id)
+          .filter(Boolean);
+
+        if (salesInvoiceIds.length === 0) break;
+
+        const { data: invoiceItems, error: itemError } = await supabase
           .from('invoice_items')
-          .select(`
-            product_id,
-            products(name),
-            quantity,
-            price,
-            total_price
-          `)
+          .select('*')
           .in('tenant_id', tenantCandidates)
-          .order('created_at', { ascending: false });
-        
-        if (invoiceItems && invoiceItems.length > 0) {
-          // Group by product and calculate totals
-          const groupedData = (invoiceItems as unknown as InvoiceItemRow[]).reduce((acc: SalesByProduct[], item: InvoiceItemRow) => {
-            const existing = acc.find(p => p.productId === item.product_id);
-            if (existing) {
-              existing.totalSales += item.total_price;
-              existing.quantitySold += item.quantity;
-            } else {
-              acc.push({
-                productId: item.product_id,
-                productName: item.products?.name || 'Unknown Product',
-                totalSales: item.total_price,
-                quantitySold: item.quantity
-              });
-            }
-            return acc;
-          }, []);
-          
-          reportData = groupedData;
+          .in('invoice_id', salesInvoiceIds);
+
+        if (itemError) throw itemError;
+
+        const productIds = Array.from(new Set((invoiceItems || []).map((item: any) => item.product_id).filter(Boolean)));
+        const productById = new Map<string, any>();
+        if (productIds.length > 0) {
+          const { data: products } = await supabase
+            .from('products')
+            .select('id, name, sku')
+            .in('tenant_id', tenantCandidates)
+            .in('id', productIds);
+          for (const product of products || []) productById.set(String(product.id), product);
         }
+
+        const grouped = new Map<string, any>();
+        for (const item of invoiceItems || []) {
+          const product = productById.get(String(item.product_id || ''));
+          const key = String(item.product_id || item.product_name || 'unknown');
+          const quantity = Number(item.quantity || 0) || 0;
+          const totalSales = Number(item.total_price ?? item.total ?? (quantity * Number(item.price ?? item.unit_price ?? 0))) || 0;
+          const existing = grouped.get(key);
+          if (existing) {
+            existing.quantitySold += quantity;
+            existing.totalSales += totalSales;
+          } else {
+            grouped.set(key, {
+              productId: item.product_id || null,
+              productName: product?.name || item.product_name || 'Ürün adı yok',
+              sku: product?.sku || item.sku || null,
+              quantitySold: quantity,
+              totalSales,
+            });
+          }
+        }
+        reportData = Array.from(grouped.values());
         break;
       }
         
