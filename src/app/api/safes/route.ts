@@ -22,19 +22,9 @@ export async function GET() {
       );
     }
 
-    const tenantId =
-      (typeof user.app_metadata?.tenant_id === 'string'
-        ? user.app_metadata.tenant_id
-        : null) ||
-      (typeof user.user_metadata?.tenant_id === 'string'
-        ? user.user_metadata.tenant_id
-        : null) ||
-      user.id;
-
     const { data, error } = await supabase
       .from('safes')
-      .select('*')
-      .in('tenant_id', Array.from(new Set([tenantId, user.id])));
+      .select('*');
 
     // tablo yoksa → boş array
     if (

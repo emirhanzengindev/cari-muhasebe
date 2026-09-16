@@ -64,7 +64,6 @@ const updateFinanceAccountBalance = async (
     .from(payload.table)
     .select("id, balance, tenant_id")
     .eq("id", payload.id)
-    .in("tenant_id", payload.tenantCandidates)
     .maybeSingle();
 
   if (accountError) {
@@ -82,8 +81,7 @@ const updateFinanceAccountBalance = async (
       balance: nextBalance,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", payload.id)
-    .in("tenant_id", payload.tenantCandidates);
+    .eq("id", payload.id);
 
   if (updateError) {
     throw new Error(updateError.message);
