@@ -670,18 +670,18 @@ export default function Dashboard() {
   
   // Authenticated user dashboard
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-full">
       {/* Dashboard Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4">
+      <header className="mb-8 overflow-hidden rounded-2xl border border-[var(--line)] bg-[#173b4a] shadow-[0_16px_35px_rgba(23,59,74,0.12)]">
+        <div className="px-6 py-7 sm:px-8 sm:py-9">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3">
-              <Package className="h-8 w-8 text-blue-600" />
-              <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+              <Package className="h-8 w-8 text-[#d9f1f1]" />
+              <h1 className="text-2xl font-bold text-white">Dashboard</h1>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="hidden items-center space-x-4 sm:flex">
               <span className="text-gray-600">Hoş geldiniz, {user?.email || user?.name || 'Kullanıcı'}!</span>
-              <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e7c88a] font-medium text-[#173b4a]">
                 {(user?.name?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()}
               </div>
             </div>
@@ -690,7 +690,7 @@ export default function Dashboard() {
       </header>
       
       {/* Quick Stats */}
-      <section className="container mx-auto px-4 py-8">
+      <section className="mx-auto max-w-[1500px]">
         {summaryError && (
           <div className="mb-6 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {summaryError}
@@ -702,7 +702,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Toplam Cari</CardTitle>
@@ -758,7 +758,7 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Toplam Alacak</CardTitle>
@@ -804,13 +804,13 @@ export default function Dashboard() {
         </div>
         
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <Card className="col-span-2">
             <CardHeader>
               <CardTitle>Hızlı Eylemler</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <Link href="/current-accounts/new">
                   <Button className="w-full justify-start" variant="outline">
                     <Users className="mr-2 h-4 w-4" />

@@ -5,6 +5,21 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import TenantSwitcher from "@/components/TenantSwitcher";
+import type { LucideIcon } from "lucide-react";
+import {
+  BarChart3,
+  Boxes,
+  Building2,
+  CircleDollarSign,
+  FileText,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  ShoppingCart,
+  UserRound,
+} from "lucide-react";
 
 export default function MainLayout({
   children,
@@ -40,75 +55,79 @@ export default function MainLayout({
     return null;
   }
 
-  const navigation = [
-    { name: "Ana Sayfa", href: "/", icon: "A" },
-    { name: "Cari Hesaplar", href: "/current-accounts", icon: "C" },
-    { name: "Stok Yonetimi", href: "/inventory", icon: "S" },
-    { name: "Faturalar", href: "/invoices", icon: "F" },
-    { name: "Hizli Satis", href: "/quick-sales", icon: "H" },
-    { name: "Finans", href: "/finance", icon: "$" },
-    { name: "Raporlar", href: "/reports", icon: "R" },
+  const navigation: { name: string; href: string; icon: LucideIcon }[] = [
+    { name: "Ana Sayfa", href: "/", icon: LayoutDashboard },
+    { name: "Cari Hesaplar", href: "/current-accounts", icon: Building2 },
+    { name: "Stok Yonetimi", href: "/inventory", icon: Boxes },
+    { name: "Faturalar", href: "/invoices", icon: FileText },
+    { name: "Hizli Satis", href: "/quick-sales", icon: ShoppingCart },
+    { name: "Finans", href: "/finance", icon: CircleDollarSign },
+    { name: "Raporlar", href: "/reports", icon: BarChart3 },
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-[var(--background)]">
       <div
         className={`${sidebarOpen ? "w-64" : "w-0 md:w-20"} ${
           isMobile && !sidebarOpen ? "hidden" : "block"
-        } bg-white shadow-md transition-all duration-300 ease-in-out overflow-hidden fixed md:relative z-50 h-full`}
+        } bg-[#122b3a] text-slate-200 shadow-[8px_0_30px_rgba(18,43,58,0.08)] transition-all duration-300 ease-in-out overflow-hidden fixed md:relative z-50 h-full`}
       >
         <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center justify-between px-4 py-5 border-b border-white/10">
             {sidebarOpen ? (
-              <h1 className="text-xl font-bold text-blue-600">On Muhasebe</h1>
+              <div className="flex items-center gap-3 whitespace-nowrap">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#d9f1f1] text-[#122b3a]"><CircleDollarSign size={20} /></div>
+                <div><h1 className="text-sm font-bold tracking-wide text-white">On Muhasebe</h1><p className="mt-0.5 text-[10px] uppercase tracking-[0.18em] text-slate-400">Business OS</p></div>
+              </div>
             ) : (
-              <h1 className="text-xl font-bold text-blue-600 mx-auto">P-A</h1>
+              <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-xl bg-[#d9f1f1] text-[#122b3a]"><CircleDollarSign size={20} /></div>
             )}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-gray-500 hover:text-gray-700 md:hidden"
+              className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-white md:hidden"
+              aria-label={sidebarOpen ? "Menuyu kapat" : "Menuyu ac"}
             >
-              {sidebarOpen ? "<<" : ">>"}
+              {sidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
             </button>
           </div>
 
-          <nav className="flex-1 px-2 py-4 overflow-y-auto">
-            <ul className="space-y-1">
+          <nav className="flex-1 overflow-y-auto px-3 py-6">
+            <p className={`${sidebarOpen ? "px-3" : "text-center"} mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500`}>Workspace</p>
+            <ul className="space-y-1.5">
               {navigation.map((item) => (
                 <li key={item.name}>
+                  {(() => { const Icon = item.icon; const active = pathname === item.href; return (
                   <Link
                     href={item.href}
-                    className={`flex items-center p-3 rounded-lg ${
-                      pathname === item.href
-                        ? "bg-blue-100 text-blue-600"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
+                    title={!sidebarOpen ? item.name : undefined}
+                    className={`group flex items-center rounded-xl px-3 py-3 text-sm font-medium transition-all ${active ? "bg-[#d9f1f1] text-[#122b3a] shadow-sm" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}
                     onClick={() => isMobile && setSidebarOpen(false)}
                   >
-                    <span className="text-xl">{item.icon}</span>
-                    {sidebarOpen && <span className="ml-3 font-medium">{item.name}</span>}
+                    <Icon size={19} strokeWidth={active ? 2.4 : 2} />
+                    {sidebarOpen && <span className="ml-3 whitespace-nowrap">{item.name}</span>}
                   </Link>
+                  ); })()}
                 </li>
               ))}
             </ul>
           </nav>
 
-          <div className="p-4 border-t">
-            <div className="flex items-center justify-between">
+          <div className="border-t border-white/10 p-3">
+            <div className={`flex items-center ${sidebarOpen ? "justify-between" : "justify-center"} rounded-xl bg-white/5 p-2`}>
               <div className="flex items-center">
-                <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#e7c88a] text-sm font-bold text-[#122b3a]">
                   {user?.name?.charAt(0) || "U"}
                 </div>
                 {sidebarOpen && (
                   <div className="ml-3">
-                    <p className="text-sm font-medium">{user?.email || user?.name || "Kullanici"}</p>
-                    <p className="text-xs text-gray-500">Hesabiniz</p>
+                    <p className="max-w-[135px] truncate text-xs font-semibold text-white">{user?.email || user?.name || "Kullanici"}</p>
+                    <p className="mt-0.5 text-[11px] text-slate-400">Hesabiniz</p>
                   </div>
                 )}
               </div>
               <div className="relative">
-                <button onClick={logout} className="text-gray-500 hover:text-gray-700">
-                  Cikis
+                <button onClick={logout} className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-white" title="Cikis yap" aria-label="Cikis yap">
+                  <LogOut size={17} />
                 </button>
               </div>
             </div>
@@ -119,32 +138,37 @@ export default function MainLayout({
       {!sidebarOpen && (
         <button
           onClick={() => setSidebarOpen(true)}
-          className="fixed top-4 left-4 z-50 p-2 bg-blue-600 text-white rounded-md shadow-lg md:hidden"
+          className="fixed left-4 top-4 z-50 rounded-xl bg-[#122b3a] p-3 text-white shadow-lg md:hidden"
+          aria-label="Menuyu ac"
         >
-          Menu
+          <Menu size={19} />
         </button>
       )}
 
       {sidebarOpen && isMobile && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          className="fixed inset-0 z-40 bg-[#122b3a]/50 backdrop-blur-sm md:hidden"
           onClick={() => setSidebarOpen(false)}
         ></div>
       )}
 
-      <div className="flex-1 flex flex-col overflow-hidden md:ml-0 transition-all duration-300">
-        <header className="bg-white shadow-sm z-30">
-          <div className="flex items-center justify-between p-4">
-            <h2 className="text-lg font-semibold text-gray-800">
+      <div className="flex flex-1 flex-col overflow-hidden transition-all duration-300 md:ml-0">
+        <header className="z-30 border-b border-[var(--line)] bg-[var(--surface)]/95 backdrop-blur">
+          <div className="flex min-h-[76px] items-center justify-between px-5 py-4 sm:px-8">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--brand)]">On Muhasebe</p>
+              <h2 className="mt-1 text-xl font-bold tracking-tight text-[#182230]">
               {navigation.find((item) => item.href === pathname)?.name || "Ana Sayfa"}
-            </h2>
-            <div className="flex items-center space-x-4">
+              </h2>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="hidden items-center gap-2 text-xs text-[var(--muted)] sm:flex"><UserRound size={15} /><span>Calisma alani</span></div>
               <TenantSwitcher />
             </div>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 bg-gray-50">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-[var(--background)] p-5 sm:p-8">{children}</main>
       </div>
     </div>
   );
