@@ -91,7 +91,8 @@ export async function POST(request: NextRequest) {
     }
 
     const payload = {
-      ...body,
+      name: String(body.name).trim(),
+      balance: Number.isFinite(Number(body.balance)) ? Number(body.balance) : 0,
       tenant_id:
         (typeof user.app_metadata?.tenant_id === 'string'
           ? user.app_metadata.tenant_id

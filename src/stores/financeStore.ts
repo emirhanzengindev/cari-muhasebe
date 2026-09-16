@@ -117,7 +117,9 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
         }));
       }
     } catch (error) {
-      set({ error: 'Failed to add safe' });
+      set({
+        error: error instanceof Error ? error.message : 'Kasa eklenemedi',
+      });
     }
   },
 
