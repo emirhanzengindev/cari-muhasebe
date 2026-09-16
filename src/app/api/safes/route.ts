@@ -22,10 +22,19 @@ export async function GET() {
       );
     }
 
+    const tenantId =
+      (typeof user.app_metadata?.tenant_id === 'string'
+        ? user.app_metadata.tenant_id
+        : null) ||
+      (typeof user.user_metadata?.tenant_id === 'string'
+        ? user.user_metadata.tenant_id
+        : null) ||
+      user.id;
+
     const { data, error } = await supabase
       .from('safes')
       .select('*')
-      .eq('tenant_id', user.id);
+      .in('tenant_id', Array.from(new Set([tenantId, user.id])));
 
     // tablo yoksa → boş array
     if (
@@ -83,7 +92,14 @@ export async function POST(request: NextRequest) {
 
     const payload = {
       ...body,
-      tenant_id: user.id,
+      tenant_id:
+        (typeof user.app_metadata?.tenant_id === 'string'
+          ? user.app_metadata.tenant_id
+          : null) ||
+        (typeof user.user_metadata?.tenant_id === 'string'
+          ? user.user_metadata.tenant_id
+          : null) ||
+        user.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };

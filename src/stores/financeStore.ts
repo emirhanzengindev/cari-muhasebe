@@ -104,6 +104,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   },
 
   addSafe: async (safeData) => {
+    set({ error: null });
     try {
       const newSafe = await makeApiRequest('/safes', {
         method: 'POST',

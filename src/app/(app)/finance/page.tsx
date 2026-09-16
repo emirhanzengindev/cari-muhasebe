@@ -16,11 +16,16 @@ export default function Finance() {
     fetchSafes, 
     fetchBanks, 
     fetchTransactions, 
-    fetchCheques 
+    fetchCheques,
+    addSafe,
   } = useFinanceStore();
   
   const { accounts, fetchAccounts } = useCurrentAccountsStore();
   const [activeTab, setActiveTab] = useState("overview");
+  const [showSafeModal, setShowSafeModal] = useState(false);
+  const [safeName, setSafeName] = useState("");
+  const [safeError, setSafeError] = useState("");
+  const [safeSaving, setSafeSaving] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -43,6 +48,32 @@ export default function Finance() {
 
   const formatCurrency = (amount: number) => {
     return `₺${amount.toFixed(2)}`;
+  };
+
+  const handleAddSafe = async () => {
+    const name = safeName.trim();
+    if (!name) {
+      setSafeError("Kasa adı zorunludur.");
+      return;
+    }
+
+    setSafeSaving(true);
+    setSafeError("");
+    try {
+      await addSafe({ name, tenantId: "" });
+      const storeError = useFinanceStore.getState().error;
+      if (storeError) {
+        setSafeError(storeError);
+        return;
+      }
+      setSafeName("");
+      setShowSafeModal(false);
+      await fetchSafes();
+    } catch (saveError) {
+      setSafeError(saveError instanceof Error ? saveError.message : "Kasa eklenemedi.");
+    } finally {
+      setSafeSaving(false);
+    }
   };
 
   if (loading) {
@@ -305,7 +336,13 @@ export default function Finance() {
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-medium text-gray-900">Kasa Hesapları</h2>
-            <button className="mt-3 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+              <button
+                onClick={() => {
+                  setSafeError("");
+                  setShowSafeModal(true);
+                }}
+                className="mt-3 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
               Kasa Ekle
             </button>
           </div>
@@ -574,6 +611,30 @@ export default function Finance() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {showSafeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="safe-modal-title">
+            <h2 id="safe-modal-title" className="text-lg font-semibold text-gray-900">Yeni Kasa Hesabı</h2>
+            <p className="mt-1 text-sm text-gray-500">Fiziksel nakit paranızı takip etmek için bir kasa oluşturun.</p>
+            <label className="mt-5 block text-sm font-medium text-gray-700" htmlFor="safe-name">Kasa adı</label>
+            <input
+              id="safe-name"
+              autoFocus
+              value={safeName}
+              onChange={(event) => setSafeName(event.target.value)}
+              onKeyDown={(event) => event.key === "Enter" && void handleAddSafe()}
+              placeholder="Örn. Merkez Kasa"
+              className="mt-2 h-11 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-soft)]"
+            />
+            {safeError && <p className="mt-2 text-sm text-red-600">{safeError}</p>}
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowSafeModal(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50" disabled={safeSaving}>İptal</button>
+              <button type="button" onClick={handleAddSafe} className="rounded-lg bg-[var(--brand)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--brand-strong)] disabled:opacity-50" disabled={safeSaving}>{safeSaving ? "Kaydediliyor..." : "Kasa Oluştur"}</button>
+            </div>
           </div>
         </div>
       )}
