@@ -7,14 +7,15 @@ type Params = {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Params }
+  { params }: { params: Promise<Params> }
 ) {
+  const { id } = await params;
   const supabase = await createServerSupabaseClientForRLS();
 
   const { data, error } = await supabase
     .from("warehouses")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (error) {
@@ -26,15 +27,16 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Params }
+  { params }: { params: Promise<Params> }
 ) {
+  const { id } = await params;
   const supabase = await createServerSupabaseClientForRLS();
   const body = await request.json();
 
   const { data, error } = await supabase
     .from("warehouses")
     .update(body)
-    .eq("id", params.id)
+    .eq("id", id)
     .select()
     .single();
 
@@ -47,14 +49,15 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Params }
+  { params }: { params: Promise<Params> }
 ) {
+  const { id } = await params;
   const supabase = await createServerSupabaseClientForRLS();
 
   const { error } = await supabase
     .from("warehouses")
     .delete()
-    .eq("id", params.id);
+    .eq("id", id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

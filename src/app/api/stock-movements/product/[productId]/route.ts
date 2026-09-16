@@ -7,15 +7,16 @@ type Params = {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Params }
+  { params }: { params: Promise<Params> }
 ) {
   try {
+    const { productId } = await params;
     const supabase = await createServerSupabaseClientForRLS();
 
     const { data, error } = await supabase
       .from("stock_movements")
       .select("*")
-      .eq("product_id", params.productId)
+      .eq("product_id", productId)
       .order("created_at", { ascending: false });
 
     if (error) {
