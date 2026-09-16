@@ -73,10 +73,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       case 'sales-by-product': {
         const { data: salesInvoices, error: invoiceError } = await supabase
           .from('invoices')
-          .select('id, invoice_type, type, is_draft')
+          .select('*')
           .in('tenant_id', tenantCandidates);
 
-        if (invoiceError) throw invoiceError;
+        if (invoiceError) {
+          return Response.json(
+            { error: 'Sales invoices could not be read', details: invoiceError.message, code: invoiceError.code },
+            { status: 500 }
+          );
+        }
 
         const salesInvoiceIds = (salesInvoices || [])
           .filter((invoice: any) => {
@@ -94,16 +99,24 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           .in('tenant_id', tenantCandidates)
           .in('invoice_id', salesInvoiceIds);
 
-        if (itemError) throw itemError;
+        if (itemError) {
+          return Response.json(
+            { error: 'Invoice items could not be read', details: itemError.message, code: itemError.code },
+            { status: 500 }
+          );
+        }
 
         const productIds = Array.from(new Set((invoiceItems || []).map((item: any) => item.product_id).filter(Boolean)));
         const productById = new Map<string, any>();
         if (productIds.length > 0) {
-          const { data: products } = await supabase
+          const { data: products, error: productError } = await supabase
             .from('products')
-            .select('id, name, sku')
+            .select('*')
             .in('tenant_id', tenantCandidates)
             .in('id', productIds);
+          if (productError) {
+            console.warn('Product lookup skipped for sales report:', productError.message);
+          }
           for (const product of products || []) productById.set(String(product.id), product);
         }
 

@@ -58,14 +58,15 @@ export const useReportStore = create<ReportState>((set, get) => ({
       });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch sales by product report');
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.details || body?.error || 'Failed to fetch sales by product report');
       }
       
       const data = await response.json();
       
       set({ salesByProduct: data, loading: false });
     } catch (error) {
-      set({ error: 'Failed to fetch sales by product report', loading: false });
+      set({ error: error instanceof Error ? error.message : 'Failed to fetch sales by product report', loading: false });
     }
   },
 
