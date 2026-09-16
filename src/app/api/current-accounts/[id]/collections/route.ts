@@ -208,9 +208,6 @@ export async function POST(
       account_id: id,
       description: body.description || (movementType === "PAYMENT" ? "Ödeme" : "Tahsilat"),
       date: body.documentDate || body.document_date || new Date().toISOString().split("T")[0],
-      tenant_id: resolvedTenantId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     };
 
     if (paymentMethod === "CASH") {
@@ -227,8 +224,12 @@ export async function POST(
     if (transactionError) {
       console.error("SUPABASE ERROR (POST collection finance transaction):", transactionError);
       return NextResponse.json(
-        { error: "Cari hareket oluştu ancak finans işlemi kaydedilemedi." },
-        { status: 500 }
+        {
+          error: "Cari hareket oluÅŸtu ancak finans iÅŸlemi kaydedilemedi.",
+          details: transactionError.message,
+          code: transactionError.code,
+        },
+        { status: transactionError.code === "42501" ? 403 : 500 }
       );
     }
 
