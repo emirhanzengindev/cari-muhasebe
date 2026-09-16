@@ -22,10 +22,19 @@ export async function GET() {
       )
     }
 
+    const tenantId =
+      (typeof user.app_metadata?.tenant_id === 'string'
+        ? user.app_metadata.tenant_id
+        : null) ||
+      (typeof user.user_metadata?.tenant_id === 'string'
+        ? user.user_metadata.tenant_id
+        : null) ||
+      user.id;
+
     const { data, error } = await supabase
       .from('banks')
       .select('*')
-      .eq('tenant_id', user.id)
+      .in('tenant_id', Array.from(new Set([tenantId, user.id])))
 
     // tablo yoksa → boş array
     if (
@@ -37,10 +46,9 @@ export async function GET() {
 
     if (error) {
       console.error('SUPABASE GET banks error:', error)
-      return Response.json(
-        { error: error.message },
-        { status: 500 }
-      )
+      return Response.json([], {
+        headers: { 'x-data-warning': 'banks-read-failed' },
+      })
     }
 
     return Response.json(data ?? [])

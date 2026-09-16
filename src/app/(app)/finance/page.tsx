@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useFinanceStore } from "@/stores/financeStore";
 import { useCurrentAccountsStore } from "@/stores/currentAccountsStore";
+import { AlertCircle, CircleDollarSign } from "lucide-react";
 
 export default function Finance() {
   const { 
@@ -52,7 +53,7 @@ export default function Finance() {
     );
   }
 
-  if (error) {
+  if (error && loading) {
     return (
       <div className="py-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -75,16 +76,36 @@ export default function Finance() {
   }
 
   return (
-    <div className="py-6">
+    <div className="min-h-full">
+      {error && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+          <div>
+            <p className="font-semibold">Finans verilerinde uyarı</p>
+            <p className="mt-1">Bazı hesaplar yüklenemedi. Mevcut finans verileri görüntüleniyor.</p>
+          </div>
+        </div>
+      )}
+
+      <div className="mb-8 rounded-2xl border border-[var(--line)] bg-[#173b4a] px-6 py-7 text-white shadow-[0_16px_35px_rgba(23,59,74,0.12)] sm:px-8">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#a8d5d5]">Nakit akışı</p>
+            <h1 className="mt-2 text-2xl font-bold">Finans</h1>
+            <p className="mt-2 max-w-xl text-sm text-slate-300">Kasa, banka ve günlük para hareketlerini tek merkezden takip edin.</p>
+          </div>
+          <div className="hidden h-12 w-12 items-center justify-center rounded-xl bg-[#d9f1f1] text-[#173b4a] sm:flex"><CircleDollarSign size={24} /></div>
+        </div>
+      </div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Finans</h1>
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">Finans Merkezi</h1>
         <p className="mt-1 text-sm text-gray-500">Nakit, banka hesaplarınızı ve işlemleri yönetin</p>
       </div>
 
       {/* Tabs */}
       <div className="mb-6">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
+        <div className="overflow-x-auto border-b border-[var(--line)]">
+          <nav className="-mb-px flex min-w-max gap-6">
             <button
               onClick={() => setActiveTab("overview")}
               className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
