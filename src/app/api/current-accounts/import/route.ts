@@ -7,7 +7,17 @@ type RawRow = Record<string, unknown>;
 const MAX_IMPORT_ROWS = 2000;
 
 const HEADER_ALIASES: Record<string, string[]> = {
-  name: ["name", "ad", "isim", "hesapadi", "hesapad", "hesap"],
+  name: [
+    "name",
+    "ad",
+    "isim",
+    "hesapadi",
+    "hesapad",
+    "hesap",
+    "cariunvan",
+    "cariadi",
+    "carihesapunvani",
+  ],
   phone: ["phone", "telefon", "tel", "gsm"],
   address: ["address", "adres"],
   tax_number: ["taxnumber", "taxno", "vergino", "verginumarasi"],
@@ -22,12 +32,12 @@ function normalizeHeader(value: string): string {
   return value
     .toLowerCase()
     .trim()
-    .replace(/ı/g, "i")
-    .replace(/ğ/g, "g")
-    .replace(/ş/g, "s")
-    .replace(/ç/g, "c")
-    .replace(/ö/g, "o")
-    .replace(/ü/g, "u")
+    .replace(/[ıİ]/g, "i")
+    .replace(/[ğĞ]/g, "g")
+    .replace(/[şŞ]/g, "s")
+    .replace(/[çÇ]/g, "c")
+    .replace(/[öÖ]/g, "o")
+    .replace(/[üÜ]/g, "u")
     .replace(/[^a-z0-9]/g, "");
 }
 
@@ -137,6 +147,22 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: `Tek seferde en fazla ${MAX_IMPORT_ROWS} satir import edilebilir.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    const headerNames = new Set(Object.keys(rows[0]).map(normalizeHeader));
+    const isMovementSheet =
+      headerNames.has("islemno") &&
+      headerNames.has("islemturu") &&
+      (headerNames.has("cariunvan") || headerNames.has("cariodu"));
+
+    if (isMovementSheet) {
+      return NextResponse.json(
+        {
+          error:
+            "Bu dosya cari hesap hareket tablosu. Cari Hesaplar ekraninda sadece hesap listesi sablonu yuklenebilir; fatura ve tahsilat hareketleri icin ayri hareket importu gerekir.",
         },
         { status: 400 }
       );
