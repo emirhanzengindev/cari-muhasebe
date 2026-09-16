@@ -163,6 +163,13 @@ export async function GET() {
       const status = String(invoice.status || "").toUpperCase();
       return !invoice.is_draft && !["PAID", "CANCELLED", "CANCELED"].includes(status);
     });
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const overdueInvoices = pendingInvoices.filter((invoice) => {
+      if (!invoice.due_date && !invoice.dueDate) return false;
+      const dueDate = new Date(String(invoice.due_date || invoice.dueDate));
+      return Number.isFinite(dueDate.getTime()) && dueDate < today;
+    });
 
     return NextResponse.json({
       totalAccounts: accountsResult.rows.length,
@@ -170,6 +177,11 @@ export async function GET() {
       monthlySales,
       pendingInvoicesCount: pendingInvoices.length,
       pendingInvoicesTotal: pendingInvoices.reduce(
+        (sum, invoice) => sum + toNumber(invoice.total_amount, invoice.total, invoice.amount),
+        0
+      ),
+      overdueInvoicesCount: overdueInvoices.length,
+      overdueInvoicesTotal: overdueInvoices.reduce(
         (sum, invoice) => sum + toNumber(invoice.total_amount, invoice.total, invoice.amount),
         0
       ),

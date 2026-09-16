@@ -18,6 +18,7 @@ const normalizeInvoice = (invoice: any): Invoice => ({
     '',
   invoiceType: invoice?.invoiceType ?? invoice?.invoice_type ?? invoice?.type ?? 'SALES',
   accountId: invoice?.accountId ?? invoice?.account_id ?? invoice?.current_account_id ?? '',
+  dueDate: invoice?.dueDate || invoice?.due_date ? toDate(invoice?.dueDate ?? invoice?.due_date) : undefined,
   totalAmount: Number(invoice?.totalAmount ?? invoice?.total_amount ?? invoice?.total ?? invoice?.amount ?? 0),
   subtotal: Number(invoice?.subtotal ?? invoice?.sub_total ?? 0),
   discount: Number(invoice?.discount ?? 0),

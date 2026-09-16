@@ -25,6 +25,8 @@ type DashboardSummary = {
   monthlySales: number;
   pendingInvoicesCount: number;
   pendingInvoicesTotal: number;
+  overdueInvoicesCount: number;
+  overdueInvoicesTotal: number;
   totalReceivable: number;
   totalDebt: number;
   netBalance: number;
@@ -123,6 +125,8 @@ export default function Dashboard() {
           monthlySales: 0,
           pendingInvoicesCount: 0,
           pendingInvoicesTotal: 0,
+          overdueInvoicesCount: 0,
+          overdueInvoicesTotal: 0,
           totalReceivable: 0,
           totalDebt: 0,
           netBalance: 0,
@@ -758,7 +762,7 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Toplam Alacak</CardTitle>
@@ -769,6 +773,21 @@ export default function Dashboard() {
                 {summaryLoading ? "..." : formatCurrency(summary?.totalReceivable ?? 0)}
               </div>
               <p className="text-xs text-muted-foreground">Cari hareket bakiyelerinden</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#fff3f1]">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Vadesi Geçenler</CardTitle>
+              <FileText className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-700">
+                {summaryLoading ? "..." : summary?.overdueInvoicesCount ?? 0}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {formatCurrency(summary?.overdueInvoicesTotal ?? 0)} açık bakiye
+              </p>
             </CardContent>
           </Card>
 

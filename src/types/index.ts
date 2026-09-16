@@ -101,6 +101,7 @@ export interface Invoice {
   invoiceNumber: string;
   invoiceType: 'SALES' | 'PURCHASE';
   date: Date;
+  dueDate?: Date;
   accountId: string;
   subtotal: number;
   discount: number;

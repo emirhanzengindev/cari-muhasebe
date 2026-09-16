@@ -24,6 +24,7 @@ export default function NewInvoice() {
   const [invoiceDate, setInvoiceDate] = useState(
     new Date().toISOString().split("T")[0]
   );
+  const [dueDate, setDueDate] = useState("");
   const [description, setDescription] = useState("");
   const [discount, setDiscount] = useState(0);
   const [currency, setCurrency] =
@@ -122,6 +123,7 @@ export default function NewInvoice() {
         invoiceNumber: "",
         invoiceType,
         date: new Date(invoiceDate),
+        dueDate: dueDate ? new Date(dueDate) : undefined,
         accountId: selectedAccount,
         subtotal,
         discount,
@@ -236,6 +238,20 @@ export default function NewInvoice() {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1" htmlFor="invoice-due-date">
+              Vade Tarihi <span className="text-gray-400">(opsiyonel)</span>
+            </label>
+            <input
+              id="invoice-due-date"
+              type="date"
+              value={dueDate}
+              min={invoiceDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full border rounded px-3 py-2"
+            />
           </div>
 
           <div>
