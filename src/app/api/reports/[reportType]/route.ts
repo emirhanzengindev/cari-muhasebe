@@ -73,14 +73,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       case 'sales-by-product': {
         const { data: salesInvoices, error: invoiceError } = await supabase
           .from('invoices')
-          .select('*')
+          .select('id, invoice_type, type, is_draft, tenant_id')
           .in('tenant_id', tenantCandidates);
 
         if (invoiceError) {
-          return Response.json(
-            { error: 'Sales invoices could not be read', details: invoiceError.message, code: invoiceError.code },
-            { status: 500 }
-          );
+          console.error('Product report invoice query failed:', invoiceError);
+          return Response.json({ error: 'Ürün raporu oluşturulamadı', code: 'PRODUCT_REPORT_FAILED' }, { status: 500 });
         }
 
         const salesInvoiceIds = (salesInvoices || [])
@@ -93,17 +91,30 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
         if (salesInvoiceIds.length === 0) break;
 
-        const { data: invoiceItems, error: itemError } = await supabase
+        let invoiceItems: any[] | null = null;
+        let itemError: any = null;
+        const itemQuery = await supabase
           .from('invoice_items')
-          .select('*')
+          .select('invoice_id, product_id, product_name, quantity, unit_price, total, tenant_id')
           .in('tenant_id', tenantCandidates)
           .in('invoice_id', salesInvoiceIds);
+        invoiceItems = itemQuery.data;
+        itemError = itemQuery.error;
 
         if (itemError) {
-          return Response.json(
-            { error: 'Invoice items could not be read', details: itemError.message, code: itemError.code },
-            { status: 500 }
-          );
+          console.warn('Product report optional product_name column unavailable; retrying:', itemError.message);
+          const fallback = await supabase
+            .from('invoice_items')
+            .select('invoice_id, product_id, quantity, unit_price, total, tenant_id')
+            .in('tenant_id', tenantCandidates)
+            .in('invoice_id', salesInvoiceIds);
+          invoiceItems = fallback.data;
+          itemError = fallback.error;
+        }
+
+        if (itemError) {
+          console.error('Product report invoice item query failed:', itemError);
+          return Response.json({ error: 'Ürün raporu oluşturulamadı', code: 'PRODUCT_REPORT_FAILED' }, { status: 500 });
         }
 
         const productIds = Array.from(new Set((invoiceItems || []).map((item: any) => item.product_id).filter(Boolean)));
@@ -111,7 +122,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         if (productIds.length > 0) {
           const { data: products, error: productError } = await supabase
             .from('products')
-            .select('*')
+            .select('id, name')
             .in('tenant_id', tenantCandidates)
             .in('id', productIds);
           if (productError) {
@@ -134,7 +145,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             grouped.set(key, {
               productId: item.product_id || null,
               productName: product?.name || item.product_name || 'Ürün adı yok',
-              sku: product?.sku || item.sku || null,
+              sku: item.sku || null,
               quantitySold: quantity,
               totalSales,
             });
