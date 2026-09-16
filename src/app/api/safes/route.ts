@@ -93,16 +93,6 @@ export async function POST(request: NextRequest) {
     const payload = {
       name: String(body.name).trim(),
       balance: Number.isFinite(Number(body.balance)) ? Number(body.balance) : 0,
-      tenant_id:
-        (typeof user.app_metadata?.tenant_id === 'string'
-          ? user.app_metadata.tenant_id
-          : null) ||
-        (typeof user.user_metadata?.tenant_id === 'string'
-          ? user.user_metadata.tenant_id
-          : null) ||
-        user.id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     };
 
     const { data, error } = await supabase
@@ -114,8 +104,8 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('SUPABASE POST safes error:', error);
       return Response.json(
-        { error: error.message },
-        { status: 500 }
+        { error: error.message, code: error.code },
+        { status: error.code === '42501' ? 403 : 500 }
       );
     }
 

@@ -39,7 +39,10 @@ const makeApiRequest = async (endpoint: string, options: RequestInit = {}) => {
   });
   
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    const body = await response.json().catch(() => null);
+    throw new Error(
+      body?.error || `API request failed: ${response.status} ${response.statusText}`
+    );
   }
   
   return response.json();
