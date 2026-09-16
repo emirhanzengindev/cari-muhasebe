@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { createServerSupabaseClient, getTenantIdFromJWT } from '@/lib/supabaseServer';
+import { createServerSupabaseClient } from '@/lib/supabaseServer';
 
 // Define types for the report data
 interface SalesByProduct {
@@ -27,20 +27,35 @@ interface AccountBalance {
   isActive: boolean;
 }
 
+const getTenantCandidates = (user: any): string[] => {
+  const appTenantId = typeof user?.app_metadata?.tenant_id === 'string'
+    ? user.app_metadata.tenant_id
+    : null;
+  const userTenantId = typeof user?.user_metadata?.tenant_id === 'string'
+    ? user.user_metadata.tenant_id
+    : null;
+
+  return Array.from(new Set([appTenantId, userTenantId, user?.id].filter(Boolean)));
+};
+
 // Placeholder API route for sales by product report
 export async function GET(request: NextRequest, { params }: { params: Promise<{ reportType: string }> }) {
   try {
     const { reportType } = await params;
     
-    const tenantId = await getTenantIdFromJWT();
-    if (!tenantId) {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
       return Response.json(
         { error: 'Tenant ID missing' },
         { status: 401 }
       );
     }
     
-    // Validate that tenantId is a proper UUID format
+    const tenantCandidates = getTenantCandidates(user);
+    const tenantId = tenantCandidates[0];
+
+    // Validate that the resolved tenant is a proper UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(tenantId)) {
       console.error('INVALID TENANT ID FORMAT:', tenantId);
@@ -49,8 +64,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         { status: 400 }
       );
     }
-    
-    const supabase = await createServerSupabaseClient();
     
     let reportData: any[] = [];
     
@@ -77,7 +90,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             price,
             total_price
           `)
-          .eq('tenant_id', tenantId)
+          .in('tenant_id', tenantCandidates)
           .order('created_at', { ascending: false });
         
         if (invoiceItems && invoiceItems.length > 0) {
@@ -105,12 +118,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         
       case 'monthly-profit-loss': {
         // Define type for invoice rows
-        type InvoiceRow = {
-          id: string;
-          total_amount: number;
-          invoice_type: string;
-          created_at: string;
-        };
+        type InvoiceRow = Record<string, any>;
         
         // Define type for monthly data
         type MonthlyData = {
@@ -124,27 +132,25 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         // Query invoices to calculate revenue and expenses
         const { data: invoices } = await supabase
           .from('invoices')
-          .select(`
-            id,
-            total_amount,
-            invoice_type,
-            created_at
-          `)
-          .eq('tenant_id', tenantId)
-          .order('created_at', { ascending: false });
+          .select('*')
+          .in('tenant_id', tenantCandidates)
+          .order('date', { ascending: false });
         
         if (invoices && invoices.length > 0) {
           // Group by month/year and calculate totals
           const monthlyData = (invoices as unknown as InvoiceRow[]).reduce((acc: MonthlyData[], invoice: InvoiceRow) => {
-            const date = new Date(invoice.created_at);
+            const date = new Date(invoice.date || invoice.invoice_date || invoice.created_at);
+            if (!Number.isFinite(date.getTime())) return acc;
             const monthYear = `${date.getMonth() + 1}/${date.getFullYear()}`;
+            const invoiceType = String(invoice.invoice_type || invoice.type || '').toUpperCase();
+            const total = Number(invoice.total_amount ?? invoice.total ?? invoice.amount ?? 0) || 0;
             
             const existing = acc.find(m => m.monthYear === monthYear);
             if (existing) {
-              if (invoice.invoice_type === 'SALES') {
-                existing.revenue += invoice.total_amount;
-              } else if (invoice.invoice_type === 'PURCHASE') {
-                existing.expenses += invoice.total_amount;
+              if (invoiceType === 'SALES') {
+                existing.revenue += total;
+              } else if (invoiceType === 'PURCHASE') {
+                existing.expenses += total;
               }
             } else {
               const monthNames = ["January", "February", "March", "April", "May", "June",
@@ -153,8 +159,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
               acc.push({
                 month: monthNames[date.getMonth()],
                 year: date.getFullYear(),
-                revenue: invoice.invoice_type === 'SALES' ? invoice.total_amount : 0,
-                expenses: invoice.invoice_type === 'PURCHASE' ? invoice.total_amount : 0,
+                revenue: invoiceType === 'SALES' ? total : 0,
+                expenses: invoiceType === 'PURCHASE' ? total : 0,
                 monthYear: monthYear
               });
             }
@@ -212,7 +218,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             created_at,
             updated_at
           `)
-          .eq('tenant_id', tenantId)
+          .in('tenant_id', tenantCandidates)
           .order('created_at', { ascending: false });
         
         if (accounts && accounts.length > 0) {
