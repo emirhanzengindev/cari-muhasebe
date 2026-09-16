@@ -176,16 +176,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
               return dateB.getTime() - dateA.getTime(); // Descending order
             })
             .slice(0, 6); // Limit to last 6 months
-        } else {
-          // Return mock data if no invoices exist
-          reportData = [
-            { month: "October", year: 2023, profit: 15000, revenue: 50000, expenses: 35000 },
-            { month: "September", year: 2023, profit: 12000, revenue: 45000, expenses: 33000 },
-            { month: "August", year: 2023, profit: 8000, revenue: 40000, expenses: 32000 },
-            { month: "July", year: 2023, profit: 10000, revenue: 38000, expenses: 28000 },
-            { month: "June", year: 2023, profit: 7000, revenue: 35000, expenses: 28000 },
-            { month: "May", year: 2023, profit: 9000, revenue: 37000, expenses: 28000 },
-          ];
+          } else {
+            reportData = [];
         }
         break;
       }

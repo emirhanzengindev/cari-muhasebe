@@ -2,28 +2,28 @@
 
 import { useState, useEffect } from "react";
 import { useReportStore } from "@/stores/reportStore";
-import { useInventoryStore } from "@/stores/inventoryStore";
 import { useCurrentAccountsStore } from "@/stores/currentAccountsStore";
 
 export default function Reports() {
   const { 
     monthlyProfitLoss, 
+    salesByProduct,
     loading, 
     error, 
-    fetchMonthlyProfitLoss 
+    fetchMonthlyProfitLoss,
+    fetchSalesByProduct,
   } = useReportStore();
   
-  const { products, fetchProducts } = useInventoryStore();
   const { accounts, fetchAccounts } = useCurrentAccountsStore();
   const [activeTab, setActiveTab] = useState("profitLoss");
 
   useEffect(() => {
     Promise.all([
       fetchMonthlyProfitLoss(),
-      fetchProducts(),
+      fetchSalesByProduct(),
       fetchAccounts()
     ]);
-  }, [fetchMonthlyProfitLoss, fetchProducts, fetchAccounts]);
+  }, [fetchMonthlyProfitLoss, fetchSalesByProduct, fetchAccounts]);
 
   const formatCurrency = (amount: number) => {
     return `₺${amount.toFixed(2)}`;
@@ -129,7 +129,13 @@ export default function Reports() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {monthlyProfitLoss.map((report, index) => (
+                {monthlyProfitLoss.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-500">
+                      Henüz fatura verisi bulunmuyor.
+                    </td>
+                  </tr>
+                ) : monthlyProfitLoss.map((report, index) => (
                   <tr key={index} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {report.month} {report.year}
@@ -178,19 +184,25 @@ export default function Reports() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {products.slice(0, 10).map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50">
+                {salesByProduct.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-500">
+                      Henüz ürün satış verisi bulunmuyor.
+                    </td>
+                  </tr>
+                ) : salesByProduct.slice(0, 10).map((report: any) => (
+                  <tr key={report.productId} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {product.name}
+                      {report.productName || "Ürün"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {product.sku || "-"}
+                      {report.productId || "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {Math.floor(Math.random() * 100)}
+                      {report.quantitySold ?? 0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency((product.sellPrice ?? 0) * Math.floor(Math.random() * 100))}
+                      {formatCurrency(Number(report.totalSales ?? 0))}
                     </td>
                   </tr>
                 ))}
@@ -222,7 +234,13 @@ export default function Reports() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {accounts.map((account) => (
+                {accounts.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="px-6 py-10 text-center text-sm text-gray-500">
+                      Henüz cari bakiye verisi bulunmuyor.
+                    </td>
+                  </tr>
+                ) : accounts.map((account) => (
                   <tr key={account.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {account.name}
