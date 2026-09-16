@@ -28,19 +28,32 @@ const readTenantRows = async (
   columns: string,
   tenantCandidates: string[]
 ) => {
-  const { data, error } = await supabase
-    .from(table)
-    .select(columns)
-    .in("tenant_id", tenantCandidates);
+  try {
+    const { data, error } = await supabase
+      .from(table)
+      .select(columns)
+      .in("tenant_id", tenantCandidates);
 
-  if (error) {
-    if (isMissingTableError(error)) {
-      return { rows: [], warning: `${table} tablosu henuz hazir degil.` };
+    if (error) {
+      if (isMissingTableError(error)) {
+        return { rows: [], warning: `${table} tablosu henuz hazir degil.` };
+      }
+
+      console.error(`Dashboard ${table} query error:`, error);
+      return {
+        rows: [],
+        warning: `${table} verisi okunamadi. Supabase RLS veya sema ayarini kontrol edin.`,
+      };
     }
-    throw error;
-  }
 
-  return { rows: data || [], warning: null };
+    return { rows: data || [], warning: null };
+  } catch (error) {
+    console.error(`Dashboard ${table} request error:`, error);
+    return {
+      rows: [],
+      warning: `${table} verisi okunamadi. Supabase baglantisini kontrol edin.`,
+    };
+  }
 };
 
 const toNumber = (...values: unknown[]) => {
