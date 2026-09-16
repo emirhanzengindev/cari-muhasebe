@@ -136,6 +136,7 @@ export interface Transaction {
   accountId?: string;
   safeId?: string;
   bankId?: string;
+  paymentMethod?: 'CASH' | 'BANK' | 'OTHER';
   description?: string;
   date: Date;
   tenantId: string;

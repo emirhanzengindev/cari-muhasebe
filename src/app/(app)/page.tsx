@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -16,12 +17,226 @@ import {
   TrendingUp
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { getSupabaseBrowser } from "@/lib/supabase";
+
+type DashboardSummary = {
+  totalAccounts: number;
+  stockValue: number;
+  monthlySales: number;
+  pendingInvoicesCount: number;
+  pendingInvoicesTotal: number;
+  totalReceivable: number;
+  totalDebt: number;
+  netBalance: number;
+  warnings?: string[];
+};
+
+type CurrentAccountOption = {
+  id: string;
+  name?: string;
+  isActive?: boolean;
+  is_active?: boolean;
+};
+
+type FinanceAccountOption = {
+  id: string;
+  name?: string;
+  balance?: number;
+};
+
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat("tr-TR", {
+    style: "currency",
+    currency: "TRY",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number.isFinite(amount) ? amount : 0);
 
 export default function Dashboard() {
   const { user, isLoading } = useAuth();
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState("");
+  const [accounts, setAccounts] = useState<CurrentAccountOption[]>([]);
+  const [safes, setSafes] = useState<FinanceAccountOption[]>([]);
+  const [banks, setBanks] = useState<FinanceAccountOption[]>([]);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentAccountId, setPaymentAccountId] = useState("");
+  const [paymentType, setPaymentType] = useState<"COLLECTION" | "PAYMENT">("COLLECTION");
+  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "BANK" | "OTHER">("CASH");
+  const [paymentSafeId, setPaymentSafeId] = useState("");
+  const [paymentBankId, setPaymentBankId] = useState("");
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split("T")[0]);
+  const [paymentDescription, setPaymentDescription] = useState("");
+  const [paymentSaving, setPaymentSaving] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
+  const [paymentSuccess, setPaymentSuccess] = useState("");
   
   // Memoize the component to prevent unnecessary re-renders
   console.log('DASHBOARD: Rendering with user:', !!user);
+
+  const activeAccounts = useMemo(
+    () =>
+      accounts.filter((account) => account.isActive ?? account.is_active ?? true),
+    [accounts]
+  );
+
+  const getAuthHeaders = useCallback(async (): Promise<Record<string, string>> => {
+    const supabase = getSupabaseBrowser();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) return {};
+    return { Authorization: `Bearer ${session.access_token}` };
+  }, []);
+
+  const fetchJson = useCallback(
+    async <T,>(endpoint: string, fallback: T): Promise<T> => {
+      const headers = await getAuthHeaders();
+      const response = await fetch(endpoint, {
+        headers,
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) return fallback;
+        throw new Error(await response.text());
+      }
+
+      return response.json();
+    },
+    [getAuthHeaders]
+  );
+
+  const loadDashboardData = useCallback(async () => {
+    if (!user) return;
+
+    setSummaryLoading(true);
+    setSummaryError("");
+    try {
+      const [summaryBody, accountsBody, safesBody, banksBody] = await Promise.all([
+        fetchJson<DashboardSummary>("/api/dashboard/summary", {
+          totalAccounts: 0,
+          stockValue: 0,
+          monthlySales: 0,
+          pendingInvoicesCount: 0,
+          pendingInvoicesTotal: 0,
+          totalReceivable: 0,
+          totalDebt: 0,
+          netBalance: 0,
+          warnings: [],
+        }),
+        fetchJson<CurrentAccountOption[]>("/api/current-accounts", []),
+        fetchJson<FinanceAccountOption[]>("/api/safes", []),
+        fetchJson<FinanceAccountOption[]>("/api/banks", []),
+      ]);
+
+      setSummary(summaryBody);
+      setAccounts(Array.isArray(accountsBody) ? accountsBody : []);
+      setSafes(Array.isArray(safesBody) ? safesBody : []);
+      setBanks(Array.isArray(banksBody) ? banksBody : []);
+    } catch (error) {
+      console.error("Dashboard data load error:", error);
+      setSummaryError("Dashboard verileri alınamadı.");
+    } finally {
+      setSummaryLoading(false);
+    }
+  }, [fetchJson, user]);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
+
+  useEffect(() => {
+    if (activeAccounts.length > 0 && !paymentAccountId) {
+      setPaymentAccountId(activeAccounts[0].id);
+    }
+  }, [activeAccounts, paymentAccountId]);
+
+  useEffect(() => {
+    if (safes.length > 0 && !paymentSafeId) {
+      setPaymentSafeId(safes[0].id);
+    }
+  }, [safes, paymentSafeId]);
+
+  useEffect(() => {
+    if (banks.length > 0 && !paymentBankId) {
+      setPaymentBankId(banks[0].id);
+    }
+  }, [banks, paymentBankId]);
+
+  const resetPaymentForm = () => {
+    setPaymentType("COLLECTION");
+    setPaymentMethod("CASH");
+    setPaymentAmount("");
+    setPaymentDate(new Date().toISOString().split("T")[0]);
+    setPaymentDescription("");
+    setPaymentError("");
+  };
+
+  const handleSavePayment = async () => {
+    setPaymentError("");
+    setPaymentSuccess("");
+
+    const amount = Number(paymentAmount);
+    if (!paymentAccountId) {
+      setPaymentError("Cari seçilmelidir.");
+      return;
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setPaymentError("Tutar 0'dan büyük olmalıdır.");
+      return;
+    }
+    if (paymentMethod === "CASH" && !paymentSafeId) {
+      setPaymentError("Nakit işlem için önce bir kasa hesabı seçin.");
+      return;
+    }
+    if (paymentMethod === "BANK" && !paymentBankId) {
+      setPaymentError("Banka işlem için önce bir banka hesabı seçin.");
+      return;
+    }
+
+    try {
+      setPaymentSaving(true);
+      const headers = {
+        ...(await getAuthHeaders()),
+        "Content-Type": "application/json",
+      };
+
+      const response = await fetch(`/api/current-accounts/${paymentAccountId}/collections`, {
+        method: "POST",
+        headers,
+        credentials: "include",
+        body: JSON.stringify({
+          movementType: paymentType,
+          direction: -1,
+          amount,
+          documentDate: paymentDate,
+          description: paymentDescription || undefined,
+          currency: "TRY",
+          paymentMethod,
+          safeId: paymentMethod === "CASH" ? paymentSafeId : undefined,
+          bankId: paymentMethod === "BANK" ? paymentBankId : undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error || "Tahsilat/ödeme kaydedilemedi.");
+      }
+
+      setShowPaymentModal(false);
+      resetPaymentForm();
+      setPaymentSuccess("Tahsilat/ödeme kaydedildi.");
+      await loadDashboardData();
+    } catch (error: any) {
+      setPaymentError(error?.message || "Tahsilat/ödeme kaydedilemedi.");
+    } finally {
+      setPaymentSaving(false);
+    }
+  };
   
   // Show loading state while checking auth
   if (isLoading) {
@@ -476,6 +691,17 @@ export default function Dashboard() {
       
       {/* Quick Stats */}
       <section className="container mx-auto px-4 py-8">
+        {summaryError && (
+          <div className="mb-6 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {summaryError}
+          </div>
+        )}
+        {paymentSuccess && (
+          <div className="mb-6 rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-700">
+            {paymentSuccess}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -483,8 +709,10 @@ export default function Dashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">24</div>
-              <p className="text-xs text-muted-foreground">+12% geçen aydan beri</p>
+              <div className="text-2xl font-bold">
+                {summaryLoading ? "..." : summary?.totalAccounts ?? 0}
+              </div>
+              <p className="text-xs text-muted-foreground">Aktif tenant cari kayıtları</p>
             </CardContent>
           </Card>
           
@@ -494,8 +722,10 @@ export default function Dashboard() {
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₺45.230</div>
-              <p className="text-xs text-muted-foreground">+5.3% geçen aydan beri</p>
+              <div className="text-2xl font-bold">
+                {summaryLoading ? "..." : formatCurrency(summary?.stockValue ?? 0)}
+              </div>
+              <p className="text-xs text-muted-foreground">Stok miktarı ve alış maliyeti</p>
             </CardContent>
           </Card>
           
@@ -505,8 +735,10 @@ export default function Dashboard() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₺124.560</div>
-              <p className="text-xs text-muted-foreground">+18% geçen aydan beri</p>
+              <div className="text-2xl font-bold">
+                {summaryLoading ? "..." : formatCurrency(summary?.monthlySales ?? 0)}
+              </div>
+              <p className="text-xs text-muted-foreground">Bu ayki satış faturaları</p>
             </CardContent>
           </Card>
           
@@ -516,8 +748,57 @@ export default function Dashboard() {
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">8</div>
-              <p className="text-xs text-muted-foreground">₺12.450 toplam</p>
+              <div className="text-2xl font-bold">
+                {summaryLoading ? "..." : summary?.pendingInvoicesCount ?? 0}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {formatCurrency(summary?.pendingInvoicesTotal ?? 0)} toplam
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Toplam Alacak</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-700">
+                {summaryLoading ? "..." : formatCurrency(summary?.totalReceivable ?? 0)}
+              </div>
+              <p className="text-xs text-muted-foreground">Cari hareket bakiyelerinden</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Toplam Borç</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-700">
+                {summaryLoading ? "..." : formatCurrency(summary?.totalDebt ?? 0)}
+              </div>
+              <p className="text-xs text-muted-foreground">Cari hareket bakiyelerinden</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Net Bakiye</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div
+                className={`text-2xl font-bold ${
+                  (summary?.netBalance ?? 0) >= 0 ? "text-green-700" : "text-red-700"
+                }`}
+              >
+                {summaryLoading ? "..." : formatCurrency(summary?.netBalance ?? 0)}
+              </div>
+              <p className="text-xs text-muted-foreground">Alacak eksi borç</p>
             </CardContent>
           </Card>
         </div>
@@ -529,11 +810,35 @@ export default function Dashboard() {
               <CardTitle>Hızlı Eylemler</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Link href="/current-accounts">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Link href="/current-accounts/new">
                   <Button className="w-full justify-start" variant="outline">
                     <Users className="mr-2 h-4 w-4" />
                     Yeni Cari Hesap
+                  </Button>
+                </Link>
+                <Button
+                  className="w-full justify-start"
+                  variant="outline"
+                  onClick={() => {
+                    setPaymentError("");
+                    setPaymentSuccess("");
+                    setShowPaymentModal(true);
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Tahsilat / Ödeme
+                </Button>
+                <Link href="/quick-sales">
+                  <Button className="w-full justify-start" variant="outline">
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    Hızlı Satış
+                  </Button>
+                </Link>
+                <Link href="/invoices/new">
+                  <Button className="w-full justify-start" variant="outline">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Yeni Fatura
                   </Button>
                 </Link>
                 <Link href="/inventory">
@@ -542,60 +847,230 @@ export default function Dashboard() {
                     Ürün Ekle
                   </Button>
                 </Link>
-                <Link href="/quick-sales">
-                  <Button className="w-full justify-start" variant="outline">
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    Hızlı Satış
-                  </Button>
-                </Link>
-                <Link href="/invoices">
-                  <Button className="w-full justify-start" variant="outline">
-                    <FileText className="mr-2 h-4 w-4" />
-                    Yeni Fatura
-                  </Button>
-                </Link>
               </div>
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader>
-              <CardTitle>Son Aktiviteler</CardTitle>
+              <CardTitle>Sistem Durumu</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-4 text-sm">
                 <div className="flex items-center">
                   <div className="bg-green-100 p-2 rounded-full mr-3">
                     <CheckCircle className="h-4 w-4 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Yeni müşteri eklendi</p>
-                    <p className="text-xs text-muted-foreground">2 dakika önce</p>
+                    <p className="font-medium">Dashboard gerçek veriden hesaplanıyor</p>
+                    <p className="text-xs text-muted-foreground">Cari, stok ve fatura tabloları</p>
                   </div>
                 </div>
                 <div className="flex items-center">
                   <div className="bg-blue-100 p-2 rounded-full mr-3">
-                    <ShoppingCart className="h-4 w-4 text-blue-600" />
+                    <FileText className="h-4 w-4 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Satış işlemi tamamlandı</p>
-                    <p className="text-xs text-muted-foreground">15 dakika önce</p>
+                    <p className="font-medium">Kasa hesapları</p>
+                    <p className="text-xs text-muted-foreground">
+                      {safes.length > 0 ? `${safes.length} kasa tanımlı` : "Henüz kasa hesabı tanımlanmadı"}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center">
                   <div className="bg-purple-100 p-2 rounded-full mr-3">
-                    <FileText className="h-4 w-4 text-purple-600" />
+                    <ShoppingCart className="h-4 w-4 text-purple-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Fatura oluşturuldu</p>
-                    <p className="text-xs text-muted-foreground">1 saat önce</p>
+                    <p className="font-medium">Banka hesapları</p>
+                    <p className="text-xs text-muted-foreground">
+                      {banks.length > 0 ? `${banks.length} banka hesabı tanımlı` : "Henüz banka hesabı bağlanmadı"}
+                    </p>
                   </div>
                 </div>
+                {(summary?.warnings || []).map((warning) => (
+                  <p key={warning} className="rounded bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                    {warning}
+                  </p>
+                ))}
               </div>
             </CardContent>
           </Card>
         </div>
       </section>
+
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dashboard-payment-title"
+            className="w-full max-w-xl rounded-lg bg-white p-6 shadow-lg"
+          >
+            <div className="mb-5">
+              <h2 id="dashboard-payment-title" className="text-lg font-semibold text-gray-900">
+                Tahsilat / Ödeme
+              </h2>
+              <p className="mt-1 text-sm text-gray-500">
+                Kayıt cari hareketlere işlenir; kasa veya banka seçilirse finans bakiyesi de güncellenir.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-sm font-medium text-gray-700">Cari</label>
+                <select
+                  value={paymentAccountId}
+                  onChange={(event) => setPaymentAccountId(event.target.value)}
+                  className="h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
+                >
+                  {activeAccounts.length === 0 ? (
+                    <option value="">Cari hesap bulunamadı</option>
+                  ) : (
+                    activeAccounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.name || "Adsız cari"}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">İşlem Türü</label>
+                <select
+                  value={paymentType}
+                  onChange={(event) => setPaymentType(event.target.value as "COLLECTION" | "PAYMENT")}
+                  className="h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
+                >
+                  <option value="COLLECTION">Tahsilat</option>
+                  <option value="PAYMENT">Ödeme</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Ödeme Yöntemi</label>
+                <select
+                  value={paymentMethod}
+                  onChange={(event) => setPaymentMethod(event.target.value as "CASH" | "BANK" | "OTHER")}
+                  className="h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
+                >
+                  <option value="CASH">Nakit</option>
+                  <option value="BANK">Banka</option>
+                  <option value="OTHER">Diğer</option>
+                </select>
+              </div>
+
+              {paymentMethod === "CASH" && (
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Kasa Hesabı</label>
+                  <select
+                    value={paymentSafeId}
+                    onChange={(event) => setPaymentSafeId(event.target.value)}
+                    className="h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
+                  >
+                    {safes.length === 0 ? (
+                      <option value="">Henüz kasa hesabı tanımlanmadı</option>
+                    ) : (
+                      safes.map((safe) => (
+                        <option key={safe.id} value={safe.id}>
+                          {safe.name || "Kasa"} - {formatCurrency(Number(safe.balance || 0))}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+              )}
+
+              {paymentMethod === "BANK" && (
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Banka Hesabı</label>
+                  <select
+                    value={paymentBankId}
+                    onChange={(event) => setPaymentBankId(event.target.value)}
+                    className="h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
+                  >
+                    {banks.length === 0 ? (
+                      <option value="">Henüz banka hesabı bağlanmadı</option>
+                    ) : (
+                      banks.map((bank) => (
+                        <option key={bank.id} value={bank.id}>
+                          {bank.name || "Banka"} - {formatCurrency(Number(bank.balance || 0))}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+              )}
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Tutar</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={paymentAmount}
+                  onChange={(event) => setPaymentAmount(event.target.value)}
+                  className="h-10 w-full rounded-md border border-gray-300 px-3 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Tarih</label>
+                <input
+                  type="date"
+                  value={paymentDate}
+                  onChange={(event) => setPaymentDate(event.target.value)}
+                  className="h-10 w-full rounded-md border border-gray-300 px-3 text-sm"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-sm font-medium text-gray-700">Açıklama</label>
+                <textarea
+                  value={paymentDescription}
+                  onChange={(event) => setPaymentDescription(event.target.value)}
+                  rows={3}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+
+            {paymentMethod === "BANK" && banks.length === 0 && (
+              <p className="mt-4 rounded bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                Banka entegrasyonu veya manuel banka hesabı henüz tanımlanmadı.
+              </p>
+            )}
+            {paymentMethod === "CASH" && safes.length === 0 && (
+              <p className="mt-4 rounded bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                Nakit işlem kaydetmek için önce finans bölümünde kasa hesabı tanımlayın.
+              </p>
+            )}
+            {paymentError && <p className="mt-4 text-sm text-red-600">{paymentError}</p>}
+
+            <div className="mt-6 flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowPaymentModal(false);
+                  resetPaymentForm();
+                }}
+                disabled={paymentSaving}
+              >
+                Vazgeç
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSavePayment}
+                disabled={paymentSaving || activeAccounts.length === 0}
+              >
+                {paymentSaving ? "Kaydediliyor..." : "Kaydet"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

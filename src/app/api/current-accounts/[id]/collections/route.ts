@@ -45,6 +45,51 @@ const resolveDirection = (movementType: string, direction?: number) => {
   return null;
 };
 
+const normalizePaymentMethod = (value: unknown) => {
+  const method = String(value || "").toUpperCase();
+  if (["CASH", "BANK", "OTHER"].includes(method)) return method as "CASH" | "BANK" | "OTHER";
+  return null;
+};
+
+const updateFinanceAccountBalance = async (
+  supabase: any,
+  payload: {
+    table: "safes" | "banks";
+    id: string;
+    tenantCandidates: string[];
+    amountDelta: number;
+  }
+) => {
+  const { data: account, error: accountError } = await supabase
+    .from(payload.table)
+    .select("id, balance, tenant_id")
+    .eq("id", payload.id)
+    .in("tenant_id", payload.tenantCandidates)
+    .maybeSingle();
+
+  if (accountError) {
+    throw new Error(accountError.message);
+  }
+
+  if (!account) {
+    throw new Error(payload.table === "safes" ? "Kasa hesabı bulunamadı." : "Banka hesabı bulunamadı.");
+  }
+
+  const nextBalance = Math.round((Number(account.balance || 0) + payload.amountDelta) * 100) / 100;
+  const { error: updateError } = await supabase
+    .from(payload.table)
+    .update({
+      balance: nextBalance,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", payload.id)
+    .in("tenant_id", payload.tenantCandidates);
+
+  if (updateError) {
+    throw new Error(updateError.message);
+  }
+};
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<Params> }
@@ -116,6 +161,26 @@ export async function POST(
     );
   }
 
+  const resolvedTenantId = resolveTenantIdForUser(user);
+  const tenantCandidates = Array.from(new Set([resolvedTenantId, user.id]));
+  const paymentMethod = normalizePaymentMethod(body.paymentMethod || body.payment_method);
+  const safeId = body.safeId || body.safe_id || null;
+  const bankId = body.bankId || body.bank_id || null;
+
+  if (paymentMethod === "CASH" && !safeId) {
+    return NextResponse.json(
+      { error: "Nakit işlem için kasa hesabı seçilmelidir." },
+      { status: 400 }
+    );
+  }
+
+  if (paymentMethod === "BANK" && !bankId) {
+    return NextResponse.json(
+      { error: "Banka işlem için banka hesabı seçilmelidir." },
+      { status: 400 }
+    );
+  }
+
   const matches = normalizeMatchPayload(body.matches);
   const { data, error } = await supabase.rpc("record_current_account_movement", {
     p_current_account_id: id,
@@ -132,6 +197,68 @@ export async function POST(
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  const shouldRecordFinanceTransaction = Boolean(paymentMethod);
+
+  if (shouldRecordFinanceTransaction) {
+    const transactionPayload: any = {
+      transaction_type: movementType === "PAYMENT" ? "PAYMENT" : "COLLECTION",
+      amount,
+      account_id: id,
+      description: body.description || (movementType === "PAYMENT" ? "Ödeme" : "Tahsilat"),
+      date: body.documentDate || body.document_date || new Date().toISOString().split("T")[0],
+      tenant_id: resolvedTenantId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    if (paymentMethod === "CASH") {
+      transactionPayload.safe_id = safeId;
+    }
+    if (paymentMethod === "BANK") {
+      transactionPayload.bank_id = bankId;
+    }
+
+    const { error: transactionError } = await supabase
+      .from("transactions")
+      .insert(transactionPayload);
+
+    if (transactionError) {
+      console.error("SUPABASE ERROR (POST collection finance transaction):", transactionError);
+      return NextResponse.json(
+        { error: "Cari hareket oluştu ancak finans işlemi kaydedilemedi." },
+        { status: 500 }
+      );
+    }
+
+    const amountDelta = movementType === "PAYMENT" ? -amount : amount;
+
+    try {
+      if (paymentMethod === "CASH") {
+        await updateFinanceAccountBalance(supabase, {
+          table: "safes",
+          id: safeId,
+          tenantCandidates,
+          amountDelta,
+        });
+      }
+
+      if (paymentMethod === "BANK") {
+        await updateFinanceAccountBalance(supabase, {
+          table: "banks",
+          id: bankId,
+          tenantCandidates,
+          amountDelta,
+        });
+      }
+    } catch (financeError: any) {
+      console.error("SUPABASE ERROR (collection finance balance update):", financeError);
+      return NextResponse.json(
+        { error: financeError?.message || "Finans hesabı güncellenemedi." },
+        { status: 500 }
+      );
+    }
   }
 
   const { data: updatedAccount, error: accountError } = await supabase
