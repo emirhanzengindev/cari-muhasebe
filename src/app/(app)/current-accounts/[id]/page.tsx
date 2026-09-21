@@ -187,6 +187,65 @@ export default function CurrentAccountDetailPage() {
         return String(invAccountId || "") === String(account.id);
       });
 
+      // Bir stok hareketi tek bir faturaya baglanmali: kullanilan hareketleri isaretliyoruz.
+      const usedStockMovementIds = new Set<string>();
+      const stockMovementTimeWindowMs = 5 * 60 * 1000;
+
+      // Eski faturalarda invoice_items kaydi hic olusmamis olabilir. Bu durumda urun/birim/
+      // miktar/fiyat bilgisi ayni fatura kaydi ile ayni anda olusan stok hareketlerinden
+      // kurtarilir. Eslestirme sadece hareketlerin toplami fatura toplamina birebir esitse
+      // kabul edilir, boylece borc/alacak/kalan tutarlari hicbir sekilde degismez.
+      const matchMovementsByCreationTime = (inv: any) => {
+        const invoiceCreatedAt = new Date(
+          String(inv.created_at || inv.date || inv.invoice_date || "")
+        ).getTime();
+        if (!Number.isFinite(invoiceCreatedAt)) return [];
+
+        const invoiceTotal = toNum(inv.total_amount ?? inv.total ?? inv.amount);
+        if (invoiceTotal <= 0) return [];
+
+        const expectedMovementType =
+          String(inv.invoice_type || inv.type || "SALES").toUpperCase() === "PURCHASE"
+            ? "in"
+            : "out";
+
+        const candidates = normalizedStockMovements
+          .filter((mv: any) => {
+            if (!mv?.id || usedStockMovementIds.has(String(mv.id))) return false;
+            if (String(mv.movement_type || "").toLowerCase() !== expectedMovementType) {
+              return false;
+            }
+            const movementCreatedAt = new Date(String(mv.created_at || "")).getTime();
+            if (!Number.isFinite(movementCreatedAt)) return false;
+            return (
+              movementCreatedAt >= invoiceCreatedAt &&
+              movementCreatedAt - invoiceCreatedAt <= stockMovementTimeWindowMs
+            );
+          })
+          .sort(
+            (a: any, b: any) =>
+              new Date(String(a.created_at)).getTime() - new Date(String(b.created_at)).getTime()
+          );
+
+        const matched: any[] = [];
+        let runningTotal = 0;
+
+        for (const mv of candidates) {
+          matched.push(mv);
+          runningTotal +=
+            Math.abs(toNum(mv.quantity, 0)) * toNum(mv.price, mv.unit_price, mv.unitPrice);
+
+          if (Math.abs(runningTotal - invoiceTotal) < 0.01) {
+            matched.forEach((row: any) => usedStockMovementIds.add(String(row.id)));
+            return matched;
+          }
+
+          if (runningTotal > invoiceTotal + 0.01) break;
+        }
+
+        return [];
+      };
+
       const invoiceRows = accountInvoices.flatMap((inv: any) => {
         const invItems = normalizedInvoiceItems.filter((it: any) => {
           const itemInvoiceId = toStr(
@@ -217,7 +276,35 @@ export default function CurrentAccountDetailPage() {
           });
 
           if (matchedMovements.length > 0) {
+            matchedMovements.forEach((mv: any) => {
+              if (mv?.id) usedStockMovementIds.add(String(mv.id));
+            });
+
             return matchedMovements.map((mv: any) => {
+              const pid = toStr(mv.product_id, mv.productId);
+              const quantity = Math.abs(toNum(mv.quantity, 0));
+              const unitPrice = toNum(mv.price, mv.unit_price, mv.unitPrice);
+              const lineTotal = quantity * unitPrice;
+              return {
+                date: invDate,
+                invoiceNo: invNo,
+                description: invDesc,
+                productName: toStr(productNameById.get(pid), pid) || "-",
+                unit: toStr(productUnitById.get(pid), "metre"),
+                quantity,
+                unitPrice,
+                documentType: "Fatura",
+                debit: invType === "SALES" ? lineTotal : 0,
+                credit: invType === "PURCHASE" ? lineTotal : 0,
+              };
+            });
+          }
+
+          // Aciklama fatura numarasini icermiyorsa satirlar olusma zamanina gore kurtarilir.
+          const timeMatchedMovements = matchMovementsByCreationTime(inv);
+
+          if (timeMatchedMovements.length > 0) {
+            return timeMatchedMovements.map((mv: any) => {
               const pid = toStr(mv.product_id, mv.productId);
               const quantity = Math.abs(toNum(mv.quantity, 0));
               const unitPrice = toNum(mv.price, mv.unit_price, mv.unitPrice);

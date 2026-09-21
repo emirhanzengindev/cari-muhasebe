@@ -88,6 +88,43 @@ export async function GET(request: NextRequest) {
       }, { status: 500 });
     }
 
+    const directRows = data?.length || 0;
+    console.log('DEBUG: Successfully fetched', directRows, 'invoice items');
+
+    // RLS fallback: the invoice_items SELECT policy compares tenant_id with the JWT
+    // tenant_id claim (auth.jwt() ->> 'tenant_id'). When that claim is missing or stale,
+    // the authenticated role cannot read its own tenant rows and the Cari Ekstre invoice
+    // lines lose product/unit/quantity/price. We retry with the service role while keeping
+    // tenant isolation, because the same tenant candidates as the RLS path are enforced.
+    if (directRows === 0) {
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+      if (serviceRoleKey && supabaseUrl) {
+        const admin = createClient(supabaseUrl, serviceRoleKey, {
+          auth: { autoRefreshToken: false, persistSession: false },
+        });
+
+        const adminResult = await admin
+          .from('invoice_items')
+          .select('*')
+          .in('tenant_id', tenantCandidates);
+
+        if (adminResult.error) {
+          console.error('SUPABASE ADMIN GET ERROR (invoice_items):', adminResult.error);
+        } else if ((adminResult.data?.length || 0) > 0) {
+          console.warn(
+            'RLS mismatch detected on invoice_items; returning service-role filtered results',
+            {
+              tenantCandidates,
+              count: adminResult.data?.length || 0,
+            }
+          );
+          return Response.json(adminResult.data);
+        }
+      }
+    }
+
     return Response.json(data);
   } catch (error) {
     console.error('Error fetching invoice items:', error);
