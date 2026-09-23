@@ -43,7 +43,7 @@ export default function SignIn() {
 
     if (data.session) {
       // Force a full navigation so middleware sees the fresh auth cookies immediately.
-      window.location.assign("/");
+      window.location.assign("/dashboard");
       return;
     }
 

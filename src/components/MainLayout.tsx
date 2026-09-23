@@ -56,7 +56,7 @@ export default function MainLayout({
   }
 
   const navigation: { name: string; href: string; icon: LucideIcon }[] = [
-    { name: "Ana Sayfa", href: "/", icon: LayoutDashboard },
+    { name: "Panel", href: "/dashboard", icon: LayoutDashboard },
     { name: "Cari Hesaplar", href: "/current-accounts", icon: Building2 },
     { name: "Stok Yonetimi", href: "/inventory", icon: Boxes },
     { name: "Faturalar", href: "/invoices", icon: FileText },

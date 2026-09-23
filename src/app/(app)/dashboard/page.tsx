@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -507,10 +508,13 @@ export default function Dashboard() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <article className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                <img
+                <Image
                   src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1200&q=80"
                   alt="Finans ve raporlama gostergeleri"
+                  width={1200}
+                  height={800}
                   className="h-48 w-full object-cover"
+                  sizes="(max-width: 1024px) 100vw, 33vw"
                   loading="lazy"
                 />
                 <div className="p-5">
@@ -522,10 +526,13 @@ export default function Dashboard() {
               </article>
 
               <article className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                <img
+                <Image
                   src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=80"
                   alt="Depo ve stok yonetimi"
+                  width={1200}
+                  height={800}
                   className="h-48 w-full object-cover"
+                  sizes="(max-width: 1024px) 100vw, 33vw"
                   loading="lazy"
                 />
                 <div className="p-5">
@@ -537,10 +544,13 @@ export default function Dashboard() {
               </article>
 
               <article className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                <img
+                <Image
                   src="https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1200&q=80"
                   alt="Satis ve fatura surecleri"
+                  width={1200}
+                  height={800}
                   className="h-48 w-full object-cover"
+                  sizes="(max-width: 1024px) 100vw, 33vw"
                   loading="lazy"
                 />
                 <div className="p-5">

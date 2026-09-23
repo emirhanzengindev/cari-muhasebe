@@ -16,9 +16,25 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Inter](https://fonts.google.com/specimen/Inter).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Routes
+
+The application is split into a public marketing area and a private application area.
+
+Public (indexable, no session required):
+
+- `/` – landing page
+- `/cari-hesap-programi`, `/stok-takip-programi`, `/fatura-programi`, `/tahsilat-takip-programi`
+- `/blog` and `/blog/<slug>` articles
+- `/auth/signin`, `/auth/signup` (marked `noindex`)
+
+Private (session required, marked `noindex`, excluded from `robots.txt` and the sitemap):
+
+- `/dashboard` (panel summary)
+- `/current-accounts`, `/inventory`, `/invoices`, `/quick-sales`, `/finance`, `/reports`
+
+Access rules live in `middleware.ts`; sitemap and robots are generated from `src/app/sitemap.ts` and `src/app/robots.ts`.
 
 ## Learn More
 
