@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest } from 'next/server'
 import { createServerSupabaseClientForRLS } from '@/lib/supabaseServer'
+import { resolveTenantCandidates, resolveTenantId } from '@/lib/tenant';
 
 /* =========================
    GET /api/categories
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase
       .from('categories')
       .select('*')
-      .eq('tenant_id', user.id)
+      .in('tenant_id', resolveTenantCandidates(user))
 
     if (error) {
       console.error('SUPABASE ERROR:', error)
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
     if (categoryData.isActive !== undefined)
       categoryWithTenant.is_active = categoryData.isActive
 
-    categoryWithTenant.tenant_id = user.id
+    categoryWithTenant.tenant_id = resolveTenantId(user) ?? user.id
     categoryWithTenant.created_at = new Date().toISOString()
     categoryWithTenant.updated_at = new Date().toISOString()
 

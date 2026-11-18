@@ -18,7 +18,6 @@ export default function robots(): MetadataRoute.Robots {
         "/quick-sales",
         "/finance",
         "/reports",
-        "/tenant-test",
         "/auth/",
         "/api/",
       ],

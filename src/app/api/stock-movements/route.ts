@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
+import { resolveTenantId } from '@/lib/tenant';
 
 const resolveStockValue = (product: any): number => {
   const raw =
@@ -36,18 +37,8 @@ const isMissingColumnErrorMessage = (message: string): boolean => {
   );
 };
 
-const resolveTenantIdForUser = (user: any): string => {
-  const appMetaTenantId =
-    typeof user?.app_metadata?.tenant_id === 'string'
-      ? user.app_metadata.tenant_id
-      : null;
-  const userMetaTenantId =
-    typeof user?.user_metadata?.tenant_id === 'string'
-      ? user.user_metadata.tenant_id
-      : null;
-
-  return appMetaTenantId || userMetaTenantId || user.id;
-};
+// Tenant comes only from app_metadata (see src/lib/tenant.ts).
+const resolveTenantIdForUser = (user: any): string => resolveTenantId(user) ?? user.id;
 
 export async function GET(request: NextRequest) {
   try {
@@ -241,13 +232,12 @@ export async function POST(request: NextRequest) {
           };
         }
 
-        if (admin && !tenantCandidates.includes(String(product.tenant_id))) {
-          console.warn('STOCK MOVEMENT TENANT MISMATCH:', {
-            productId: normalizedProductId,
-            normalizedProductId,
-            productTenantId: product.tenant_id,
-            tenantCandidates,
-          });
+        // The admin client bypasses RLS, so ownership must be enforced here.
+        if (!tenantCandidates.includes(String(product.tenant_id))) {
+          return {
+            ok: false,
+            message: `Product not found for id: ${normalizedProductId}`,
+          };
         }
 
         const detectedStockColumn = detectStockColumn(product);
@@ -282,7 +272,8 @@ export async function POST(request: NextRequest) {
             const { error: candidateError } = await client
               .from('products')
               .update(payload)
-              .eq('id', normalizedProductId);
+              .eq('id', normalizedProductId)
+              .in('tenant_id', tenantCandidates);
             if (!candidateError) {
               stockUpdateError = null;
               break;

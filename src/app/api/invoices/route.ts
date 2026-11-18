@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
+import { resolveTenantId } from '@/lib/tenant';
 
 const getMissingColumnName = (message?: string | null) => {
   if (!message) return null;
@@ -19,18 +20,8 @@ const getMissingColumnName = (message?: string | null) => {
   return null;
 };
 
-const resolveTenantIdForUser = (user: any): string => {
-  const appMetaTenantId =
-    typeof user?.app_metadata?.tenant_id === 'string'
-      ? user.app_metadata.tenant_id
-      : null;
-  const userMetaTenantId =
-    typeof user?.user_metadata?.tenant_id === 'string'
-      ? user.user_metadata.tenant_id
-      : null;
-
-  return appMetaTenantId || userMetaTenantId || user.id;
-};
+// Tenant comes only from app_metadata (see src/lib/tenant.ts).
+const resolveTenantIdForUser = (user: any): string => resolveTenantId(user) ?? user.id;
 
 const getNextSequentialInvoiceNumber = async (
   client: any,
@@ -122,7 +113,6 @@ export async function GET(request: NextRequest) {
     console.log('DEBUG: invoices tenant resolution', {
       userId: user.id,
       appMetaTenantId: user.app_metadata?.tenant_id ?? null,
-      userMetaTenantId: user.user_metadata?.tenant_id ?? null,
       resolvedTenantId,
       tenantCandidates
     });

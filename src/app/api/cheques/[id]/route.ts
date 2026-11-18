@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClientForRLS } from '@/lib/supabaseServer'
+import { resolveTenantCandidates } from '@/lib/tenant';
 
 /* =========================
    GET /api/cheques/[id]
@@ -25,7 +26,7 @@ export async function GET(
     .from('cheques')
     .select('*')
     .eq('id', id)
-    .eq('tenant_id', user.id)
+    .in('tenant_id', resolveTenantCandidates(user))
     .single()
 
   if (error) {
@@ -60,7 +61,7 @@ export async function PUT(
     .from('cheques')
     .update(body)
     .eq('id', id)
-    .eq('tenant_id', user.id)
+    .in('tenant_id', resolveTenantCandidates(user))
     .select()
     .single()
 
@@ -95,7 +96,7 @@ export async function DELETE(
     .from('cheques')
     .delete()
     .eq('id', id)
-    .eq('tenant_id', user.id)
+    .in('tenant_id', resolveTenantCandidates(user))
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

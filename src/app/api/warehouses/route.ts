@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest } from 'next/server';
 import { headers, cookies } from 'next/headers';
 import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
+import { resolveTenantCandidates, resolveTenantId } from '@/lib/tenant';
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase
       .from('warehouses')
       .select('*')
-      .eq('tenant_id', user.id)  // Filter by authenticated user's tenant ID
+      .in('tenant_id', resolveTenantCandidates(user))  // Filter by authenticated user's tenant ID
 
     if (error) {
       console.error('SUPABASE ERROR DETAILS (GET):', {
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
     warehouseWithTenant.updated_at = new Date().toISOString();
     
     // Use the user.id as tenant_id since that's how RLS is configured
-    warehouseWithTenant.tenant_id = user.id;
+    warehouseWithTenant.tenant_id = resolveTenantId(user) ?? user.id;
     
     // Validate required fields
     if (!warehouseWithTenant.name) {

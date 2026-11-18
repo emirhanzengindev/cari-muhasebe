@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { resolveTenantId } from "@/lib/tenant";
 
 /**
  * Ana Supabase client (RLS için)
@@ -34,8 +35,8 @@ export const createServerSupabaseClientWithRequest =
   createServerSupabaseClientForRLS;
 
 /**
- * Tenant ID artık JWT’den otomatik geliyor.
- * Ama eski kod kırılmasın diye dummy fonksiyon bırakıyoruz.
+ * Company (tenant) id of the signed-in user, from app_metadata only.
+ * Same value as public.app_tenant_id() in the database; see src/lib/tenant.ts.
  */
 export async function getTenantIdFromJWT() {
   const supabase = await createServerSupabaseClientForRLS();
@@ -43,7 +44,7 @@ export async function getTenantIdFromJWT() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  return user?.id ?? null;
+  return resolveTenantId(user);
 }
 
 export const getTenantIdFromJWTWithRequest = getTenantIdFromJWT;

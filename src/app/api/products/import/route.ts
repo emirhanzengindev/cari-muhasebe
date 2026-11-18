@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { createServerSupabaseClientForRLS } from "@/lib/supabaseServer";
+import { resolveTenantCandidates, resolveTenantId } from "@/lib/tenant";
 
 type RawRow = Record<string, unknown>;
 
 const MAX_IMPORT_ROWS = 3000;
+// Reject oversized uploads before they reach the spreadsheet parser.
+const MAX_IMPORT_BYTES = 4 * 1024 * 1024;
 
 const HEADER_ALIASES: Record<string, string[]> = {
   name: ["name", "ad", "urun", "urunadi", "urunad"],
@@ -102,10 +105,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Auth session missing" }, { status: 401 });
     }
 
-    const userMetadataTenantId =
-      typeof user.user_metadata?.tenant_id === "string" ? user.user_metadata.tenant_id : null;
-    const resolvedTenantId = userMetadataTenantId || user.id;
-    const tenantCandidates = Array.from(new Set([resolvedTenantId, user.id]));
+    const resolvedTenantId = resolveTenantId(user) ?? user.id;
+    const tenantCandidates = resolveTenantCandidates(user);
 
     const formData = await request.formData();
     const modeValue = String(formData.get("mode") || "insert").toLowerCase();
@@ -114,6 +115,10 @@ export async function POST(request: Request) {
 
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "Excel dosyasi bulunamadi." }, { status: 400 });
+    }
+
+    if (file.size > MAX_IMPORT_BYTES) {
+      return NextResponse.json({ error: "Excel dosyasi en fazla 4 MB olabilir." }, { status: 413 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());

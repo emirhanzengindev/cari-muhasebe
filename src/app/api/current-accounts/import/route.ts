@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { createServerSupabaseClientForRLS } from "@/lib/supabaseServer";
+import { resolveTenantCandidates, resolveTenantId } from '@/lib/tenant';
 
 type RawRow = Record<string, unknown>;
 
 const MAX_IMPORT_ROWS = 2000;
+// Reject oversized uploads before they reach the spreadsheet parser.
+const MAX_IMPORT_BYTES = 4 * 1024 * 1024;
 
 const HEADER_ALIASES: Record<string, string[]> = {
   name: [
@@ -126,6 +129,10 @@ export async function POST(request: Request) {
       );
     }
 
+    if (file.size > MAX_IMPORT_BYTES) {
+      return NextResponse.json({ error: "Excel dosyasi en fazla 4 MB olabilir." }, { status: 413 });
+    }
+
     const buffer = Buffer.from(await file.arrayBuffer());
     const workbook = XLSX.read(buffer, { type: "buffer" });
     const firstSheet = workbook.SheetNames[0];
@@ -191,7 +198,7 @@ export async function POST(request: Request) {
         balance: toNumber(getValue(row, HEADER_ALIASES.balance)),
         account_type: toAccountType(getValue(row, HEADER_ALIASES.account_type)),
         is_active: toIsActive(getValue(row, HEADER_ALIASES.is_active)),
-        tenant_id: user.id,
+        tenant_id: resolveTenantId(user) ?? user.id,
         user_id: user.id,
       };
 
@@ -202,7 +209,7 @@ export async function POST(request: Request) {
         let existingQuery = supabase
           .from("current_accounts")
           .select("id")
-          .eq("tenant_id", user.id)
+          .in("tenant_id", resolveTenantCandidates(user))
           .eq("name", name)
           .limit(1);
 

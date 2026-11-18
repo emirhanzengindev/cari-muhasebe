@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { resolveTenantCandidates } from '@/lib/tenant';
 
 async function handleBalanceUpdate(
   request: NextRequest,
@@ -20,12 +21,7 @@ async function handleBalanceUpdate(
       );
     }
 
-    const userMetadataTenantId =
-      typeof user.user_metadata?.tenant_id === 'string'
-        ? user.user_metadata.tenant_id
-        : null;
-    const resolvedTenantId = userMetadataTenantId || user.id;
-    const tenantCandidates = Array.from(new Set([resolvedTenantId, user.id]));
+    const tenantCandidates = resolveTenantCandidates(user);
 
     // First fetch current balance so we can support delta updates with `amount`.
     // Do not pre-filter by tenant_id here; RLS + explicit checks below determine access.

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClientForRLS } from "@/lib/supabaseServer";
+import { resolveTenantId } from '@/lib/tenant';
 
 // GET /api/current-accounts
 export async function GET() {
@@ -49,7 +50,7 @@ export async function POST(req: Request) {
       balance: body.balance ?? 0,
       is_active: body.isActive ?? true,
       account_type: body.accountType ?? body.account_type,
-      tenant_id: user.id,
+      tenant_id: resolveTenantId(user) ?? user.id,
       user_id: user.id,
     })
     .select()

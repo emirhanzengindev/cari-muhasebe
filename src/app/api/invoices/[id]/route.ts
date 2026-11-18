@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabaseServer'
 import { createClient } from '@supabase/supabase-js'
+import { resolveTenantId } from '@/lib/tenant';
 
 type Params = {
   id: string
@@ -21,18 +22,8 @@ const getMissingColumnName = (message?: string | null) => {
   return null;
 };
 
-const resolveTenantIdForUser = (user: any): string => {
-  const appMetaTenantId =
-    typeof user?.app_metadata?.tenant_id === 'string'
-      ? user.app_metadata.tenant_id
-      : null;
-  const userMetaTenantId =
-    typeof user?.user_metadata?.tenant_id === 'string'
-      ? user.user_metadata.tenant_id
-      : null;
-
-  return appMetaTenantId || userMetaTenantId || user.id;
-};
+// Tenant comes only from app_metadata (see src/lib/tenant.ts).
+const resolveTenantIdForUser = (user: any): string => resolveTenantId(user) ?? user.id;
 
 const mapInvoiceUpdatePayload = (body: Record<string, any>) => {
   const payload: Record<string, any> = {};
@@ -314,10 +305,8 @@ export async function DELETE(
     if (!authorized) {
       const linkedAccountId = targetInvoice.account_id || (targetInvoice as any).current_account_id;
 
-      // Legacy rows may not carry account linkage; allow deletion after authenticated fallback path.
-      if (!linkedAccountId) {
-        authorized = true;
-      } else {
+      // Rows without an account link cannot be tied to the caller: never authorize them.
+      if (linkedAccountId) {
         const accountCheck = await admin
           .from('current_accounts')
           .select('id, tenant_id, user_id')

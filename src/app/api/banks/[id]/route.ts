@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClientForRLS } from '@/lib/supabaseServer'
+import { resolveTenantCandidates } from '@/lib/tenant';
 
 type Params = {
   id: string
@@ -32,7 +33,7 @@ export async function GET(
     .from('banks')
     .select('*')
     .eq('id', id)
-    .eq('tenant_id', user.id)
+    .in('tenant_id', resolveTenantCandidates(user))
     .single()
 
   if (error) {
@@ -76,7 +77,7 @@ export async function PUT(
       updated_at: new Date().toISOString()
     })
     .eq('id', id)
-    .eq('tenant_id', user.id)
+    .in('tenant_id', resolveTenantCandidates(user))
     .select()
     .single()
 
@@ -117,7 +118,7 @@ export async function DELETE(
     .from('banks')
     .delete()
     .eq('id', id)
-    .eq('tenant_id', user.id)
+    .in('tenant_id', resolveTenantCandidates(user))
 
   if (error) {
     return NextResponse.json(

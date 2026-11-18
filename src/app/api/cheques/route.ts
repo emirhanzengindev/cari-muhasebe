@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest } from 'next/server'
 import { createServerSupabaseClientForRLS } from '@/lib/supabaseServer'
+import { resolveTenantCandidates, resolveTenantId } from '@/lib/tenant';
 
 /* =========================
    GET /api/cheques
@@ -25,7 +26,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from('cheques')
       .select('*')
-      .eq('tenant_id', user.id)
+      .in('tenant_id', resolveTenantCandidates(user))
 
     if (error) {
       // tablo yoksa boş array
@@ -97,7 +98,7 @@ export async function POST(request: NextRequest) {
 
     const payload = {
       ...body,
-      tenant_id: user.id,
+      tenant_id: resolveTenantId(user) ?? user.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }

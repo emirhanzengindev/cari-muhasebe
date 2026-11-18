@@ -3,19 +3,10 @@ export const dynamic = 'force-dynamic'
 import { NextRequest } from 'next/server';
 import { createServerSupabaseClientWithRequest } from '@/lib/supabaseServer';
 import { createClient } from '@supabase/supabase-js';
+import { resolveTenantId } from '@/lib/tenant';
 
-const resolveTenantIdForUser = (user: any): string => {
-  const appMetaTenantId =
-    typeof user?.app_metadata?.tenant_id === 'string'
-      ? user.app_metadata.tenant_id
-      : null;
-  const userMetaTenantId =
-    typeof user?.user_metadata?.tenant_id === 'string'
-      ? user.user_metadata.tenant_id
-      : null;
-
-  return appMetaTenantId || userMetaTenantId || user.id;
-};
+// Tenant comes only from app_metadata (see src/lib/tenant.ts).
+const resolveTenantIdForUser = (user: any): string => resolveTenantId(user) ?? user.id;
 
 export async function GET(request: NextRequest) {
   try {

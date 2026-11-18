@@ -56,3 +56,5 @@ temp/
 prisma/migrations
 prisma/seed.ts
 prisma/generated
+.vercel
+.env*

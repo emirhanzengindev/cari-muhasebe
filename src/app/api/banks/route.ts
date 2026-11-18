@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest } from 'next/server'
 import { createServerSupabaseClientForRLS } from '@/lib/supabaseServer'
+import { resolveTenantCandidates, resolveTenantId } from '@/lib/tenant'
 
 /* =========================
    GET /api/banks
@@ -22,19 +23,10 @@ export async function GET() {
       )
     }
 
-    const tenantId =
-      (typeof user.app_metadata?.tenant_id === 'string'
-        ? user.app_metadata.tenant_id
-        : null) ||
-      (typeof user.user_metadata?.tenant_id === 'string'
-        ? user.user_metadata.tenant_id
-        : null) ||
-      user.id;
-
     const { data, error } = await supabase
       .from('banks')
       .select('*')
-      .in('tenant_id', Array.from(new Set([tenantId, user.id])))
+      .in('tenant_id', resolveTenantCandidates(user))
 
     // tablo yoksa → boş array
     if (
@@ -90,7 +82,7 @@ export async function POST(request: NextRequest) {
 
     const payload = {
       ...body,
-      tenant_id: user.id,
+      tenant_id: resolveTenantId(user) ?? user.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }

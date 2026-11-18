@@ -1,22 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClientWithRequest } from "@/lib/supabaseServer";
+import { resolveTenantId } from '@/lib/tenant';
 
 type Params = {
   id: string;
 };
 
-const resolveTenantIdForUser = (user: any): string => {
-  const appMetaTenantId =
-    typeof user?.app_metadata?.tenant_id === "string"
-      ? user.app_metadata.tenant_id
-      : null;
-  const userMetaTenantId =
-    typeof user?.user_metadata?.tenant_id === "string"
-      ? user.user_metadata.tenant_id
-      : null;
-
-  return appMetaTenantId || userMetaTenantId || user.id;
-};
+// Tenant comes only from app_metadata (see src/lib/tenant.ts).
+const resolveTenantIdForUser = (user: any): string => resolveTenantId(user) ?? user.id;
 
 const normalizeMatchPayload = (matches: unknown) => {
   if (!Array.isArray(matches)) return [];

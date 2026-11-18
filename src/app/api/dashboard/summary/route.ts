@@ -2,21 +2,12 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { createServerSupabaseClientWithRequest } from "@/lib/supabaseServer";
+import { resolveTenantId } from '@/lib/tenant';
 
 type SupabaseClient = Awaited<ReturnType<typeof createServerSupabaseClientWithRequest>>;
 
-const resolveTenantIdForUser = (user: any): string => {
-  const appMetaTenantId =
-    typeof user?.app_metadata?.tenant_id === "string"
-      ? user.app_metadata.tenant_id
-      : null;
-  const userMetaTenantId =
-    typeof user?.user_metadata?.tenant_id === "string"
-      ? user.user_metadata.tenant_id
-      : null;
-
-  return appMetaTenantId || userMetaTenantId || user.id;
-};
+// Tenant comes only from app_metadata (see src/lib/tenant.ts).
+const resolveTenantIdForUser = (user: any): string => resolveTenantId(user) ?? user.id;
 
 const isMissingTableError = (error: any) =>
   error?.code === "42P01" ||

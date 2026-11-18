@@ -11,6 +11,7 @@ import {
 import { Session, AuthChangeEvent } from "@supabase/supabase-js";
 import { getSupabaseBrowser } from "@/lib/supabase";
 import { useTenantStore } from "@/lib/tenantStore";
+import { resolveTenantId } from "@/lib/tenant";
 
 /* ================= TYPES ================= */
 
@@ -37,18 +38,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 function buildUser(session: Session): User | null {
   const u = session.user;
 
-  console.log("BUILD USER: Processing session user:", u);
 
   if (!u?.id) {
     console.warn("BUILD USER: user id missing");
     return null;
   }
 
-  const tenantId =
-    typeof u.user_metadata?.tenant_id === "string" &&
-    /^[0-9a-f-]{36}$/i.test(u.user_metadata.tenant_id)
-      ? u.user_metadata.tenant_id
-      : u.id;
+  // app_metadata only: user_metadata is editable by the user.
+  const tenantId = resolveTenantId(u) ?? u.id;
 
   const userData: User = {
     id: u.id,
@@ -57,7 +54,6 @@ function buildUser(session: Session): User | null {
     tenantId,
   };
 
-  console.log("BUILD USER: Final user data:", userData);
   return userData;
 }
 

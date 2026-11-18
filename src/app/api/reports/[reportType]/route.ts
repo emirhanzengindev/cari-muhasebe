@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { resolveTenantCandidates } from '@/lib/tenant';
 
 // Define types for the report data
 interface SalesByProduct {
@@ -27,16 +28,8 @@ interface AccountBalance {
   isActive: boolean;
 }
 
-const getTenantCandidates = (user: any): string[] => {
-  const appTenantId = typeof user?.app_metadata?.tenant_id === 'string'
-    ? user.app_metadata.tenant_id
-    : null;
-  const userTenantId = typeof user?.user_metadata?.tenant_id === 'string'
-    ? user.user_metadata.tenant_id
-    : null;
-
-  return Array.from(new Set([appTenantId, userTenantId, user?.id].filter(Boolean)));
-};
+// Tenant comes only from app_metadata (see src/lib/tenant.ts).
+const getTenantCandidates = (user: any): string[] => resolveTenantCandidates(user);
 
 // Placeholder API route for sales by product report
 export async function GET(request: NextRequest, { params }: { params: Promise<{ reportType: string }> }) {
