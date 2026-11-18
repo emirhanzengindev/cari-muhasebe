@@ -41,8 +41,16 @@ Notlar (2026-11-18 ön kontrolünden):
 
 ## Adım 0: Hazırlık (migration'dan önceki gün)
 
-1. **Yedek:** Dashboard → Database → Backups bölümünde son günlük yedeğin tarihine bak. PITR varsa açık olduğunu doğrula. Plan izin veriyorsa elle bir yedek al.
-2. **Yeni kod hazır:** `fix/faz0-guvenlik` dalının build'i hazır olsun (Vercel'de preview deployment; "Promote" tek tıkla yapılabilsin). Preview, canlı veritabanına bağlıysa adresini kimseyle paylaşma (yeni kod + eski şema = faturalar görünmez).
+0. **Supabase GitHub entegrasyonu** (Project Settings → Integrations → GitHub; repo bağlı, 2026-11-18): **"Deploy to production" kapalı olmalı** (2026-11-18'de kapatıldı; migration günü tekrar bak). Açıksa `main` dalına yapılan her push veya merge, migration geçmişinde olmayan bütün dosyaları canlıya kontrolsüz uygular. Geçmişteki son kayıt `create_current_accounts` (`20250127150000`), repoda bundan sonra gelen çok sayıda dosya var. 2026-09-16 tarihli dosyalar iki ay önce `main` dalına girdi ama geçmişte görünmüyor: entegrasyon şimdiye kadar hiçbir migration'ı uygulamadı (ya kapalı, ya da `config.toml` olmadığı için başarısız oluyor). Kapatmak bir şey kaybettirmez. Branching ücretsiz planda yok.
+   - **`supabase db push` bu projede kullanılmaz:** geçmiş eksik olduğu için eski dosyaların hepsini yeniden uygulamaya çalışır. Geçmişin `supabase migration repair` ile düzeltilmesi ayrı bir iş.
+1. **Yedek:** projenin planında otomatik yedek yok (Dashboard: "No backups", 2026-11-18). Migration öncesi tam bir yedek (`pg_dump`, şema + veri; ayrı onayla) alınır ve yalnızca yerelde saklanır, GitHub'a gitmez. Migration'ın kendi `backup` şeması bunun yerini tutmaz; sadece bu migration'ın değiştirdiklerini geri alır.
+   - Komut (normal bir PowerShell penceresinde, `supabase\runbooks` klasöründen):
+     `.\backup_live_full.ps1 -PoolerHost <POOLER_HOST> -ProjectRef <PROJECT_REF> -SslRootCert <ca.crt>`
+   - Kapsam: `public` ve `auth` şemaları, custom format. Varsayılan hedef `$env:USERPROFILE\Desktop\cari1-backups`; repo içine yazmayı reddeder.
+   - Çıktının sonunda `data present` satırları görünmeli: `invoices`, `invoice_items`, `products`, `stock_movements`, `current_accounts`, `current_account_movements` ve `auth.users`. Satırlardan biri `MISSING DATA` ise migration'a başlama.
+   - Yerel deneme (2026-11-18): yedek alındı, boş bir veritabanına geri yüklendi, satır sayıları kaynakla aynı.
+   - Dosya gerçek müşteri verisi içerir: şifreli bir diskte (BitLocker) veya şifreli bir arşivde sakla.
+2. **Yeni kod hazır:** `fix/faz0-guvenlik` dalı push edildi ve Vercel preview build'i başarılı (2026-11-18). Preview canlı veritabanına bağlı ve migration öncesinde faturalar ile stoklu ürünler görünmüyor (doğrulandı). Preview'dan kayıt ekleme ve adresini kimseyle paylaşma.
 3. **Bir önceki production deployment'ı not et:** geri dönüşte "Instant Rollback" ile buna dönülecek.
 4. **Ön kontrol sorgusu** (salt okunur, ayrı onayla): `<DOSYA>` = `/work/runbooks/20261118130000_preflight.sql`, `<LOG>` = `/out/live_preflight.txt`. Yalnızca sayı döndürür, kayıt içeriği döndürmez.
    - **2026-11-18 canlı sonucu:**
