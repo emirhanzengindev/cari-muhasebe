@@ -19,6 +19,17 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter);
   --font-mono: var(--font-inter);
+  /* Herkese açık sayfalar (ana sayfa, pazarlama, giriş/kayıt) */
+  --font-serif: var(--font-newsreader), Georgia, serif;
+  --color-co-ink: #16201c;
+  --color-co-ink-soft: #5b6660;
+  --color-co-muted: #a3aaa6;
+  --color-co-line: #e4e6e3;
+  --color-co-paper: #f8f8f4;
+  --color-co-lime: #d9f53b;
+  --color-co-lime-dark: #c4e01f;
+  --color-co-cream: #faf6e9;
+  --color-co-forest: #1c2a17;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -58,31 +69,3 @@ body {
   background: var(--brand-soft);
   color: var(--brand-strong);
 }
-
-@keyframes auth-rise {
-  from { opacity: 0; transform: translateY(18px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes auth-drift {
-  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
-  50% { transform: translate3d(14px, -10px, 0) rotate(4deg); }
-}
-
-.auth-orbit {
-  position: absolute;
-  pointer-events: none;
-  border: 1px solid rgba(23, 107, 135, 0.12);
-  border-radius: 999px;
-  animation: auth-drift 9s ease-in-out infinite;
-}
-
-.auth-orbit-one { width: 360px; height: 360px; left: -180px; top: 18%; }
-.auth-orbit-two { width: 220px; height: 220px; right: 8%; bottom: 8%; animation-delay: -3s; }
-
-@media (prefers-reduced-motion: reduce) {
-  .auth-orbit, [class*="animate-[auth-rise"] { animation: none !important; }
-}
-
-
-

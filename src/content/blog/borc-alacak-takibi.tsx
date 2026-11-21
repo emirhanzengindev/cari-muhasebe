@@ -48,12 +48,12 @@ export default function Content() {
       <H2>Borç ve Alacak Arasındaki Fark</H2>
       <UL>
         <LI>
-          <strong className="font-semibold text-[#122B3A]">Alacak:</strong>{" "}
+          <strong className="font-semibold text-co-ink">Alacak:</strong>{" "}
           işletmenin tahsil etmeyi beklediği tutardır. Genellikle satış
           faturalarından doğar.
         </LI>
         <LI>
-          <strong className="font-semibold text-[#122B3A]">Borç:</strong>{" "}
+          <strong className="font-semibold text-co-ink">Borç:</strong>{" "}
           işletmenin ödemesi gereken tutardır. Genellikle alış faturalarından ve
           tedarikçi hareketlerinden doğar.
         </LI>

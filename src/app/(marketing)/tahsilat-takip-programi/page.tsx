@@ -189,7 +189,7 @@ export default function TahsilatTakipProgramiPage() {
           Vade ve bakiye bilgisi,{" "}
           <a
             href="/cari-hesap-programi"
-            className="font-semibold text-[#176B87] underline decoration-[#b7dfe0] decoration-2 underline-offset-2"
+            className="font-medium text-co-ink underline decoration-co-lime-dark decoration-2 underline-offset-[3px] hover:decoration-co-ink"
           >
             cari hesap
           </a>{" "}

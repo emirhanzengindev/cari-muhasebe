@@ -180,7 +180,7 @@ export default function StokTakipProgramiPage() {
           etkilenir. Stok ve cari hareketlerin aynı işlem içinde ilerlemesi,{" "}
           <a
             href="/fatura-programi"
-            className="font-semibold text-[#176B87] underline decoration-[#b7dfe0] decoration-2 underline-offset-2"
+            className="font-medium text-co-ink underline decoration-co-lime-dark decoration-2 underline-offset-[3px] hover:decoration-co-ink"
           >
             fatura
           </a>{" "}
