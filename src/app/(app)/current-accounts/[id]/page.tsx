@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { downloadAccountStatementPdf } from "@/lib/pdfExports";
 import { useCurrentAccountsStore } from "@/stores/currentAccountsStore";
-import { Trash2 } from "lucide-react";
+import { Activity, CalendarClock, Download, Pencil, Plus, Trash2, UserRound, Wallet } from "lucide-react";
+import { Alert, Avatar, Card, CardHead, EmptyState, Field, IconButton, PageHeader, Spinner, Status, tl, ui } from "@/components/app-ui/ui";
 
 type Account = {
   id: string;
@@ -96,17 +97,13 @@ export default function CurrentAccountDetailPage() {
     load();
   }, [params.id]);
 
-  if (loading) {
-    return <div className="py-6">Yukleniyor...</div>;
-  }
+  if (loading) return <Spinner />;
 
   if (error || !account) {
     return (
-      <div className="py-6">
-        <p className="text-red-600">{error || "Hesap bulunamadi."}</p>
-        <Link href="/current-accounts" className="text-blue-600 underline">
-          Geri don
-        </Link>
+      <div className={ui.page}>
+        <PageHeader title="Cari Hesap" back={{ href: "/current-accounts", label: "Cari Hesaplar" }} />
+        <Alert>{error || "Hesap bulunamadı."}</Alert>
       </div>
     );
   }
@@ -422,7 +419,7 @@ export default function CurrentAccountDetailPage() {
       );
     } catch (err) {
       console.error("Account statement PDF error:", err);
-      setPdfError("Cari ekstre PDF olusturulamadi.");
+      setPdfError("Cari ekstre PDF oluşturulamadı.");
     } finally {
       setDownloading(false);
     }
@@ -458,7 +455,7 @@ export default function CurrentAccountDetailPage() {
     if (!account?.id) return;
 
     if (!Number.isFinite(collectionAmount) || collectionAmount <= 0) {
-      setCollectionError("Tutar 0'dan buyuk olmali.");
+      setCollectionError("Tutar 0'dan büyük olmalı.");
       return;
     }
 
@@ -477,7 +474,7 @@ export default function CurrentAccountDetailPage() {
       await refreshAccountData();
       setShowCollectionModal(false);
       resetCollectionForm();
-      setCollectionSuccess("Tahsilat/odeme kaydedildi.");
+      setCollectionSuccess("Tahsilat/ödeme kaydedildi.");
     } catch (err: any) {
       setCollectionError(err?.message || "Tahsilat kaydedilemedi.");
     } finally {
@@ -503,132 +500,183 @@ export default function CurrentAccountDetailPage() {
     }
   };
 
+  const balance = Number(account.balance ?? 0) || 0;
+  const supplier = account.accountType === "SUPPLIER";
+  const active = account.isActive ?? true;
+  const openTotal = openInvoices.reduce((sum, invoice) => sum + invoiceTotal(invoice), 0);
+  const movementLabel = (type: string) =>
+    type === "COLLECTION" ? "Tahsilat" : type === "PAYMENT" ? "Ödeme" : "Düzeltme";
+  const formatDay = (value: unknown) => {
+    if (!value) return "—";
+    const parsed = new Date(String(value));
+    return Number.isNaN(parsed.getTime()) ? "—" : parsed.toLocaleDateString("tr-TR");
+  };
+
   return (
-    <div className="py-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{account.name || "Cari Hesap"}</h1>
-        <div className="flex gap-3">
-          <button
-            onClick={() => {
-              setCollectionError("");
-              setCollectionSuccess("");
-              setShowCollectionModal(true);
-            }}
-            className="px-3 py-2 rounded bg-indigo-600 text-white"
-          >
-            Tahsilat Ekle
-          </button>
-          <button
-            onClick={handleDownloadStatement}
-            disabled={downloading}
-            className="px-3 py-2 rounded bg-emerald-600 text-white disabled:opacity-60"
-          >
-            {downloading ? "Hazirlaniyor..." : "Ekstre PDF Indir"}
-          </button>
-          <button
-            onClick={() => router.push(`/current-accounts/${account.id}/edit`)}
-            className="px-3 py-2 rounded bg-blue-600 text-white"
-          >
-            Duzenle
-          </button>
-          <Link href="/current-accounts" className="px-3 py-2 rounded border">
-            Listeye don
-          </Link>
-        </div>
+    <div className={ui.page}>
+      <PageHeader
+        back={{ href: "/current-accounts", label: "Cari Hesaplar" }}
+        title={
+          <span className="flex items-center gap-3">
+            <Avatar name={account.name || "Cari"} size={36} />
+            {account.name || "Cari Hesap"}
+          </span>
+        }
+        description={
+          <span className="inline-flex flex-wrap items-center gap-2">
+            <Status tone={supplier ? "violet" : "green"}>{supplier ? "Tedarikçi" : "Müşteri"}</Status>
+            <Status tone={active ? "green" : "gray"}>{active ? "Aktif" : "Pasif"}</Status>
+          </span>
+        }
+        actions={
+          <>
+            <button type="button" onClick={() => router.push(`/current-accounts/${account.id}/edit`)} className={ui.btn}>
+              <Pencil aria-hidden="true" />
+              Düzenle
+            </button>
+            <button type="button" onClick={handleDownloadStatement} disabled={downloading} className={ui.btn}>
+              <Download aria-hidden="true" />
+              {downloading ? "Hazırlanıyor..." : "Ekstre PDF"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCollectionError("");
+                setCollectionSuccess("");
+                setShowCollectionModal(true);
+              }}
+              className={ui.btnDark}
+            >
+              <Plus aria-hidden="true" />
+              Tahsilat / Ödeme
+            </button>
+          </>
+        }
+      />
+
+      {collectionSuccess && <Alert tone="green">{collectionSuccess}</Alert>}
+      {pdfError && <Alert>{pdfError}</Alert>}
+
+      <div className="mb-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Card className="p-4">
+          <small className={`block ${ui.soft}`}>Bakiye</small>
+          <b className={`mt-1 block text-[20px] font-semibold tabular-nums tracking-[-0.02em] ${balance > 0 ? ui.pos : balance < 0 ? ui.neg : ""}`}>
+            {tl(balance)}
+          </b>
+        </Card>
+        <Card className="p-4">
+          <small className={`block ${ui.soft}`}>Açık fatura</small>
+          <b className="mt-1 block text-[20px] font-semibold tabular-nums">{openInvoices.length}</b>
+        </Card>
+        <Card className="p-4">
+          <small className={`block ${ui.soft}`}>Vadesi geçen</small>
+          <b className={`mt-1 block text-[20px] font-semibold tabular-nums ${overdueInvoices.length ? ui.neg : ""}`}>
+            {overdueInvoices.length}
+          </b>
+        </Card>
+        <Card className="p-4">
+          <small className={`block ${ui.soft}`}>Açık toplam</small>
+          <b className="mt-1 block text-[20px] font-semibold tabular-nums tracking-[-0.02em]">{tl(openTotal)}</b>
+        </Card>
       </div>
 
-      <div className="bg-white shadow rounded p-4 space-y-2">
-        <p><strong>Telefon:</strong> {account.phone || "-"}</p>
-        <p><strong>Adres:</strong> {account.address || "-"}</p>
-        <p><strong>Vergi No:</strong> {account.tax_number || "-"}</p>
-        <p><strong>Vergi Dairesi:</strong> {account.tax_office || "-"}</p>
-        <p><strong>Sirket:</strong> {account.company || "-"}</p>
-        <p><strong>Bakiye:</strong> {(account.balance ?? 0).toFixed(2)}</p>
-        <p><strong>Durum:</strong> {account.isActive ? "Aktif" : "Pasif"}</p>
-        <p><strong>Tur:</strong> {account.accountType || "-"}</p>
-      </div>
-      {collectionSuccess && <p className="text-green-700 text-sm">{collectionSuccess}</p>}
-      {pdfError && <p className="text-red-600 text-sm">{pdfError}</p>}
-
-      <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-5 shadow-[0_10px_30px_rgba(28,55,75,0.05)]">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">Vade durumu</h2>
-            <p className="mt-1 text-sm text-[var(--muted)]">Bu cariye ait açık faturaların kısa özeti.</p>
-          </div>
-          <Link href="/invoices" className="text-sm font-semibold text-[var(--brand)] hover:text-[var(--brand-strong)]">Faturalara git</Link>
-        </div>
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-xl bg-[var(--surface-muted)] p-4"><p className="text-xs text-[var(--muted)]">Açık fatura</p><p className="mt-1 text-xl font-bold">{openInvoices.length}</p></div>
-          <div className="rounded-xl bg-[#fff3f1] p-4"><p className="text-xs text-[var(--muted)]">Vadesi geçen</p><p className="mt-1 text-xl font-bold text-red-700">{overdueInvoices.length}</p></div>
-          <div className="rounded-xl bg-[#f4fbf8] p-4"><p className="text-xs text-[var(--muted)]">Açık toplam</p><p className="mt-1 text-xl font-bold text-[var(--success)]">{openInvoices.reduce((sum, invoice) => sum + invoiceTotal(invoice), 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TRY</p></div>
-        </div>
-        {overdueInvoices.length > 0 && (
-          <div className="mt-4 space-y-2">
-            {overdueInvoices.slice(0, 3).map((invoice) => (
-              <div key={invoice.id} className="flex items-center justify-between rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm">
-                <span>{invoice.invoice_number || invoice.invoice_no || "Fatura"}</span>
-                <span className="font-semibold text-red-700">{invoiceTotal(invoice).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TRY</span>
+      <div className="grid gap-3 lg:grid-cols-[1fr_1.4fr]">
+        <Card className="self-start">
+          <CardHead icon={<UserRound aria-hidden="true" />} title="Hesap bilgileri" />
+          <dl>
+            {[
+              { label: "Telefon", value: account.phone },
+              { label: "Şirket", value: account.company },
+              { label: "Vergi no", value: account.tax_number },
+              { label: "Vergi dairesi", value: account.tax_office },
+              { label: "Adres", value: account.address },
+            ].map((row) => (
+              <div key={row.label} className="flex justify-between gap-4 border-t border-[#f2f2f3] px-4 py-2.5">
+                <dt className={ui.soft}>{row.label}</dt>
+                <dd className="text-right font-medium">{row.value || <span className={ui.muted}>—</span>}</dd>
               </div>
             ))}
-          </div>
-        )}
+          </dl>
+        </Card>
+
+        <Card className="self-start">
+          <CardHead icon={<CalendarClock aria-hidden="true" />} title="Vade durumu">
+            <Link href="/invoices" className={ui.btn}>
+              Faturalar
+            </Link>
+          </CardHead>
+          {overdueInvoices.length === 0 ? (
+            <EmptyState
+              title={openInvoices.length ? "Vadesi geçen fatura yok" : "Açık fatura yok"}
+              description={openInvoices.length ? `${openInvoices.length} açık fatura, toplam ${tl(openTotal)}.` : undefined}
+            />
+          ) : (
+            <ul>
+              {overdueInvoices.slice(0, 5).map((invoice) => (
+                <li key={invoice.id}>
+                  <Link
+                    href={`/invoices/${invoice.id}`}
+                    className="flex items-center gap-3 border-t border-[#f2f2f3] px-4 py-2.5 hover:bg-[#fafafa]"
+                  >
+                    <span className="h-8 w-[3px] rounded bg-[var(--app-red)]" aria-hidden="true" />
+                    <span className="min-w-0">
+                      <b className="block font-medium">Fatura #{invoice.invoice_number || invoice.invoice_no || "—"}</b>
+                      <small className={ui.muted}>Vade {formatDay(invoice.due_date || invoice.dueDate)}</small>
+                    </span>
+                    <span className={`ml-auto ${ui.num} ${ui.neg}`}>{tl(invoiceTotal(invoice))}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
       </div>
 
-      <div className="bg-white shadow rounded p-4">
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <h2 className="text-lg font-semibold">Tahsilat/Odeme Hareketleri</h2>
-          <span className="text-sm text-gray-500">{movements.length} kayıt</span>
-        </div>
+      <Card className="mt-3">
+        <CardHead icon={<Activity aria-hidden="true" />} title="Tahsilat / Ödeme Hareketleri">
+          <span className={ui.muted}>{movements.length} kayıt</span>
+        </CardHead>
 
         {movements.length === 0 ? (
-          <p className="text-sm text-gray-500">Henüz tahsilat veya ödeme kaydı bulunmuyor.</p>
+          <EmptyState icon={<Wallet aria-hidden="true" />} title="Henüz tahsilat veya ödeme kaydı yok" />
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
+            <table className={ui.table}>
               <thead>
-                <tr className="border-b text-left text-gray-500">
-                  <th className="px-3 py-2 font-medium">Tür</th>
-                  <th className="px-3 py-2 font-medium">Tarih</th>
-                  <th className="px-3 py-2 font-medium">Tutar</th>
-                  <th className="px-3 py-2 font-medium">Açıklama</th>
-                  <th className="px-3 py-2 text-right font-medium">İşlem</th>
+                <tr>
+                  <th scope="col" className={ui.th}>Tür</th>
+                  <th scope="col" className={ui.th}>Tarih</th>
+                  <th scope="col" className={ui.th}>Tutar</th>
+                  <th scope="col" className={ui.th}>Açıklama</th>
+                  <th scope="col" className={`${ui.th} text-right`}>İşlem</th>
                 </tr>
               </thead>
               <tbody>
                 {movements.map((movement) => (
-                  <tr key={movement.id} className="border-b last:border-b-0">
-                    <td className="px-3 py-3">
-                      {movement.movement_type === "COLLECTION" ? "Tahsilat" : movement.movement_type === "PAYMENT" ? "Ödeme" : "Düzeltme"}
+                  <tr key={movement.id} className={ui.tr}>
+                    <td className={ui.td}>
+                      <Status tone={movement.movement_type === "COLLECTION" ? "green" : movement.movement_type === "PAYMENT" ? "red" : "gray"}>
+                        {movementLabel(movement.movement_type)}
+                      </Status>
                     </td>
-                    <td className="px-3 py-3">
-                      {movement.document_date
-                        ? new Date(movement.document_date).toLocaleDateString("tr-TR")
-                        : "-"}
-                    </td>
-                    <td className="px-3 py-3 font-medium">
-                      {Number(movement.amount ?? 0).toLocaleString("tr-TR", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })} {movement.currency || "TRY"}
-                    </td>
-                    <td className="px-3 py-3 text-gray-600">{movement.description || "-"}</td>
-                    <td className="px-3 py-3 text-right">
-                      <button
-                        type="button"
-                        title="Tahsilatı sil"
-                        aria-label="Tahsilatı sil"
-                        onClick={() => {
-                          setCollectionError("");
-                          setCollectionSuccess("");
-                          setMovementToDelete(movement);
-                        }}
-                        disabled={deletingMovementId !== null}
-                        className="inline-flex items-center gap-1 rounded border border-red-200 px-2 py-1 text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <Trash2 size={15} />
-                        Sil
-                      </button>
+                    <td className={`${ui.td} ${ui.soft}`}>{formatDay(movement.document_date)}</td>
+                    <td className={`${ui.td} ${ui.num}`}>{tl(Number(movement.amount ?? 0), movement.currency || "TRY")}</td>
+                    <td className={`${ui.td} ${ui.soft}`}>{movement.description || <span className={ui.muted}>—</span>}</td>
+                    <td className={ui.td}>
+                      <div className="flex justify-end">
+                        <IconButton
+                          label={`${movementLabel(movement.movement_type)} kaydını sil`}
+                          danger
+                          onClick={() => {
+                            setCollectionError("");
+                            setCollectionSuccess("");
+                            setMovementToDelete(movement);
+                          }}
+                          disabled={deletingMovementId !== null}
+                        >
+                          <Trash2 aria-hidden="true" />
+                        </IconButton>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -636,50 +684,34 @@ export default function CurrentAccountDetailPage() {
             </table>
           </div>
         )}
-      </div>
+      </Card>
 
       {movementToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-collection-title"
-            className="w-full max-w-md rounded bg-white p-5 space-y-4"
-          >
-            <div>
-              <h2 id="delete-collection-title" className="text-lg font-semibold">
-                Bu tahsilatı silmek istediğinize emin misiniz?
-              </h2>
-              <p className="mt-2 text-sm text-gray-600">
-                Tutar: {Number(movementToDelete.amount ?? 0).toLocaleString("tr-TR", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })} {movementToDelete.currency || "TRY"}
-              </p>
-              <p className="text-sm text-gray-600">
-                Tarih: {movementToDelete.document_date
-                  ? new Date(movementToDelete.document_date).toLocaleDateString("tr-TR")
-                  : "-"}
-              </p>
-            </div>
+        <div className={ui.modalBackdrop}>
+          <div role="dialog" aria-modal="true" aria-labelledby="delete-collection-title" className={`${ui.modal} max-w-md`}>
+            <h2 id="delete-collection-title" className="text-[16px] font-semibold">
+              Bu kaydı silmek istediğinize emin misiniz?
+            </h2>
+            <dl className={`mt-3 grid gap-1 ${ui.soft}`}>
+              <div className="flex justify-between">
+                <dt>Tutar</dt>
+                <dd className="font-medium text-[var(--app-ink)]">
+                  {tl(Number(movementToDelete.amount ?? 0), movementToDelete.currency || "TRY")}
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt>Tarih</dt>
+                <dd className="font-medium text-[var(--app-ink)]">{formatDay(movementToDelete.document_date)}</dd>
+              </div>
+            </dl>
 
-            {collectionError && <p className="text-red-600 text-sm">{collectionError}</p>}
+            {collectionError && <p className="mt-3 text-[var(--app-red)]">{collectionError}</p>}
 
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setMovementToDelete(null)}
-                className="px-3 py-2 rounded border"
-                disabled={deletingMovementId !== null}
-              >
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => setMovementToDelete(null)} className={ui.btn} disabled={deletingMovementId !== null}>
                 İptal
               </button>
-              <button
-                type="button"
-                onClick={handleDeleteMovement}
-                disabled={deletingMovementId !== null}
-                className="px-3 py-2 rounded bg-red-600 text-white disabled:opacity-60"
-              >
+              <button type="button" onClick={handleDeleteMovement} disabled={deletingMovementId !== null} className={ui.btnDanger}>
                 {deletingMovementId ? "Siliniyor..." : "Evet, sil"}
               </button>
             </div>
@@ -688,82 +720,80 @@ export default function CurrentAccountDetailPage() {
       )}
 
       {showCollectionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded bg-white p-5 space-y-4">
-            <h2 className="text-lg font-semibold">Tahsilat/Odeme Ekle</h2>
+        <div className={ui.modalBackdrop}>
+          <div role="dialog" aria-modal="true" aria-labelledby="collection-title" className={`${ui.modal} max-w-md`}>
+            <h2 id="collection-title" className="text-[16px] font-semibold">
+              Tahsilat / Ödeme Ekle
+            </h2>
+            <p className={`mt-1 ${ui.soft}`}>{account.name}</p>
 
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm mb-1">Islem Tipi</label>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <Field id="collectionType" label="İşlem tipi">
                 <select
+                  id="collectionType"
                   value={collectionType}
                   onChange={(e) => setCollectionType(e.target.value as "COLLECTION" | "PAYMENT")}
-                  className="w-full border rounded px-3 py-2"
+                  className={ui.input}
                 >
                   <option value="COLLECTION">Tahsilat</option>
-                  <option value="PAYMENT">Odeme</option>
+                  <option value="PAYMENT">Ödeme</option>
                 </select>
-              </div>
-              <div>
-                <label className="block text-sm mb-1">Tutar</label>
+              </Field>
+              <Field id="collectionAmount" label="Tutar (₺)">
                 <input
+                  id="collectionAmount"
                   type="number"
                   min={0}
                   step="0.01"
                   value={collectionAmount}
                   onChange={(e) => setCollectionAmount(Number(e.target.value) || 0)}
-                  className="w-full border rounded px-3 py-2"
+                  className={ui.input}
                 />
-              </div>
-              <div>
-                <label className="block text-sm mb-1">Tarih</label>
+              </Field>
+              <Field id="collectionDate" label="Tarih">
                 <input
+                  id="collectionDate"
                   type="date"
                   value={collectionDate}
                   onChange={(e) => setCollectionDate(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
+                  className={ui.input}
                 />
-              </div>
-              <div>
-                <label className="block text-sm mb-1">Dekont No</label>
+              </Field>
+              <Field id="collectionDocumentNo" label="Dekont no">
                 <input
+                  id="collectionDocumentNo"
                   type="text"
                   value={collectionDocumentNo}
                   onChange={(e) => setCollectionDocumentNo(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
+                  className={ui.input}
                 />
-              </div>
-              <div>
-                <label className="block text-sm mb-1">Aciklama</label>
+              </Field>
+              <Field id="collectionDescription" label="Açıklama" className="sm:col-span-2">
                 <textarea
+                  id="collectionDescription"
                   value={collectionDescription}
                   onChange={(e) => setCollectionDescription(e.target.value)}
                   rows={3}
-                  className="w-full border rounded px-3 py-2"
+                  className={ui.textarea}
                 />
-              </div>
+              </Field>
             </div>
 
-            {collectionError && <p className="text-red-600 text-sm">{collectionError}</p>}
+            {collectionError && <p className="mt-3 text-[var(--app-red)]">{collectionError}</p>}
 
-            <div className="flex justify-end gap-2">
+            <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setShowCollectionModal(false);
                   setCollectionError("");
                 }}
-                className="px-3 py-2 rounded border"
+                className={ui.btn}
                 disabled={savingCollection}
               >
-                Vazgec
+                Vazgeç
               </button>
-              <button
-                type="button"
-                onClick={handleSaveCollection}
-                disabled={savingCollection}
-                className="px-3 py-2 rounded bg-indigo-600 text-white disabled:opacity-60"
-              >
+              <button type="button" onClick={handleSaveCollection} disabled={savingCollection} className={ui.btnDark}>
                 {savingCollection ? "Kaydediliyor..." : "Kaydet"}
               </button>
             </div>

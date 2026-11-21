@@ -7,6 +7,8 @@ import { useInvoiceItemStore } from "@/stores/invoiceItemStore";
 import { useCurrentAccountsStore } from "@/stores/currentAccountsStore";
 import { useInventoryStore } from "@/stores/inventoryStore";
 import { useTenantStore } from "@/lib/tenantStore";
+import { FileText, Package, Plus, Trash2 } from "lucide-react";
+import { Alert, Card, CardHead, EmptyState, Field, IconButton, PageHeader, tl, ui } from "@/components/app-ui/ui";
 
 export default function NewInvoice() {
   const router = useRouter();
@@ -175,271 +177,206 @@ export default function NewInvoice() {
   };
 
   return (
-    <div className="py-6">
-      <h1 className="text-2xl font-bold mb-4">
-        Yeni Fatura
-      </h1>
+    <div className={`${ui.page} max-w-5xl`}>
+      <PageHeader
+        title="Yeni Fatura"
+        description="Satış veya alış faturası oluşturun"
+        back={{ href: "/invoices", label: "Faturalar" }}
+      />
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
-          {error}
-        </div>
-      )}
+      {error && <Alert>{error}</Alert>}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm mb-1">
-              Fatura Tipi
-            </label>
-            <select
-              value={invoiceType}
-              onChange={(e) =>
-                setInvoiceType(
-                  e.target.value as "SALES" | "PURCHASE"
-                )
-              }
-              className="w-full border rounded px-3 py-2"
-            >
-              <option value="SALES">Satis</option>
-              <option value="PURCHASE">Alis</option>
-            </select>
+      <form onSubmit={handleSubmit} className="grid gap-3">
+        <Card>
+          <CardHead icon={<FileText aria-hidden="true" />} title="Fatura bilgileri" />
+          <div className="grid gap-4 px-4 pb-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Field id="invoiceType" label="Fatura tipi">
+              <select
+                id="invoiceType"
+                value={invoiceType}
+                onChange={(e) => setInvoiceType(e.target.value as "SALES" | "PURCHASE")}
+                className={ui.input}
+              >
+                <option value="SALES">Satış</option>
+                <option value="PURCHASE">Alış</option>
+              </select>
+            </Field>
+            <Field id="selectedAccount" label="Cari hesap *">
+              <select
+                id="selectedAccount"
+                value={selectedAccount}
+                onChange={(e) => setSelectedAccount(e.target.value)}
+                className={ui.input}
+              >
+                <option value="">Seçiniz</option>
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field id="currency" label="Para birimi">
+              <select
+                id="currency"
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value as "TRY" | "USD")}
+                className={ui.input}
+              >
+                <option value="TRY">TRY (₺)</option>
+                <option value="USD">USD ($)</option>
+              </select>
+            </Field>
+            <Field id="invoiceDate" label="Tarih">
+              <input
+                id="invoiceDate"
+                type="date"
+                value={invoiceDate}
+                onChange={(e) => setInvoiceDate(e.target.value)}
+                className={ui.input}
+              />
+            </Field>
+            <Field id="invoice-due-date" label="Vade tarihi (isteğe bağlı)">
+              <input
+                id="invoice-due-date"
+                type="date"
+                value={dueDate}
+                min={invoiceDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className={ui.input}
+              />
+            </Field>
+            <Field id="description" label="Açıklama">
+              <input
+                id="description"
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className={ui.input}
+              />
+            </Field>
           </div>
+        </Card>
 
-          <div>
-            <label className="block text-sm mb-1">
-              Tarih
-            </label>
-            <input
-              type="date"
-              value={invoiceDate}
-              onChange={(e) =>
-                setInvoiceDate(e.target.value)
-              }
-              className="w-full border rounded px-3 py-2"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm mb-1">
-              Cari Hesap
-            </label>
-            <select
-              value={selectedAccount}
-              onChange={(e) =>
-                setSelectedAccount(e.target.value)
-              }
-              className="w-full border rounded px-3 py-2"
-            >
-              <option value="">Seciniz</option>
-              {accounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm mb-1" htmlFor="invoice-due-date">
-              Vade Tarihi <span className="text-gray-400">(opsiyonel)</span>
-            </label>
-            <input
-              id="invoice-due-date"
-              type="date"
-              value={dueDate}
-              min={invoiceDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="w-full border rounded px-3 py-2"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm mb-1">
-              Para Birimi
-            </label>
-            <select
-              value={currency}
-              onChange={(e) =>
-                setCurrency(
-                  e.target.value as "TRY" | "USD"
-                )
-              }
-              className="w-full border rounded px-3 py-2"
-            >
-              <option value="TRY">TRY</option>
-              <option value="USD">USD</option>
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1">
-            Aciklama
-          </label>
-          <input
-            type="text"
-            value={description}
-            onChange={(e) =>
-              setDescription(e.target.value)
-            }
-            className="w-full border rounded px-3 py-2"
-          />
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">
-              Kalemler
-            </h2>
-            <button
-              type="button"
-              onClick={addItemRow}
-              className="px-3 py-2 rounded bg-blue-600 text-white"
-            >
+        <Card>
+          <CardHead icon={<Package aria-hidden="true" />} title="Kalemler">
+            <button type="button" onClick={addItemRow} className={ui.btn}>
+              <Plus aria-hidden="true" />
               Kalem Ekle
             </button>
+          </CardHead>
+
+          {items.length === 0 ? (
+            <EmptyState title="Henüz kalem yok" description="Faturaya ürün eklemek için “Kalem Ekle”ye basın." />
+          ) : (
+            <ul>
+              {items.map((item, index) => {
+                const lineTotal = (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0);
+                return (
+                  <li
+                    key={index}
+                    className="grid grid-cols-2 gap-3 border-t border-[#f2f2f3] px-4 py-3 md:grid-cols-[minmax(0,5fr)_minmax(0,2fr)_minmax(0,2fr)_minmax(0,2fr)_minmax(0,2fr)_auto] md:items-end"
+                  >
+                    <Field id={`item-product-${index}`} label="Ürün" className="col-span-2 md:col-span-1">
+                      <select
+                        id={`item-product-${index}`}
+                        value={item.productId}
+                        onChange={(e) => handleProductChange(index, e.target.value)}
+                        className={ui.input}
+                      >
+                        <option value="">Seçiniz</option>
+                        {products.map((product) => (
+                          <option key={product.id} value={product.id}>
+                            {product.name}
+                            {product.sku ? ` (${product.sku})` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field id={`item-unit-${index}`} label="Birim">
+                      <input
+                        id={`item-unit-${index}`}
+                        type="text"
+                        value={item.unit}
+                        onChange={(e) => updateItem(index, "unit", e.target.value || "metre")}
+                        className={ui.input}
+                      />
+                    </Field>
+                    <Field id={`item-qty-${index}`} label="Miktar">
+                      <input
+                        id={`item-qty-${index}`}
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={item.quantity}
+                        onChange={(e) => updateItem(index, "quantity", Number(e.target.value) || 0)}
+                        className={ui.input}
+                      />
+                    </Field>
+                    <Field id={`item-price-${index}`} label="Birim fiyat">
+                      <input
+                        id={`item-price-${index}`}
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={item.unitPrice}
+                        onChange={(e) => updateItem(index, "unitPrice", Number(e.target.value) || 0)}
+                        className={ui.input}
+                      />
+                    </Field>
+                    <div>
+                      <span className={ui.label}>Tutar</span>
+                      <div className="flex h-9 items-center font-medium tabular-nums">{tl(lineTotal, currency)}</div>
+                    </div>
+                    <div className="flex items-end justify-end">
+                      <IconButton label={`${index + 1}. kalemi sil`} danger onClick={() => removeItemRow(index)} className="h-9 w-9">
+                        <Trash2 aria-hidden="true" />
+                      </IconButton>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          <div className="flex justify-end border-t border-[var(--app-line)] px-4 py-4">
+            <dl className="grid w-full max-w-xs gap-2">
+              <div className={`flex justify-between ${ui.soft}`}>
+                <dt>Ara toplam</dt>
+                <dd className="tabular-nums">{tl(calculateSubtotal(), currency)}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt>
+                  <label htmlFor="discount" className={ui.soft}>
+                    İndirim
+                  </label>
+                </dt>
+                <dd>
+                  <input
+                    id="discount"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={discount}
+                    onChange={(e) => setDiscount(Number(e.target.value) || 0)}
+                    className={`${ui.input} h-8 w-32 text-right`}
+                  />
+                </dd>
+              </div>
+              <div className="flex justify-between border-t border-[var(--app-line)] pt-2 text-[15px] font-semibold">
+                <dt>Genel toplam</dt>
+                <dd className="tabular-nums">{tl(calculateTotal(), currency)}</dd>
+              </div>
+            </dl>
           </div>
+        </Card>
 
-          {items.map((item, index) => (
-            <div
-              key={index}
-              className="grid grid-cols-1 md:grid-cols-12 gap-3 border rounded p-3"
-            >
-              <div className="md:col-span-5">
-                <label className="block text-sm mb-1">
-                  Urun
-                </label>
-                <select
-                  value={item.productId}
-                  onChange={(e) =>
-                    handleProductChange(index, e.target.value)
-                  }
-                  className="w-full border rounded px-3 py-2"
-                >
-                  <option value="">Seciniz</option>
-                  {products.map((product) => (
-                    <option
-                      key={product.id}
-                      value={product.id}
-                    >
-                      {product.name}
-                      {product.sku
-                        ? ` (${product.sku})`
-                        : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm mb-1">
-                  Birim
-                </label>
-                <input
-                  type="text"
-                  value={item.unit}
-                  onChange={(e) =>
-                    updateItem(index, "unit", e.target.value || "metre")
-                  }
-                  className="w-full border rounded px-3 py-2"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm mb-1">
-                  Miktar
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={item.quantity}
-                  onChange={(e) =>
-                    updateItem(
-                      index,
-                      "quantity",
-                      Number(e.target.value) || 0
-                    )
-                  }
-                  className="w-full border rounded px-3 py-2"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm mb-1">
-                  Birim Fiyat
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={item.unitPrice}
-                  onChange={(e) =>
-                    updateItem(
-                      index,
-                      "unitPrice",
-                      Number(e.target.value) || 0
-                    )
-                  }
-                  className="w-full border rounded px-3 py-2"
-                />
-              </div>
-
-              <div className="md:col-span-1 flex items-end">
-                <button
-                  type="button"
-                  onClick={() => removeItemRow(index)}
-                  className="w-full px-3 py-2 rounded bg-red-600 text-white"
-                >
-                  Sil
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-start-3 space-y-2 border rounded p-3">
-            <div className="flex justify-between">
-              <span>Ara Toplam</span>
-              <span>{calculateSubtotal().toFixed(2)}</span>
-            </div>
-            <div>
-              <label className="block text-sm mb-1">
-                Indirim
-              </label>
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                value={discount}
-                onChange={(e) =>
-                  setDiscount(Number(e.target.value) || 0)
-                }
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div className="flex justify-between font-semibold">
-              <span>Genel Toplam</span>
-              <span>{calculateTotal().toFixed(2)}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => router.push("/invoices")}
-            className="px-4 py-2 border rounded"
-          >
-            Iptal
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={() => router.push("/invoices")} className={ui.btn}>
+            İptal
           </button>
-          <button
-            type="submit"
-            className="px-4 py-2 rounded bg-green-600 text-white"
-          >
-            Faturayi Kaydet
+          <button type="submit" className={ui.btnDark}>
+            Faturayı Kaydet
           </button>
         </div>
       </form>

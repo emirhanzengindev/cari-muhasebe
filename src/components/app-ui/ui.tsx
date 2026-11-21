@@ -324,6 +324,45 @@ export function TableFoot({ children }: { children: ReactNode }) {
   );
 }
 
+/* ---------------- Form alanı / detay listesi ---------------- */
+
+export function Field({
+  id,
+  label,
+  hint,
+  className,
+  children,
+}: {
+  id?: string;
+  label: ReactNode;
+  hint?: ReactNode;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className={className}>
+      <label htmlFor={id} className={ui.label}>
+        {label}
+      </label>
+      {children}
+      {hint ? <p className="mt-1 text-[12px] text-[var(--app-ink-3)]">{hint}</p> : null}
+    </div>
+  );
+}
+
+export function DetailGrid({ items }: { items: { label: string; value: ReactNode }[] }) {
+  return (
+    <dl className="grid grid-cols-1 sm:grid-cols-2">
+      {items.map((item) => (
+        <div key={item.label} className="flex justify-between gap-4 border-t border-[#f2f2f3] px-4 py-2.5 sm:odd:border-r sm:odd:border-r-[#f2f2f3]">
+          <dt className="text-[var(--app-ink-2)]">{item.label}</dt>
+          <dd className="text-right font-medium">{item.value ?? <span className="text-[var(--app-ink-3)]">—</span>}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 /* ---------------- Para ---------------- */
 
 const tlFormatter = new Intl.NumberFormat("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

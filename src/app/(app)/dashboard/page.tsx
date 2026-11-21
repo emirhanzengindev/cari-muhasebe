@@ -23,6 +23,7 @@ import RecentInvoices from "@/components/dashboard/RecentInvoices";
 import AccountsTable, { type PanelAccount } from "@/components/dashboard/AccountsTable";
 import { tl, type PanelSummary } from "@/components/dashboard/format";
 import panel from "@/components/dashboard/panel.module.css";
+import { ui } from "@/components/app-ui/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSupabaseBrowser } from "@/lib/supabase";
 
@@ -778,29 +779,29 @@ export default function Dashboard() {
       <AccountsTable accounts={accounts} loading={summaryLoading} />
 
       {showPaymentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className={ui.modalBackdrop}>
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="dashboard-payment-title"
-            className="w-full max-w-xl rounded-lg bg-white p-6 shadow-lg"
+            className={`${ui.modal} max-w-xl`}
           >
             <div className="mb-5">
-              <h2 id="dashboard-payment-title" className="text-lg font-semibold text-gray-900">
+              <h2 id="dashboard-payment-title" className="text-[16px] font-semibold">
                 Tahsilat / Ödeme
               </h2>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className={`mt-1 ${ui.soft}`}>
                 Kayıt cari hareketlere işlenir; kasa veya banka seçilirse finans bakiyesi de güncellenir.
               </p>
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-gray-700">Cari</label>
+                <label className={ui.label}>Cari</label>
                 <select
                   value={paymentAccountId}
                   onChange={(event) => setPaymentAccountId(event.target.value)}
-                  className="h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
+                  className={ui.input}
                 >
                   {activeAccounts.length === 0 ? (
                     <option value="">Cari hesap bulunamadı</option>
@@ -815,11 +816,11 @@ export default function Dashboard() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">İşlem Türü</label>
+                <label className={ui.label}>İşlem Türü</label>
                 <select
                   value={paymentType}
                   onChange={(event) => setPaymentType(event.target.value as "COLLECTION" | "PAYMENT")}
-                  className="h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
+                  className={ui.input}
                 >
                   <option value="COLLECTION">Tahsilat</option>
                   <option value="PAYMENT">Ödeme</option>
@@ -827,11 +828,11 @@ export default function Dashboard() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Ödeme Yöntemi</label>
+                <label className={ui.label}>Ödeme Yöntemi</label>
                 <select
                   value={paymentMethod}
                   onChange={(event) => setPaymentMethod(event.target.value as "CASH" | "BANK" | "OTHER")}
-                  className="h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
+                  className={ui.input}
                 >
                   <option value="CASH">Nakit</option>
                   <option value="BANK">Banka</option>
@@ -841,11 +842,11 @@ export default function Dashboard() {
 
               {paymentMethod === "CASH" && (
                 <div className="sm:col-span-2">
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Kasa Hesabı</label>
+                  <label className={ui.label}>Kasa Hesabı</label>
                   <select
                     value={paymentSafeId}
                     onChange={(event) => setPaymentSafeId(event.target.value)}
-                    className="h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
+                    className={ui.input}
                   >
                     {safes.length === 0 ? (
                       <option value="">Henüz kasa hesabı tanımlanmadı</option>
@@ -862,11 +863,11 @@ export default function Dashboard() {
 
               {paymentMethod === "BANK" && (
                 <div className="sm:col-span-2">
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Banka Hesabı</label>
+                  <label className={ui.label}>Banka Hesabı</label>
                   <select
                     value={paymentBankId}
                     onChange={(event) => setPaymentBankId(event.target.value)}
-                    className="h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
+                    className={ui.input}
                   >
                     {banks.length === 0 ? (
                       <option value="">Henüz banka hesabı bağlanmadı</option>
@@ -882,54 +883,54 @@ export default function Dashboard() {
               )}
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Tutar</label>
+                <label className={ui.label}>Tutar</label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
                   value={paymentAmount}
                   onChange={(event) => setPaymentAmount(event.target.value)}
-                  className="h-10 w-full rounded-md border border-gray-300 px-3 text-sm"
+                  className={ui.input}
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Tarih</label>
+                <label className={ui.label}>Tarih</label>
                 <input
                   type="date"
                   value={paymentDate}
                   onChange={(event) => setPaymentDate(event.target.value)}
-                  className="h-10 w-full rounded-md border border-gray-300 px-3 text-sm"
+                  className={ui.input}
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-gray-700">Açıklama</label>
+                <label className={ui.label}>Açıklama</label>
                 <textarea
                   value={paymentDescription}
                   onChange={(event) => setPaymentDescription(event.target.value)}
                   rows={3}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  className={ui.textarea}
                 />
               </div>
             </div>
 
             {paymentMethod === "BANK" && banks.length === 0 && (
-              <p className="mt-4 rounded bg-amber-50 px-3 py-2 text-sm text-amber-700">
+              <p className="mt-4 rounded-[10px] border border-[#fde68a] bg-[#fffbeb] px-3.5 py-2.5 text-[#b45309]">
                 Banka entegrasyonu veya manuel banka hesabı henüz tanımlanmadı.
               </p>
             )}
             {paymentMethod === "CASH" && safes.length === 0 && (
-              <p className="mt-4 rounded bg-amber-50 px-3 py-2 text-sm text-amber-700">
+              <p className="mt-4 rounded-[10px] border border-[#fde68a] bg-[#fffbeb] px-3.5 py-2.5 text-[#b45309]">
                 Nakit işlem kaydetmek için önce finans bölümünde kasa hesabı tanımlayın.
               </p>
             )}
-            {paymentError && <p className="mt-4 text-sm text-red-600">{paymentError}</p>}
+            {paymentError && <p className="mt-4 text-[var(--app-red)]">{paymentError}</p>}
 
             <div className="mt-6 flex justify-end gap-2">
-              <Button
+              <button
                 type="button"
-                variant="outline"
+                className={ui.btn}
                 onClick={() => {
                   setShowPaymentModal(false);
                   resetPaymentForm();
@@ -937,14 +938,15 @@ export default function Dashboard() {
                 disabled={paymentSaving}
               >
                 Vazgeç
-              </Button>
-              <Button
+              </button>
+              <button
                 type="button"
+                className={ui.btnDark}
                 onClick={handleSavePayment}
                 disabled={paymentSaving || activeAccounts.length === 0}
               >
                 {paymentSaving ? "Kaydediliyor..." : "Kaydet"}
-              </Button>
+              </button>
             </div>
           </div>
         </div>

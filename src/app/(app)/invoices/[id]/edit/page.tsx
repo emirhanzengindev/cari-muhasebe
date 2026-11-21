@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useInvoiceStore } from "@/stores/invoiceStore";
 import { useCurrentAccountsStore } from "@/stores/currentAccountsStore";
+import { Alert, Card, Field, PageHeader, Spinner, ui } from "@/components/app-ui/ui";
 
 export default function EditInvoicePage() {
   const router = useRouter();
@@ -35,7 +36,7 @@ export default function EditInvoicePage() {
 
         const res = await fetch(`/api/invoices/${id}`, { credentials: "include" });
         const body = await res.json();
-        if (!res.ok) throw new Error(body?.error || "Fatura bulunamadi");
+        if (!res.ok) throw new Error(body?.error || "Fatura bulunamadı.");
 
         if (cancelled) return;
         setInvoiceNumber(body.invoice_number || body.invoice_no || body.number || "");
@@ -45,7 +46,7 @@ export default function EditInvoicePage() {
         setTotalAmount(Number(body.total_amount ?? body.total ?? body.amount ?? 0));
         setDescription(body.description || "");
       } catch (err: any) {
-        if (!cancelled) setError(err?.message || "Fatura yuklenemedi");
+        if (!cancelled) setError(err?.message || "Fatura yüklenemedi.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -74,112 +75,75 @@ export default function EditInvoicePage() {
       } as any);
       router.push(`/invoices/${id}`);
     } catch (err: any) {
-      setError(err?.message || "Fatura guncellenemedi");
+      setError(err?.message || "Fatura güncellenemedi.");
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return <div className="py-6">Yukleniyor...</div>;
-  }
+  if (loading) return <Spinner />;
 
   return (
-    <div className="py-6">
-      <h1 className="text-2xl font-bold text-gray-900">Fatura Duzenle</h1>
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+    <div className={`${ui.page} max-w-3xl`}>
+      <PageHeader
+        title="Faturayı Düzenle"
+        description={invoiceNumber ? `Fatura #${invoiceNumber}` : undefined}
+        back={{ href: `/invoices/${id}`, label: "Fatura detayı" }}
+      />
+      {error && <Alert>{error}</Alert>}
 
-      <form onSubmit={onSubmit} className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl">
-        <div>
-          <label className="block text-sm mb-1">Fatura No</label>
-          <input
-            className="w-full border rounded px-3 py-2"
-            value={invoiceNumber}
-            onChange={(e) => setInvoiceNumber(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1">Fatura Tipi</label>
-          <select
-            className="w-full border rounded px-3 py-2"
-            value={invoiceType}
-            onChange={(e) => setInvoiceType(e.target.value as "SALES" | "PURCHASE")}
-          >
-            <option value="SALES">Satis</option>
-            <option value="PURCHASE">Alis</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1">Tarih</label>
-          <input
-            type="date"
-            className="w-full border rounded px-3 py-2"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1">Cari Hesap</label>
-          <select
-            className="w-full border rounded px-3 py-2"
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-          >
-            <option value="">Seciniz</option>
-            {accounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1">Tutar</label>
-          <input
-            type="number"
-            step="0.01"
-            className="w-full border rounded px-3 py-2"
-            value={totalAmount}
-            onChange={(e) => setTotalAmount(Number(e.target.value) || 0)}
-          />
-        </div>
-
-        <div className="md:col-span-2">
-          <label className="block text-sm mb-1">Aciklama</label>
-          <textarea
-            rows={3}
-            className="w-full border rounded px-3 py-2"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </div>
-
-        <div className="md:col-span-2 flex gap-4">
-          <button
-            type="submit"
-            disabled={saving}
-            className="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-60"
-          >
-            {saving ? "Kaydediliyor..." : "Kaydet"}
-          </button>
-          <Link href={`/invoices/${id}`} className="px-4 py-2 rounded border border-gray-300 text-gray-700">
-            Vazgec
-          </Link>
-        </div>
-      </form>
-
-      <div className="mt-4 flex gap-4">
-        <Link href={`/invoices/${id}`} className="text-blue-600 hover:text-blue-800">
-          Fatura detayina git
-        </Link>
-        <Link href="/invoices" className="text-gray-700 hover:text-gray-900">
-          Fatura listesine don
-        </Link>
-      </div>
+      <Card>
+        <form onSubmit={onSubmit} className="grid gap-4 p-4 sm:grid-cols-2 sm:p-5">
+          <Field id="invoiceNumber" label="Fatura no">
+            <input id="invoiceNumber" className={ui.input} value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} />
+          </Field>
+          <Field id="invoiceType" label="Fatura tipi">
+            <select
+              id="invoiceType"
+              className={ui.input}
+              value={invoiceType}
+              onChange={(e) => setInvoiceType(e.target.value as "SALES" | "PURCHASE")}
+            >
+              <option value="SALES">Satış</option>
+              <option value="PURCHASE">Alış</option>
+            </select>
+          </Field>
+          <Field id="date" label="Tarih">
+            <input id="date" type="date" className={ui.input} value={date} onChange={(e) => setDate(e.target.value)} />
+          </Field>
+          <Field id="accountId" label="Cari hesap">
+            <select id="accountId" className={ui.input} value={accountId} onChange={(e) => setAccountId(e.target.value)}>
+              <option value="">Seçiniz</option>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field id="totalAmount" label="Tutar (₺)">
+            <input
+              id="totalAmount"
+              type="number"
+              step="0.01"
+              className={ui.input}
+              value={totalAmount}
+              onChange={(e) => setTotalAmount(Number(e.target.value) || 0)}
+            />
+          </Field>
+          <Field id="description" label="Açıklama" className="sm:col-span-2">
+            <textarea id="description" rows={3} className={ui.textarea} value={description} onChange={(e) => setDescription(e.target.value)} />
+          </Field>
+          <div className="flex justify-end gap-2 border-t border-[var(--app-line)] pt-4 sm:col-span-2">
+            <Link href={`/invoices/${id}`} className={ui.btn}>
+              Vazgeç
+            </Link>
+            <button type="submit" disabled={saving} className={ui.btnDark}>
+              {saving ? "Kaydediliyor..." : "Kaydet"}
+            </button>
+          </div>
+        </form>
+      </Card>
     </div>
   );
 }

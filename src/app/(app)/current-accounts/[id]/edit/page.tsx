@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { Alert, Card, Field, PageHeader, Spinner, ui } from "@/components/app-ui/ui";
 
 type AccountForm = {
   name: string;
@@ -84,91 +85,70 @@ export default function EditCurrentAccountPage() {
     }
   };
 
-  if (loading) {
-    return <div className="py-6">Yukleniyor...</div>;
-  }
+  if (loading) return <Spinner />;
+
+  const set = <K extends keyof AccountForm>(key: K, value: AccountForm[K]) =>
+    setForm((s) => ({ ...s, [key]: value }));
 
   return (
-    <div className="py-6 max-w-3xl">
-      <h1 className="text-2xl font-bold mb-4">Cari Hesap Duzenle</h1>
-      {error && <p className="text-red-600 mb-3">{error}</p>}
+    <div className={`${ui.page} max-w-3xl`}>
+      <PageHeader
+        title="Cari Hesabı Düzenle"
+        description={form.name || undefined}
+        back={{ href: `/current-accounts/${params.id}`, label: "Cari detayı" }}
+      />
+      {error && <Alert>{error}</Alert>}
 
-      <form onSubmit={onSubmit} className="space-y-3 bg-white p-4 rounded shadow">
-        <input
-          className="w-full border rounded p-2"
-          placeholder="Ad"
-          value={form.name}
-          onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
-          required
-        />
-        <input
-          className="w-full border rounded p-2"
-          placeholder="Telefon"
-          value={form.phone}
-          onChange={(e) => setForm((s) => ({ ...s, phone: e.target.value }))}
-        />
-        <textarea
-          className="w-full border rounded p-2"
-          placeholder="Adres"
-          value={form.address}
-          onChange={(e) => setForm((s) => ({ ...s, address: e.target.value }))}
-        />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <input
-            className="w-full border rounded p-2"
-            placeholder="Vergi No"
-            value={form.tax_number}
-            onChange={(e) => setForm((s) => ({ ...s, tax_number: e.target.value }))}
-          />
-          <input
-            className="w-full border rounded p-2"
-            placeholder="Vergi Dairesi"
-            value={form.tax_office}
-            onChange={(e) => setForm((s) => ({ ...s, tax_office: e.target.value }))}
-          />
-        </div>
-        <input
-          className="w-full border rounded p-2"
-          placeholder="Sirket"
-          value={form.company}
-          onChange={(e) => setForm((s) => ({ ...s, company: e.target.value }))}
-        />
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2">
+      <Card>
+        <form onSubmit={onSubmit} className="grid gap-4 p-4 sm:grid-cols-2 sm:p-5">
+          <Field id="name" label="Ad / Unvan *" className="sm:col-span-2">
+            <input id="name" className={ui.input} value={form.name} onChange={(e) => set("name", e.target.value)} required />
+          </Field>
+          <Field id="account_type" label="Hesap tipi">
+            <select
+              id="account_type"
+              className={ui.input}
+              value={form.account_type}
+              onChange={(e) => set("account_type", e.target.value === "SUPPLIER" ? "SUPPLIER" : "CUSTOMER")}
+            >
+              <option value="CUSTOMER">Müşteri</option>
+              <option value="SUPPLIER">Tedarikçi</option>
+            </select>
+          </Field>
+          <Field id="phone" label="Telefon">
+            <input id="phone" type="tel" className={ui.input} value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+          </Field>
+          <Field id="company" label="Şirket" className="sm:col-span-2">
+            <input id="company" className={ui.input} value={form.company} onChange={(e) => set("company", e.target.value)} />
+          </Field>
+          <Field id="tax_number" label="Vergi no">
+            <input id="tax_number" className={ui.input} value={form.tax_number} onChange={(e) => set("tax_number", e.target.value)} />
+          </Field>
+          <Field id="tax_office" label="Vergi dairesi">
+            <input id="tax_office" className={ui.input} value={form.tax_office} onChange={(e) => set("tax_office", e.target.value)} />
+          </Field>
+          <Field id="address" label="Adres" className="sm:col-span-2">
+            <textarea id="address" rows={3} className={ui.textarea} value={form.address} onChange={(e) => set("address", e.target.value)} />
+          </Field>
+          <label className="flex items-center gap-2 sm:col-span-2">
             <input
               type="checkbox"
+              className="h-4 w-4 accent-[var(--app-accent)]"
               checked={form.is_active}
-              onChange={(e) => setForm((s) => ({ ...s, is_active: e.target.checked }))}
+              onChange={(e) => set("is_active", e.target.checked)}
             />
-            Aktif
+            Hesap aktif
           </label>
-          <select
-            className="border rounded p-2"
-            value={form.account_type}
-            onChange={(e) =>
-              setForm((s) => ({
-                ...s,
-                account_type: e.target.value === "SUPPLIER" ? "SUPPLIER" : "CUSTOMER",
-              }))
-            }
-          >
-            <option value="CUSTOMER">Musteri</option>
-            <option value="SUPPLIER">Tedarikci</option>
-          </select>
-        </div>
-        <div className="flex gap-3">
-          <button disabled={saving} className="px-4 py-2 rounded bg-blue-600 text-white">
-            {saving ? "Kaydediliyor..." : "Kaydet"}
-          </button>
-          <button
-            type="button"
-            className="px-4 py-2 rounded border"
-            onClick={() => router.push(`/current-accounts/${params.id}`)}
-          >
-            Iptal
-          </button>
-        </div>
-      </form>
+          <div className="flex justify-end gap-2 border-t border-[var(--app-line)] pt-4 sm:col-span-2">
+            <button type="button" className={ui.btn} onClick={() => router.push(`/current-accounts/${params.id}`)}>
+              İptal
+            </button>
+            <button type="submit" disabled={saving} className={ui.btnDark}>
+              {saving ? "Kaydediliyor..." : "Kaydet"}
+            </button>
+          </div>
+        </form>
+      </Card>
     </div>
   );
 }

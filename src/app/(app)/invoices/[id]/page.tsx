@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { CalendarDays, Download, FileText, Pencil, UserRound } from "lucide-react";
 import { downloadInvoicePdf } from "@/lib/pdfExports";
+import { Alert, Card, CardHead, DetailGrid, PageHeader, Spinner, Status, tl, ui } from "@/components/app-ui/ui";
 
 type InvoiceDetail = {
   id: string;
@@ -47,7 +49,7 @@ export default function InvoiceDetailPage() {
         const res = await fetch(`/api/invoices/${id}`, { credentials: "include" });
         const body = await res.json();
         if (!res.ok) {
-          throw new Error(body?.error || "Invoice could not be loaded");
+          throw new Error(body?.error || "Fatura yüklenemedi.");
         }
         if (!cancelled) {
           setInvoice(body);
@@ -64,7 +66,7 @@ export default function InvoiceDetailPage() {
           }
         }
       } catch (err: any) {
-        if (!cancelled) setError(err?.message || "Invoice could not be loaded");
+        if (!cancelled) setError(err?.message || "Fatura yüklenemedi.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -76,17 +78,13 @@ export default function InvoiceDetailPage() {
     };
   }, [id]);
 
-  if (loading) {
-    return <div className="py-6">Yukleniyor...</div>;
-  }
+  if (loading) return <Spinner />;
 
   if (error) {
     return (
-      <div className="py-6">
-        <p className="text-red-600">{error}</p>
-        <Link href="/invoices" className="text-blue-600 hover:text-blue-800">
-          Faturalara don
-        </Link>
+      <div className={ui.page}>
+        <PageHeader title="Fatura" back={{ href: "/invoices", label: "Faturalar" }} />
+        <Alert>{error}</Alert>
       </div>
     );
   }
@@ -138,39 +136,80 @@ export default function InvoiceDetailPage() {
       );
     } catch (err) {
       console.error("Invoice PDF error:", err);
-      setPdfError("PDF olusturulamadi");
+      setPdfError("PDF oluşturulamadı.");
     } finally {
       setDownloading(false);
     }
   };
 
+  const number = invoice?.invoice_number || invoice?.invoice_no || invoice?.number || "";
+  const purchase = (invoice?.invoice_type || invoice?.type || "SALES").toUpperCase() === "PURCHASE";
+  const rawDate = invoice?.date || invoice?.invoice_date;
+  const parsedDate = rawDate ? new Date(rawDate) : null;
+  const dateText = parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate.toLocaleDateString("tr-TR") : "—";
+  const total = Number(invoice?.total_amount ?? invoice?.total ?? invoice?.amount ?? 0);
+
   return (
-    <div className="py-6">
-      <h1 className="text-2xl font-bold text-gray-900">Fatura Detayi</h1>
-      <div className="mt-4 space-y-2 text-sm text-gray-800">
-        <div><strong>ID:</strong> {invoice?.id}</div>
-        <div><strong>No:</strong> {invoice?.invoice_number || "-"}</div>
-        <div><strong>Tur:</strong> {invoice?.invoice_type || "-"}</div>
-        <div><strong>Tutar:</strong> {Number(invoice?.total_amount || 0).toFixed(2)}</div>
-        <div><strong>Tarih:</strong> {invoice?.date ? new Date(invoice.date).toLocaleDateString() : "-"}</div>
-        <div><strong>Aciklama:</strong> {invoice?.description || "-"}</div>
+    <div className={`${ui.page} max-w-4xl`}>
+      <PageHeader
+        back={{ href: "/invoices", label: "Faturalar" }}
+        title={`Fatura #${number || "—"}`}
+        description={
+          <span className="inline-flex items-center gap-2">
+            <Status tone={purchase ? "violet" : "green"}>{purchase ? "Alış" : "Satış"}</Status>
+            {dateText}
+          </span>
+        }
+        actions={
+          <>
+            <Link href={`/invoices/${id}/edit`} className={ui.btn}>
+              <Pencil aria-hidden="true" />
+              Düzenle
+            </Link>
+            <button type="button" onClick={handleDownloadPdf} disabled={downloading} className={ui.btnDark}>
+              <Download aria-hidden="true" />
+              {downloading ? "Hazırlanıyor..." : "PDF İndir"}
+            </button>
+          </>
+        }
+      />
+
+      {pdfError && <Alert>{pdfError}</Alert>}
+
+      <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Card className="p-4">
+          <small className={`flex items-center gap-1.5 ${ui.soft}`}><FileText size={14} aria-hidden="true" />Toplam tutar</small>
+          <b className="mt-1 block text-[20px] font-semibold tabular-nums tracking-[-0.02em]">{tl(total)}</b>
+        </Card>
+        <Card className="p-4">
+          <small className={`flex items-center gap-1.5 ${ui.soft}`}><UserRound size={14} aria-hidden="true" />Cari</small>
+          <b className="mt-1 block truncate text-[15px] font-semibold">{accountName || "—"}</b>
+        </Card>
+        <Card className="p-4">
+          <small className={`flex items-center gap-1.5 ${ui.soft}`}><CalendarDays size={14} aria-hidden="true" />Tarih</small>
+          <b className="mt-1 block text-[15px] font-semibold">{dateText}</b>
+        </Card>
       </div>
-      {pdfError && <p className="mt-4 text-red-600 text-sm">{pdfError}</p>}
-      <div className="mt-6 flex gap-4">
-        <button
-          onClick={handleDownloadPdf}
-          disabled={downloading}
-          className="px-4 py-2 rounded bg-emerald-600 text-white disabled:opacity-60"
-        >
-          {downloading ? "Hazirlaniyor..." : "PDF Indir"}
-        </button>
-        <Link href={`/invoices/${id}/edit`} className="text-blue-600 hover:text-blue-800">
-          Duzenle
-        </Link>
-        <Link href="/invoices" className="text-gray-700 hover:text-gray-900">
-          Listeye don
-        </Link>
-      </div>
+
+      <Card>
+        <CardHead icon={<FileText aria-hidden="true" />} title="Fatura bilgileri" />
+        <DetailGrid
+          items={[
+            { label: "Fatura no", value: number || null },
+            { label: "Tür", value: purchase ? "Alış" : "Satış" },
+            { label: "Ara toplam", value: tl(Number(invoice?.subtotal ?? 0)) },
+            { label: "İndirim", value: tl(Number(invoice?.discount ?? 0)) },
+            { label: "KDV", value: tl(Number(invoice?.vat_amount ?? 0)) },
+            { label: "Genel toplam", value: tl(total) },
+          ]}
+        />
+        {invoice?.description ? (
+          <div className="border-t border-[#f2f2f3] px-4 py-3">
+            <p className={ui.soft}>Açıklama</p>
+            <p className="mt-1">{invoice.description}</p>
+          </div>
+        ) : null}
+      </Card>
     </div>
   );
 }
