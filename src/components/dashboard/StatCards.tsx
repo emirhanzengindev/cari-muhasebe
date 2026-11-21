@@ -29,7 +29,7 @@ export type StatSummary = {
 
 const TICK_COUNT = 28;
 const MAX_DOTS = 8;
-const DOT_COLORS = ["#111", "#2f3cf4", "#6b6b6b", "#111", "#2f3cf4", "#9a9a96", "#111", "#2f3cf4"];
+const DOT_COLORS = ["#122b3a", "#176b87", "#6b6b6b", "#122b3a", "#4fa9c2", "#9a9a96", "#122b3a", "#176b87"];
 const ARC_PATH = "M4 60 Q140 -20 276 60";
 
 const num = (v: number | undefined) => (Number.isFinite(v) ? (v as number) : 0);
