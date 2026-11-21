@@ -20,8 +20,6 @@ import { blogPosts, getBlogPostPath } from "@/lib/blog";
 import {
   productPages,
   siteDescription,
-  siteName,
-  siteTagline,
   siteTitle,
 } from "@/lib/site";
 
@@ -159,19 +157,8 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
-  openGraph: {
-    type: "website",
-    locale: "tr_TR",
-    url: "/",
-    siteName,
-    title: siteTitle,
-    description: `${siteTagline} ${siteDescription}`,
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: siteTitle,
-    description: `${siteTagline} ${siteDescription}`,
-  },
+  // openGraph / twitter: root layout'tan miras alınır (görsel: app/opengraph-image.tsx).
+  // Burada yeniden tanımlamak root'taki paylaşım görselini ezer.
 };
 
 export default function HomePage() {

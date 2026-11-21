@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { PROTECTED_PATHS } from "@/lib/routes";
 import { absoluteUrl } from "@/lib/site";
 
 /**
@@ -10,17 +11,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: [
-        "/dashboard",
-        "/current-accounts",
-        "/inventory",
-        "/invoices",
-        "/quick-sales",
-        "/finance",
-        "/reports",
-        "/auth/",
-        "/api/",
-      ],
+      disallow: [...PROTECTED_PATHS, "/auth/", "/api/"],
     },
     sitemap: absoluteUrl("/sitemap.xml"),
     host: absoluteUrl("/"),

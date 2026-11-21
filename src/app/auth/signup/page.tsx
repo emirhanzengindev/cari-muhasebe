@@ -8,7 +8,9 @@ import AuthShell, {
   authLabelClass,
   authSubmitClass,
 } from "@/components/auth/AuthShell";
+import Link from "next/link";
 import { ArrowIcon } from "@/components/marketing/SiteHeader";
+import { privacyPath, termsPath } from "@/lib/legal";
 
 export default function SignUp() {
   const [name, setName] = useState("");
@@ -144,6 +146,17 @@ export default function SignUp() {
               </>
             )}
           </button>
+          <p className="mt-3 text-[12.5px] leading-relaxed text-co-ink-soft">
+            Hesap oluşturarak{" "}
+            <Link href={termsPath} className="text-co-ink underline underline-offset-2">
+              Kullanım Koşulları
+            </Link>
+            &apos;nı kabul etmiş olursunuz. Kişisel verileriniz{" "}
+            <Link href={privacyPath} className="text-co-ink underline underline-offset-2">
+              Gizlilik Politikası
+            </Link>{" "}
+            kapsamında işlenir.
+          </p>
         </div>
       </form>
     </AuthShell>

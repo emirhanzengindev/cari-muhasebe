@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { blogPosts, getBlogPostPath } from "@/lib/blog";
+import { privacyPath, termsPath } from "@/lib/legal";
 import { productPages, siteName, siteTagline } from "@/lib/site";
 import { Logo } from "./SiteHeader";
 
@@ -62,6 +63,16 @@ export default function SiteFooter() {
               <li>
                 <Link href="/auth/signup" className={linkClass}>
                   Hesap Oluştur
+                </Link>
+              </li>
+              <li>
+                <Link href={privacyPath} className={linkClass}>
+                  Gizlilik ve KVKK
+                </Link>
+              </li>
+              <li>
+                <Link href={termsPath} className={linkClass}>
+                  Kullanım Koşulları
                 </Link>
               </li>
             </ul>

@@ -53,7 +53,12 @@ export type ProductPageLink = {
   title: string;
   shortTitle: string;
   description: string;
+  /** Sayfa içeriğinin son anlamlı değişiklik tarihi (YYYY-MM-DD); sitemap lastmod. */
+  updatedAt: string;
 };
+
+/** Ana sayfa içeriğinin son anlamlı değişiklik tarihi (YYYY-MM-DD); sitemap lastmod. */
+export const homeUpdatedAt = "2026-11-21";
 
 /** Public product pages, reused for navigation, footer and internal linking. */
 export const productPages: ProductPageLink[] = [
@@ -63,6 +68,7 @@ export const productPages: ProductPageLink[] = [
     shortTitle: "Cari Hesap",
     description:
       "Müşteri ve tedarikçi hesaplarını, borç ve alacak hareketlerini tek ekranda takip edin.",
+    updatedAt: "2026-11-21",
   },
   {
     href: "/stok-takip-programi",
@@ -70,6 +76,7 @@ export const productPages: ProductPageLink[] = [
     shortTitle: "Stok Takip",
     description:
       "Ürün, kategori ve depolarınızı yönetin; stok hareketlerini ve kritik seviyeleri izleyin.",
+    updatedAt: "2026-11-21",
   },
   {
     href: "/fatura-programi",
@@ -77,6 +84,7 @@ export const productPages: ProductPageLink[] = [
     shortTitle: "Fatura",
     description:
       "Satış ve alış faturalarını kalemleriyle oluşturun, cari hareketlerle birlikte takip edin.",
+    updatedAt: "2026-11-21",
   },
   {
     href: "/tahsilat-takip-programi",
@@ -84,6 +92,7 @@ export const productPages: ProductPageLink[] = [
     shortTitle: "Tahsilat",
     description:
       "Tahsilat ve ödemeleri cari hesaba işleyin, açık faturaları ve bakiyeleri izleyin.",
+    updatedAt: "2026-11-21",
   },
 ];
 
