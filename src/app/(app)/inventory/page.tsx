@@ -5,6 +5,35 @@ import Link from "next/link";
 import { useInventoryStore } from "@/stores/inventoryStore";
 import { useTenantStore } from "@/lib/tenantStore";
 import { useRouter } from "next/navigation";
+import {
+  BarChart3,
+  Barcode,
+  CircleDollarSign,
+  Download,
+  Layers,
+  Package,
+  Plus,
+  Tag,
+  Upload,
+  Warehouse,
+  X,
+} from "lucide-react";
+import {
+  Alert,
+  Avatar,
+  Card,
+  EmptyState,
+  IconButton,
+  PageHeader,
+  RowActions,
+  SearchInput,
+  Spinner,
+  Status,
+  TableFoot,
+  Tabs,
+  tl,
+  ui,
+} from "@/components/app-ui/ui";
 
 type ImportFailure = {
   row: number;
@@ -19,10 +48,16 @@ type ImportResult = {
   failures: ImportFailure[];
 };
 
+const thInner = "inline-flex items-center gap-1.5";
+
+const isLow = (product: any) =>
+  Number(product.stockQuantity || product.stock_quantity || 0) <=
+  Number(product.criticalLevel || product.critical_level || 0);
+
 export default function Inventory() {
   const router = useRouter();
   const { products, categories, warehouses, loading, error, fetchProducts, fetchCategories, fetchWarehouses, addProduct, addCategory, addWarehouse } = useInventoryStore();
-  const [filter, setFilter] = useState("ALL");
+  const [filter, setFilter] = useState<"ALL" | "LOW_STOCK">("ALL");
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [showManageCategoriesModal, setShowManageCategoriesModal] = useState(false);
@@ -71,27 +106,26 @@ export default function Inventory() {
   }, [tenantId, fetchProducts, fetchCategories, fetchWarehouses]);
 
   const filteredProducts = products?.filter(product => {
-    const q = String(searchTerm ?? "").toLowerCase();
-    const name = String(product?.name ?? "").toLowerCase();
-    const sku = String(product?.sku ?? "").toLowerCase();
-    const barcode = String(product?.barcode ?? "").toLowerCase();
+    const q = String(searchTerm ?? "").toLocaleLowerCase("tr-TR");
+    const name = String(product?.name ?? "").toLocaleLowerCase("tr-TR");
+    const sku = String(product?.sku ?? "").toLocaleLowerCase("tr-TR");
+    const barcode = String(product?.barcode ?? "").toLocaleLowerCase("tr-TR");
     const matchesSearch = name.includes(q) || sku.includes(q) || barcode.includes(q);
-    
-    if (filter === "ALL") return matchesSearch;
-    if (filter === "LOW_STOCK") return matchesSearch && Number(product.stockQuantity || product.stock_quantity || 0) <= Number(product.criticalLevel || product.critical_level || 0);
+
+    if (filter === "LOW_STOCK") return matchesSearch && isLow(product);
     return matchesSearch;
   }) || [];
 
   const getCategoryName = (categoryId: string | undefined) => {
-    if (!categoryId) return "Uncategorized";
+    if (!categoryId) return "Kategorisiz";
     const category = categories.find(cat => cat.id === categoryId);
-    return category ? category.name : "Unknown Category";
+    return category ? category.name : "Bilinmeyen kategori";
   };
 
   const getWarehouseName = (warehouseId: string | undefined) => {
-    if (!warehouseId) return "Unassigned";
+    if (!warehouseId) return "Atanmamış";
     const warehouse = warehouses.find(wh => wh.id === warehouseId);
-    return warehouse ? warehouse.name : "Unknown Warehouse";
+    return warehouse ? warehouse.name : "Bilinmeyen depo";
   };
 
   const handleAddProduct = async (e: React.FormEvent) => {
@@ -298,120 +332,93 @@ export default function Inventory() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="py-6 flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  if (loading) return <Spinner />;
 
   if (error) {
     return (
-      <div className="py-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Hata</h3>
-              <div className="mt-2 text-sm text-red-700">
-                <p>{error}</p>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className={ui.page}>
+        <PageHeader title="Stok Yönetimi" />
+        <Alert>{error}</Alert>
       </div>
     );
   }
 
-  return (
-    <div className="py-6">
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Stok Yönetimi</h1>
-          <p className="mt-1 text-sm text-gray-500">Ürünlerinizi, kategorilerinizi ve depolarınızı yönetin</p>
-        </div>
-        <div className="mt-4 sm:mt-0 flex flex-wrap gap-3">
-          <input
-            ref={productImportInputRef}
-            type="file"
-            accept=".xlsx,.xls"
-            className="hidden"
-            onChange={handleProductImportFileChange}
-          />
-          <button
-            onClick={downloadProductTemplate}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Urun Sablonu Indir
-          </button>
-          <select
-            value={productImportMode}
-            onChange={(e) => setProductImportMode(e.target.value as "insert" | "upsert")}
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700"
-          >
-            <option value="insert">Yalniz Ekle</option>
-            <option value="upsert">Varsa Guncelle</option>
-          </select>
-          <button
-            onClick={triggerProductImport}
-            disabled={isImportingProducts}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-          >
-            {isImportingProducts ? "Import Ediliyor..." : "Excel Yukle"}
-          </button>
-          <button 
-            onClick={() => setShowManageCategoriesModal(true)}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Kategorileri Yönet
-          </button>
-          <button 
-            onClick={() => setShowManageWarehousesModal(true)}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Depoları Yönet
-          </button>
-          <button 
-            onClick={() => setShowAddProductModal(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Ürün Ekle
-          </button>
-        </div>
-      </div>
+  const allProducts = products || [];
+  const lowCount = allProducts.filter(isLow).length;
 
-      {productImportError && (
-        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {productImportError}
-        </div>
-      )}
+  return (
+    <div className={ui.page}>
+      <PageHeader
+        title="Stok Yönetimi"
+        description="Ürünlerinizi, kategorilerinizi ve depolarınızı yönetin"
+        actions={
+          <>
+            <input
+              ref={productImportInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={handleProductImportFileChange}
+            />
+            <button type="button" onClick={() => setShowManageCategoriesModal(true)} className={ui.btn}>
+              <Tag aria-hidden="true" />
+              Kategoriler
+            </button>
+            <button type="button" onClick={() => setShowManageWarehousesModal(true)} className={ui.btn}>
+              <Warehouse aria-hidden="true" />
+              Depolar
+            </button>
+            <button type="button" onClick={downloadProductTemplate} className={ui.btn}>
+              <Download aria-hidden="true" />
+              Şablon İndir
+            </button>
+            <label className="sr-only" htmlFor="product-import-mode">
+              İçe aktarma modu
+            </label>
+            <select
+              id="product-import-mode"
+              value={productImportMode}
+              onChange={(e) => setProductImportMode(e.target.value as "insert" | "upsert")}
+              className={ui.btn}
+            >
+              <option value="insert">Yalnız ekle</option>
+              <option value="upsert">Varsa güncelle</option>
+            </select>
+            <button type="button" onClick={triggerProductImport} disabled={isImportingProducts} className={ui.btn}>
+              <Upload aria-hidden="true" />
+              {isImportingProducts ? "İçe aktarılıyor..." : "Excel Yükle"}
+            </button>
+            <button type="button" onClick={() => setShowAddProductModal(true)} className={ui.btnDark}>
+              <Plus aria-hidden="true" />
+              Ürün Ekle
+            </button>
+          </>
+        }
+      />
+
+      {productImportError && <Alert>{productImportError}</Alert>}
 
       {productImportResult && (
-        <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4">
-          <p className="text-sm text-green-800">
-            Toplam satir: <strong>{productImportResult.totalRows}</strong> | Basarili:{" "}
-            <strong>{productImportResult.importedCount}</strong> | Hatali:{" "}
+        <Alert tone={productImportResult.failedCount > 0 ? "amber" : "green"}>
+          <p>
+            Toplam satır: <strong>{productImportResult.totalRows}</strong> · Başarılı:{" "}
+            <strong>{productImportResult.importedCount}</strong> · Hatalı:{" "}
             <strong>{productImportResult.failedCount}</strong>
           </p>
 
           {productImportResult.failures.length > 0 && (
             <div className="mt-3 overflow-x-auto">
-              <table className="min-w-full text-left text-xs text-red-900">
+              <table className="min-w-full text-left text-xs">
                 <thead>
                   <tr>
-                    <th className="px-2 py-1">Satir</th>
-                    <th className="px-2 py-1">Deger</th>
-                    <th className="px-2 py-1">Hata</th>
+                    <th className="px-2 py-1 font-medium">Satır</th>
+                    <th className="px-2 py-1 font-medium">Değer</th>
+                    <th className="px-2 py-1 font-medium">Hata</th>
                   </tr>
                 </thead>
                 <tbody>
                   {productImportResult.failures.slice(0, 25).map((failure, idx) => (
-                    <tr key={`${failure.row}-${idx}`} className="border-t border-red-100">
+                    <tr key={`${failure.row}-${idx}`} className="border-t border-black/5">
                       <td className="px-2 py-1">{failure.row}</td>
                       <td className="px-2 py-1">{failure.value || "-"}</td>
                       <td className="px-2 py-1">{failure.reason}</td>
@@ -421,668 +428,520 @@ export default function Inventory() {
               </table>
             </div>
           )}
+        </Alert>
+      )}
+
+      <Card>
+        <div className="flex flex-wrap items-center gap-2 px-4 pb-2.5 pt-3.5">
+          <Tabs
+            items={[
+              { value: "ALL", label: "Tüm Ürünler", count: allProducts.length },
+              { value: "LOW_STOCK", label: "Düşük Stok", count: lowCount },
+            ]}
+            value={filter as "ALL" | "LOW_STOCK"}
+            onChange={setFilter}
+            label="Ürün filtresi"
+          />
+          <div className="w-full sm:ml-auto sm:w-auto">
+            <SearchInput value={searchTerm} onChange={setSearchTerm} placeholder="Ürün, SKU veya barkod ara..." />
+          </div>
+        </div>
+
+        {filteredProducts.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className={ui.table}>
+              <thead>
+                <tr>
+                  <th scope="col" className={ui.th}>
+                    <span className={thInner}><Package size={13} className={ui.muted} aria-hidden="true" />Ürün</span>
+                  </th>
+                  <th scope="col" className={ui.th}>
+                    <span className={thInner}><Barcode size={13} className={ui.muted} aria-hidden="true" />SKU / Barkod</span>
+                  </th>
+                  <th scope="col" className={ui.th}>
+                    <span className={thInner}><Tag size={13} className={ui.muted} aria-hidden="true" />Kategori</span>
+                  </th>
+                  <th scope="col" className={ui.th}>
+                    <span className={thInner}><Warehouse size={13} className={ui.muted} aria-hidden="true" />Depo</span>
+                  </th>
+                  <th scope="col" className={ui.th}>
+                    <span className={thInner}><CircleDollarSign size={13} className={ui.muted} aria-hidden="true" />Fiyat</span>
+                  </th>
+                  <th scope="col" className={ui.th}>
+                    <span className={thInner}><BarChart3 size={13} className={ui.muted} aria-hidden="true" />Stok</span>
+                  </th>
+                  <th scope="col" className={ui.th}>
+                    <span className={thInner}><Layers size={13} className={ui.muted} aria-hidden="true" />Kumaş Detayları</span>
+                  </th>
+                  <th scope="col" className={`${ui.th} text-right`}>İşlemler</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredProducts.map((product) => {
+                  const name = String(product.name || "Adsız ürün");
+                  const stock = Number(product.stockQuantity || product.stock_quantity || 0);
+                  const critical = Number(product.criticalLevel || product.critical_level || 0);
+                  const buy = Number(product.buyPrice || product.buy_price || 0);
+                  const sell = Number(product.sellPrice || product.sell_price || 0);
+                  const vat = Number(product.vatRate || product.vat_rate || 0);
+                  const details = [
+                    product.unit ? `Birim: ${product.unit}` : "",
+                    product.pattern ? `Desen: ${product.pattern}` : "",
+                    product.composition ? String(product.composition) : "",
+                    product.width ? `${product.width} cm` : "",
+                    product.weight ? `${product.weight} GSM` : "",
+                  ].filter(Boolean);
+                  return (
+                    <tr key={product.id} className={ui.tr}>
+                      <td className={ui.td}>
+                        <Link href={`/inventory/${product.id}`} className="flex items-center gap-2.5">
+                          <Avatar name={name} square />
+                          <span className="font-medium">{name}</span>
+                        </Link>
+                      </td>
+                      <td className={ui.td}>
+                        <span className="block">{product.sku || <span className={ui.muted}>—</span>}</span>
+                        {product.barcode ? <small className={ui.muted}>{product.barcode}</small> : null}
+                      </td>
+                      <td className={ui.td}>
+                        <Status tone="gray">{getCategoryName(product.categoryId || product.category_id)}</Status>
+                      </td>
+                      <td className={`${ui.td} ${ui.soft}`}>
+                        {getWarehouseName(product.warehouseId || product.warehouse_id)}
+                      </td>
+                      <td className={ui.td}>
+                        <span className={ui.num}>{tl(sell)}</span>
+                        <small className={`block ${ui.muted}`}>
+                          alış {tl(buy)} · KDV %{vat}
+                        </small>
+                      </td>
+                      <td className={ui.td}>
+                        {stock <= 0 ? (
+                          <Status tone="red">Tükendi</Status>
+                        ) : stock <= critical ? (
+                          <Status tone="amber">{stock.toLocaleString("tr-TR")} adet</Status>
+                        ) : (
+                          <span className={ui.num}>
+                            {stock.toLocaleString("tr-TR")} <small className={ui.muted}>adet</small>
+                          </span>
+                        )}
+                        <small className={`block ${ui.muted}`}>Kritik: {critical}</small>
+                      </td>
+                      <td className={ui.td}>
+                        {product.color ? (
+                          <span className="flex items-center gap-1.5">
+                            <span
+                              className="inline-block h-2.5 w-2.5 rounded-full border border-black/10"
+                              style={{ backgroundColor: String(product.color).toLowerCase() }}
+                              aria-hidden="true"
+                            />
+                            {product.color}
+                          </span>
+                        ) : null}
+                        {details.length ? (
+                          <small className={`block ${ui.muted}`}>{details.join(" · ")}</small>
+                        ) : !product.color ? (
+                          <span className={ui.muted}>—</span>
+                        ) : null}
+                      </td>
+                      <td className={ui.td}>
+                        <RowActions name={name} viewHref={`/inventory/${product.id}`} />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {allProducts.length === 0 ? (
+          <EmptyState
+            icon={<Package aria-hidden="true" />}
+            title="Henüz ürün yok"
+            description="Yeni bir ürün ekleyerek veya Excel dosyasından içe aktararak başlayın."
+            action={
+              <button type="button" onClick={() => setShowAddProductModal(true)} className={ui.btnDark}>
+                <Plus aria-hidden="true" />
+                Yeni Ürün Ekle
+              </button>
+            }
+          />
+        ) : filteredProducts.length === 0 ? (
+          <EmptyState title="Bu filtreye uyan ürün yok" />
+        ) : (
+          <TableFoot>
+            <span>
+              {filteredProducts.length} ürün gösteriliyor
+              {filteredProducts.length !== allProducts.length ? ` · toplam ${allProducts.length}` : ""}
+            </span>
+            {lowCount > 0 ? <span className="text-[#b45309]">{lowCount} ürün kritik seviyede</span> : null}
+          </TableFoot>
+        )}
+      </Card>
+
+      {/* Ürün ekleme */}
+      {showAddProductModal && (
+        <div className={ui.modalBackdrop}>
+          <div role="dialog" aria-modal="true" aria-labelledby="add-product-title" className={`${ui.modal} max-w-2xl`}>
+            <div className="mb-5 flex items-center justify-between">
+              <h2 id="add-product-title" className="text-[16px] font-semibold">
+                Yeni Ürün Ekle
+              </h2>
+              <IconButton label="Kapat" onClick={handleCancelAddProduct}>
+                <X aria-hidden="true" />
+              </IconButton>
+            </div>
+            <form onSubmit={handleAddProduct}>
+              {productFormError && <Alert>{productFormError}</Alert>}
+              {productFormSuccess && <Alert tone="green">{productFormSuccess}</Alert>}
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field id="productName" label="Ürün Adı *" wide>
+                  <input
+                    type="text"
+                    id="productName"
+                    value={productName}
+                    onChange={(e) => setProductName(e.target.value)}
+                    className={ui.input}
+                    placeholder="Ürün adı"
+                    required
+                  />
+                </Field>
+                <Field id="productSku" label="SKU">
+                  <input
+                    type="text"
+                    id="productSku"
+                    value={productSku}
+                    onChange={(e) => setProductSku(e.target.value)}
+                    className={ui.input}
+                    placeholder="Stok kodu"
+                  />
+                </Field>
+                <Field id="productBarcode" label="Barkod">
+                  <input
+                    type="text"
+                    id="productBarcode"
+                    value={productBarcode}
+                    onChange={(e) => setProductBarcode(e.target.value)}
+                    className={ui.input}
+                    placeholder="Barkod"
+                  />
+                </Field>
+                <Field id="productCategory" label="Kategori">
+                  <select
+                    id="productCategory"
+                    value={productCategoryId}
+                    onChange={(e) => setProductCategoryId(e.target.value)}
+                    className={ui.input}
+                  >
+                    <option value="">Kategori seçin</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field id="productWarehouse" label="Depo">
+                  <select
+                    id="productWarehouse"
+                    value={productWarehouseId}
+                    onChange={(e) => setProductWarehouseId(e.target.value)}
+                    className={ui.input}
+                  >
+                    <option value="">Depo seçin</option>
+                    {warehouses.map((warehouse) => (
+                      <option key={warehouse.id} value={warehouse.id}>
+                        {warehouse.name}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field id="productBuyPrice" label="Alış Fiyatı (₺)">
+                  <input
+                    type="number"
+                    id="productBuyPrice"
+                    value={productBuyPrice}
+                    onChange={(e) => setProductBuyPrice(e.target.value)}
+                    min="0"
+                    step="0.01"
+                    className={ui.input}
+                    placeholder="0,00"
+                  />
+                </Field>
+                <Field id="productSellPrice" label="Satış Fiyatı (₺)">
+                  <input
+                    type="number"
+                    id="productSellPrice"
+                    value={productSellPrice}
+                    onChange={(e) => setProductSellPrice(e.target.value)}
+                    min="0"
+                    step="0.01"
+                    className={ui.input}
+                    placeholder="0,00"
+                  />
+                </Field>
+                <Field id="productVatRate" label="KDV Oranı (%)">
+                  <input
+                    type="number"
+                    id="productVatRate"
+                    value={productVatRate}
+                    onChange={(e) => setProductVatRate(e.target.value)}
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    className={ui.input}
+                    placeholder="18"
+                  />
+                </Field>
+                <Field id="productStockQuantity" label="Stok Miktarı">
+                  <input
+                    type="number"
+                    id="productStockQuantity"
+                    value={productStockQuantity}
+                    onChange={(e) => setProductStockQuantity(e.target.value)}
+                    min="0"
+                    step="1"
+                    className={ui.input}
+                    placeholder="0"
+                    required
+                  />
+                </Field>
+                <Field id="productCriticalLevel" label="Kritik Seviye">
+                  <input
+                    type="number"
+                    id="productCriticalLevel"
+                    value={productCriticalLevel}
+                    onChange={(e) => setProductCriticalLevel(e.target.value)}
+                    min="0"
+                    step="1"
+                    className={ui.input}
+                    placeholder="5"
+                  />
+                </Field>
+                <Field id="productColor" label="Renk">
+                  <input
+                    type="text"
+                    id="productColor"
+                    value={productColor}
+                    onChange={(e) => setProductColor(e.target.value)}
+                    className={ui.input}
+                    placeholder="Kumaş rengi"
+                  />
+                </Field>
+                <Field id="productUnit" label="Birim">
+                  <input
+                    type="text"
+                    id="productUnit"
+                    value={productUnit}
+                    onChange={(e) => setProductUnit(e.target.value)}
+                    className={ui.input}
+                    placeholder="metre, kg..."
+                  />
+                </Field>
+                <Field id="productPattern" label="Desen">
+                  <input
+                    type="text"
+                    id="productPattern"
+                    value={productPattern}
+                    onChange={(e) => setProductPattern(e.target.value)}
+                    className={ui.input}
+                    placeholder="Kumaş deseni"
+                  />
+                </Field>
+                <Field id="productComposition" label="Kompozisyon">
+                  <input
+                    type="text"
+                    id="productComposition"
+                    value={productComposition}
+                    onChange={(e) => setProductComposition(e.target.value)}
+                    className={ui.input}
+                    placeholder="%100 Pamuk"
+                  />
+                </Field>
+                <Field id="productWidth" label="Genişlik (cm)">
+                  <input
+                    type="number"
+                    id="productWidth"
+                    value={productWidth}
+                    onChange={(e) => setProductWidth(e.target.value)}
+                    min="0"
+                    step="0.1"
+                    className={ui.input}
+                  />
+                </Field>
+                <Field id="productWeight" label="Ağırlık (GSM)">
+                  <input
+                    type="number"
+                    id="productWeight"
+                    value={productWeight}
+                    onChange={(e) => setProductWeight(e.target.value)}
+                    min="0"
+                    step="0.1"
+                    className={ui.input}
+                  />
+                </Field>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-2">
+                <button type="button" onClick={handleCancelAddProduct} disabled={isSubmitting} className={ui.btn}>
+                  İptal
+                </button>
+                <button type="submit" disabled={isSubmitting} className={ui.btnDark}>
+                  {isSubmitting ? "Ekleniyor..." : "Ürün Ekle"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
-      {/* Filters and Search */}
-      <div className="mb-6 bg-white p-4 rounded-lg shadow">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setFilter("ALL")}
-              className={`px-3 py-1 text-sm rounded-full ${
-                filter === "ALL"
-                  ? "bg-blue-100 text-blue-800"
-                  : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-              }`}
-            >
-              Tüm Ürünler
-            </button>
-            <button
-              onClick={() => setFilter("LOW_STOCK")}
-              className={`px-3 py-1 text-sm rounded-full ${
-                filter === "LOW_STOCK"
-                  ? "bg-blue-100 text-blue-800"
-                  : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-              }`}
-            >
-              Düşük Stok
-            </button>
-          </div>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Ürünleri ara..."
-              className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-              </svg>
+      {/* Kategoriler */}
+      {showManageCategoriesModal && (
+        <div className={ui.modalBackdrop}>
+          <div role="dialog" aria-modal="true" aria-labelledby="categories-title" className={`${ui.modal} max-w-md`}>
+            <div className="mb-5 flex items-center justify-between">
+              <h2 id="categories-title" className="text-[16px] font-semibold">
+                Kategoriler
+              </h2>
+              <IconButton label="Kapat" onClick={() => setShowManageCategoriesModal(false)}>
+                <X aria-hidden="true" />
+              </IconButton>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Products Table */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ürün
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                SKU/Barkod
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Kategori
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Depo
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Fiyatlar
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Stok
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Kumaş Detayları
-              </th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                İşlemler
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredProducts.map((product) => (
-              <tr key={product.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{product.sku || "-"}</div>
-                  <div className="text-sm text-gray-500">{product.barcode || "-"}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {getCategoryName(product.categoryId || product.category_id)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {getWarehouseName(product.warehouseId || product.warehouse_id)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">Buy: ₺{(Number(product.buyPrice || product.buy_price || 0)).toFixed(2)}</div>
-                  <div className="text-sm text-gray-900">Sell: ₺{(Number(product.sellPrice || product.sell_price || 0)).toFixed(2)}</div>
-                  <div className="text-sm text-gray-500">VAT: %{Number(product.vatRate || product.vat_rate || 0)}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className={`text-sm font-medium ${Number(product.stockQuantity || product.stock_quantity || 0) <= Number(product.criticalLevel || product.critical_level || 0) ? "text-red-600" : "text-green-600"}`}>
-                    {Number(product.stockQuantity || product.stock_quantity || 0)}
-                  </div>
-                  <div className="text-xs text-gray-500">Critical: {Number(product.criticalLevel || product.critical_level || 0)}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {product.color && (
-                    <div>
-                      <span className="inline-block w-3 h-3 rounded-full mr-2" style={{ backgroundColor: String(product.color).toLowerCase() }}></span>
-                      {product.color}
-                    </div>
-                  )}
-                  {product.unit && <div>Unit: {product.unit}</div>}
-                  {product.pattern && <div>Pattern: {product.pattern}</div>}
-                  {product.composition && <div>Composition: {product.composition}</div>}
-                  {product.width && <div>Width: {product.width} cm</div>}
-                  {product.weight && <div>Weight: {product.weight} GSM</div>}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <Link href={`/inventory/${product.id}`} className="text-blue-600 hover:text-blue-900 mr-3">
-                    Görüntüle
-                  </Link>
-                  <button className="text-indigo-600 hover:text-indigo-900 mr-3">
-                    Düzenle
-                  </button>
-                  <button className="text-red-600 hover:text-red-900">
-                    Sil
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        
-        {(products?.length ?? 0) === 0 && (
-          <div className="text-center py-12">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Ürün yok</h3>
-            <p className="mt-1 text-sm text-gray-500">Yeni bir ürün oluşturarak başlayın.</p>
-            <div className="mt-6">
-              <button 
-                onClick={() => setShowAddProductModal(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                </svg>
-                Yeni Ürün Ekle
+            <label htmlFor="newCategoryName" className={ui.label}>
+              Yeni kategori
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="newCategoryName"
+                type="text"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                className={ui.input}
+                placeholder="Kategori adı"
+              />
+              <button type="button" onClick={handleAddCategory} className={ui.btnDark}>
+                Ekle
+              </button>
+            </div>
+            <h3 className="mb-1 mt-6 text-[12px] font-medium text-[var(--app-ink-2)]">
+              Mevcut kategoriler ({categories.length})
+            </h3>
+            {categories.length === 0 ? (
+              <p className={`py-3 ${ui.muted}`}>Henüz kategori yok.</p>
+            ) : (
+              <ul className="divide-y divide-[#f2f2f3]">
+                {categories.map((category) => (
+                  <li key={category.id} className="flex items-center gap-2.5 py-2.5">
+                    <Avatar name={category.name} square size={26} />
+                    {category.name}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="mt-5 flex justify-end">
+              <button type="button" onClick={() => setShowManageCategoriesModal(false)} className={ui.btn}>
+                Kapat
               </button>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Pagination */}
-      {(products?.length ?? 0) > 0 && (
-        <div className="mt-6 flex items-center justify-between">
-          <div className="text-sm text-gray-700">
-            <span className="font-medium">1</span> - <span className="font-medium">{Math.min(10, products?.length || 0)}</span> arası gösteriliyor, Toplam: {' '}
-            <span className="font-medium">{products?.length || 0}</span> ürün
-          </div>
-          <div className="flex space-x-2">
-            <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-              Önceki
-            </button>
-            <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-              Sonraki
-            </button>
-          </div>
         </div>
       )}
 
-      {/* Add Product Modal */}
-      {showAddProductModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-900">Yeni Ürün Ekle</h3>
-                <button 
-                  onClick={handleCancelAddProduct}
-                  className="text-gray-400 hover:text-gray-500"
-                >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <div className="mt-4">
-                <form onSubmit={handleAddProduct}>
-                  {productFormError && (
-                    <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
-                      <div className="flex">
-                        <div className="flex-shrink-0">
-                          <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <div className="ml-3">
-                          <h3 className="text-sm font-medium text-red-800">Hata</h3>
-                          <div className="mt-2 text-sm text-red-700">
-                            <p>{productFormError}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {productFormSuccess && (
-                    <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
-                      <div className="flex">
-                        <div className="flex-shrink-0">
-                          <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L7 13.586 15.293 5.293a1 1 0 111.414 1.414l-9 9a1 1 0 010 1.414z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <div className="ml-3">
-                          <h3 className="text-sm font-medium text-green-800">Başarılı</h3>
-                          <div className="mt-2 text-sm text-green-700">
-                            <p>{productFormSuccess}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Product Name */}
-                    <div className="col-span-2">
-                      <label htmlFor="productName" className="block text-sm font-medium text-gray-700">
-                        Ürün Adı *
-                      </label>
-                      <input
-                        type="text"
-                        id="productName"
-                        value={productName}
-                        onChange={(e) => setProductName(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
-                        placeholder="Ürün adı"
-                        required
-                      />
-                    </div>
-                    
-                    {/* SKU */}
-                    <div>
-                      <label htmlFor="productSku" className="block text-sm font-medium text-gray-700">
-                        SKU
-                      </label>
-                      <input
-                        type="text"
-                        id="productSku"
-                        value={productSku}
-                        onChange={(e) => setProductSku(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
-                        placeholder="Ürün SKU'su"
-                      />
-                    </div>
-                    
-                    {/* Barcode */}
-                    <div>
-                      <label htmlFor="productBarcode" className="block text-sm font-medium text-gray-700">
-                        Barkod
-                      </label>
-                      <input
-                        type="text"
-                        id="productBarcode"
-                        value={productBarcode}
-                        onChange={(e) => setProductBarcode(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
-                        placeholder="Barkod"
-                      />
-                    </div>
-                    
-                    {/* Category */}
-                    <div>
-                      <label htmlFor="productCategory" className="block text-sm font-medium text-gray-700">
-                        Kategori
-                      </label>
-                      <select
-                        id="productCategory"
-                        value={productCategoryId}
-                        onChange={(e) => setProductCategoryId(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
-                      >
-                        <option value="">Kategori Seçin</option>
-                        {categories.map((category) => (
-                          <option key={category.id} value={category.id}>
-                            {category.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    {/* Warehouse */}
-                    <div>
-                      <label htmlFor="productWarehouse" className="block text-sm font-medium text-gray-700">
-                        Depo
-                      </label>
-                      <select
-                        id="productWarehouse"
-                        value={productWarehouseId}
-                        onChange={(e) => setProductWarehouseId(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
-                      >
-                        <option value="">Depo Seçin</option>
-                        {warehouses.map((warehouse) => (
-                          <option key={warehouse.id} value={warehouse.id}>
-                            {warehouse.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    {/* Buy Price */}
-                    <div>
-                      <label htmlFor="productBuyPrice" className="block text-sm font-medium text-gray-700">
-                        Alış Fiyatı (₺)
-                      </label>
-                      <input
-                        type="number"
-                        id="productBuyPrice"
-                        value={productBuyPrice}
-                        onChange={(e) => setProductBuyPrice(e.target.value)}
-                        min="0"
-                        step="0.01"
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    
-                    {/* Sell Price */}
-                    <div>
-                      <label htmlFor="productSellPrice" className="block text-sm font-medium text-gray-700">
-                        Satış Fiyatı (₺)
-                      </label>
-                      <input
-                        type="number"
-                        id="productSellPrice"
-                        value={productSellPrice}
-                        onChange={(e) => setProductSellPrice(e.target.value)}
-                        min="0"
-                        step="0.01"
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    
-                    {/* VAT Rate */}
-                    <div>
-                      <label htmlFor="productVatRate" className="block text-sm font-medium text-gray-700">
-                        KDV Oranı (%)
-                      </label>
-                      <input
-                        type="number"
-                        id="productVatRate"
-                        value={productVatRate}
-                        onChange={(e) => setProductVatRate(e.target.value)}
-                        min="0"
-                        max="100"
-                        step="0.1"
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
-                        placeholder="18"
-                      />
-                    </div>
-                    
-                    {/* Stock Quantity */}
-                    <div>
-                      <label htmlFor="productStockQuantity" className="block text-sm font-medium text-gray-700">
-                        Stok Miktarı
-                      </label>
-                      <input
-                        type="number"
-                        id="productStockQuantity"
-                        value={productStockQuantity}
-                        onChange={(e) => setProductStockQuantity(e.target.value)}
-                        min="0"
-                        step="1"
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
-                        placeholder="0"
-                        required
-                      />
-                    </div>
-                    
-                    {/* Critical Level */}
-                    <div>
-                      <label htmlFor="productCriticalLevel" className="block text-sm font-medium text-gray-700">
-                        Kritik Seviye
-                      </label>
-                      <input
-                        type="number"
-                        id="productCriticalLevel"
-                        value={productCriticalLevel}
-                        onChange={(e) => setProductCriticalLevel(e.target.value)}
-                        min="0"
-                        step="1"
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
-                        placeholder="5"
-                      />
-                    </div>
-                    
-                    {/* Color */}
-                    <div>
-                      <label htmlFor="productColor" className="block text-sm font-medium text-gray-700">
-                        Renk
-                      </label>
-                      <input
-                        type="text"
-                        id="productColor"
-                        value={productColor}
-                        onChange={(e) => setProductColor(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
-                        placeholder="Kumaş rengi"
-                      />
-                    </div>
-                    
-                    {/* Unit */}
-                    <div>
-                      <label htmlFor="productUnit" className="block text-sm font-medium text-gray-700">
-                        Birim
-                      </label>
-                      <input
-                        type="text"
-                        id="productUnit"
-                        value={productUnit}
-                        onChange={(e) => setProductUnit(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
-                        placeholder="Ölçü birimi (örn: metre, kg)"
-                      />
-                    </div>
-                    
-                    {/* Pattern */}
-                    <div>
-                      <label htmlFor="productPattern" className="block text-sm font-medium text-gray-700">
-                        Desen
-                      </label>
-                      <input
-                        type="text"
-                        id="productPattern"
-                        value={productPattern}
-                        onChange={(e) => setProductPattern(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
-                        placeholder="Kumaş deseni"
-                      />
-                    </div>
-                    
-                    {/* Composition */}
-                    <div>
-                      <label htmlFor="productComposition" className="block text-sm font-medium text-gray-700">
-                        Kompozisyon
-                      </label>
-                      <input
-                        type="text"
-                        id="productComposition"
-                        value={productComposition}
-                        onChange={(e) => setProductComposition(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
-                        placeholder="Kumaş kompozisyonu (örn: %100 Pamuk)"
-                      />
-                    </div>
-                    
-                    {/* Width */}
-                    <div>
-                      <label htmlFor="productWidth" className="block text-sm font-medium text-gray-700">
-                        Genişlik (cm)
-                      </label>
-                      <input
-                        type="number"
-                        id="productWidth"
-                        value={productWidth}
-                        onChange={(e) => setProductWidth(e.target.value)}
-                        min="0"
-                        step="0.1"
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
-                        placeholder="Genişlik (cm)"
-                      />
-                    </div>
-                    
-                    {/* Weight (GSM) */}
-                    <div>
-                      <label htmlFor="productWeight" className="block text-sm font-medium text-gray-700">
-                        Ağırlık (GSM)
-                      </label>
-                      <input
-                        type="number"
-                        id="productWeight"
-                        value={productWeight}
-                        onChange={(e) => setProductWeight(e.target.value)}
-                        min="0"
-                        step="0.1"
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900"
-                        placeholder="Gramaj (GSM)"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="mt-6 flex justify-end space-x-3">
-                    <button
-                      type="button"
-                      onClick={handleCancelAddProduct}
-                      disabled={isSubmitting}
-                      className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      İptal
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="inline-flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Ekleniyor...
-                        </>
-                      ) : (
-                        "Ürün Ekle"
-                      )}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Manage Categories Modal */}
-      {showManageCategoriesModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-900">Kategorileri Yönet</h3>
-                <button 
-                  onClick={() => setShowManageCategoriesModal(false)}
-                  className="text-gray-400 hover:text-gray-500"
-                >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <div className="mt-4">
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700">Yeni Kategori Ekle</label>
-                  <div className="mt-1 flex">
-                    <input
-                      type="text"
-                      value={newCategoryName}
-                      onChange={(e) => setNewCategoryName(e.target.value)}
-                      className="block w-full border border-gray-300 rounded-l-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                      placeholder="Kategori adı"
-                    />
-                    <button
-                      onClick={handleAddCategory}
-                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-r-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
-                      Ekle
-                    </button>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <h4 className="text-md font-medium text-gray-900">Mevcut Kategoriler</h4>
-                  <ul className="mt-2 divide-y divide-gray-200">
-                    {categories.map((category) => (
-                      <li key={category.id} className="py-2 flex justify-between">
-                        <span className="text-sm text-gray-900">{category.name}</span>
-                        <button className="text-sm text-red-600 hover:text-red-900">Sil</button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="mt-4 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setShowManageCategoriesModal(false)}
-                    className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    Kapat
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Manage Warehouses Modal */}
+      {/* Depolar */}
       {showManageWarehousesModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-900">Depoları Yönet</h3>
-                <button 
-                  onClick={() => setShowManageWarehousesModal(false)}
-                  className="text-gray-400 hover:text-gray-500"
-                >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+        <div className={ui.modalBackdrop}>
+          <div role="dialog" aria-modal="true" aria-labelledby="warehouses-title" className={`${ui.modal} max-w-md`}>
+            <div className="mb-5 flex items-center justify-between">
+              <h2 id="warehouses-title" className="text-[16px] font-semibold">
+                Depolar
+              </h2>
+              <IconButton label="Kapat" onClick={() => setShowManageWarehousesModal(false)}>
+                <X aria-hidden="true" />
+              </IconButton>
+            </div>
+            <div className="grid gap-3">
+              <div>
+                <label htmlFor="newWarehouseName" className={ui.label}>
+                  Depo adı
+                </label>
+                <input
+                  id="newWarehouseName"
+                  type="text"
+                  value={newWarehouseName}
+                  onChange={(e) => setNewWarehouseName(e.target.value)}
+                  className={ui.input}
+                  placeholder="Ana depo"
+                />
+              </div>
+              <div>
+                <label htmlFor="newWarehouseLocation" className={ui.label}>
+                  Konum (isteğe bağlı)
+                </label>
+                <input
+                  id="newWarehouseLocation"
+                  type="text"
+                  value={newWarehouseLocation}
+                  onChange={(e) => setNewWarehouseLocation(e.target.value)}
+                  className={ui.input}
+                  placeholder="Şehir / adres"
+                />
+              </div>
+              <div>
+                <button type="button" onClick={handleAddWarehouse} className={ui.btnDark}>
+                  <Plus aria-hidden="true" />
+                  Depo Ekle
                 </button>
               </div>
-              <div className="mt-4">
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700">Yeni Depo Ekle</label>
-                  <div className="mt-1">
-                    <input
-                      type="text"
-                      value={newWarehouseName}
-                      onChange={(e) => setNewWarehouseName(e.target.value)}
-                      className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm mb-2"
-                      placeholder="Depo adı"
-                    />
-                    <input
-                      type="text"
-                      value={newWarehouseLocation}
-                      onChange={(e) => setNewWarehouseLocation(e.target.value)}
-                      className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                      placeholder="Konum (isteğe bağlı)"
-                    />
-                  </div>
-                  <button
-                    onClick={handleAddWarehouse}
-                    className="mt-2 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    Depo Ekle
-                  </button>
-                </div>
-                <div className="mt-4">
-                  <h4 className="text-md font-medium text-gray-900">Mevcut Depolar</h4>
-                  <ul className="mt-2 divide-y divide-gray-200">
-                    {warehouses.map((warehouse) => (
-                      <li key={warehouse.id} className="py-2 flex justify-between">
-                        <div>
-                          <span className="text-sm text-gray-900">{warehouse.name}</span>
-                          {warehouse.location && (
-                            <span className="block text-xs text-gray-500">{warehouse.location}</span>
-                          )}
-                        </div>
-                        <button className="text-sm text-red-600 hover:text-red-900">Sil</button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="mt-4 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setShowManageWarehousesModal(false)}
-                    className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    Kapat
-                  </button>
-                </div>
-              </div>
+            </div>
+            <h3 className="mb-1 mt-6 text-[12px] font-medium text-[var(--app-ink-2)]">
+              Mevcut depolar ({warehouses.length})
+            </h3>
+            {warehouses.length === 0 ? (
+              <p className={`py-3 ${ui.muted}`}>Henüz depo yok.</p>
+            ) : (
+              <ul className="divide-y divide-[#f2f2f3]">
+                {warehouses.map((warehouse) => (
+                  <li key={warehouse.id} className="flex items-center gap-2.5 py-2.5">
+                    <Avatar name={warehouse.name} square size={26} />
+                    <span>
+                      {warehouse.name}
+                      {warehouse.location && <small className={`block ${ui.muted}`}>{warehouse.location}</small>}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="mt-5 flex justify-end">
+              <button type="button" onClick={() => setShowManageWarehousesModal(false)} className={ui.btn}>
+                Kapat
+              </button>
             </div>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function Field({
+  id,
+  label,
+  wide,
+  children,
+}: {
+  id: string;
+  label: string;
+  wide?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={wide ? "sm:col-span-2" : undefined}>
+      <label htmlFor={id} className={ui.label}>
+        {label}
+      </label>
+      {children}
     </div>
   );
 }

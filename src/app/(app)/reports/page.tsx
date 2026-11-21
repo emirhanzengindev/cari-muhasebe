@@ -1,270 +1,177 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { BarChart3, Package, Users } from "lucide-react";
 import { useReportStore } from "@/stores/reportStore";
 import { useCurrentAccountsStore } from "@/stores/currentAccountsStore";
+import { Alert, Avatar, Card, CardHead, EmptyState, PageHeader, Spinner, Status, Tabs, tl, ui } from "@/components/app-ui/ui";
+
+type TabKey = "profitLoss" | "salesByProduct" | "accountBalances";
 
 export default function Reports() {
-  const { 
-    monthlyProfitLoss, 
+  const {
+    monthlyProfitLoss,
     salesByProduct,
-    loading, 
-    error, 
+    loading,
+    error,
     fetchMonthlyProfitLoss,
     fetchSalesByProduct,
   } = useReportStore();
-  
+
   const { accounts, fetchAccounts } = useCurrentAccountsStore();
-  const [activeTab, setActiveTab] = useState("profitLoss");
+  const [activeTab, setActiveTab] = useState<TabKey>("profitLoss");
 
   useEffect(() => {
-    Promise.all([
-      fetchMonthlyProfitLoss(),
-      fetchSalesByProduct(),
-      fetchAccounts()
-    ]);
+    Promise.all([fetchMonthlyProfitLoss(), fetchSalesByProduct(), fetchAccounts()]);
   }, [fetchMonthlyProfitLoss, fetchSalesByProduct, fetchAccounts]);
 
-  const formatCurrency = (amount: number) => {
-    return `₺${amount.toFixed(2)}`;
-  };
+  const formatCurrency = (amount: number) => tl(Number(amount) || 0);
 
-  if (loading) {
-    return (
-      <div className="py-6 flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  if (loading) return <Spinner />;
 
   if (error) {
     return (
-      <div className="py-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Error</h3>
-              <div className="mt-2 text-sm text-red-700">
-                <p>{error}</p>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className={ui.page}>
+        <PageHeader title="Raporlar" />
+        <Alert>{error}</Alert>
       </div>
     );
   }
 
+  const tabs: { value: TabKey; label: string }[] = [
+    { value: "profitLoss", label: "Kâr / Zarar" },
+    { value: "salesByProduct", label: "Ürün Bazlı Satış" },
+    { value: "accountBalances", label: "Cari Bakiyeler" },
+  ];
+
   return (
-    <div className="py-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-        <p className="mt-1 text-sm text-gray-500">Analyze your business performance</p>
+    <div className={ui.page}>
+      <PageHeader title="Raporlar" description="Satış, kâr-zarar ve cari bakiye raporları" />
+
+      <div className="mb-3.5">
+        <Tabs items={tabs} value={activeTab} onChange={setActiveTab} label="Rapor türü" />
       </div>
 
-      {/* Tabs */}
-      <div className="mb-6">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setActiveTab("profitLoss")}
-              className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === "profitLoss"
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              Profit/Loss
-            </button>
-            <button
-              onClick={() => setActiveTab("salesByProduct")}
-              className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === "salesByProduct"
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              Sales by Product
-            </button>
-            <button
-              onClick={() => setActiveTab("accountBalances")}
-              className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === "accountBalances"
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              Account Balances
-            </button>
-          </nav>
-        </div>
-      </div>
-
-      {/* Profit/Loss Report */}
       {activeTab === "profitLoss" && (
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">Monthly Profit/Loss</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Month
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Revenue
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Expenses
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Profit
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {monthlyProfitLoss.length === 0 ? (
+        <Card>
+          <CardHead icon={<BarChart3 aria-hidden="true" />} title="Aylık Kâr / Zarar" />
+          {monthlyProfitLoss.length === 0 ? (
+            <EmptyState icon={<BarChart3 aria-hidden="true" />} title="Henüz fatura verisi yok" />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className={ui.table}>
+                <thead>
                   <tr>
-                    <td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-500">
-                      Henüz fatura verisi bulunmuyor.
-                    </td>
+                    <th scope="col" className={ui.th}>Ay</th>
+                    <th scope="col" className={`${ui.th} text-right`}>Gelir</th>
+                    <th scope="col" className={`${ui.th} text-right`}>Gider</th>
+                    <th scope="col" className={`${ui.th} text-right`}>Kâr</th>
                   </tr>
-                ) : monthlyProfitLoss.map((report, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {report.month} {report.year}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(report.revenue)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(report.expenses)}
-                    </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
-                      report.profit >= 0 ? "text-green-600" : "text-red-600"
-                    }`}>
-                      {formatCurrency(report.profit)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                </thead>
+                <tbody>
+                  {monthlyProfitLoss.map((report, index) => (
+                    <tr key={index} className={ui.tr}>
+                      <td className={`${ui.td} font-medium`}>
+                        {report.month} {report.year}
+                      </td>
+                      <td className={`${ui.td} ${ui.num} text-right`}>{formatCurrency(report.revenue)}</td>
+                      <td className={`${ui.td} ${ui.num} text-right ${ui.soft}`}>{formatCurrency(report.expenses)}</td>
+                      <td className={`${ui.td} ${ui.num} text-right ${report.profit >= 0 ? ui.pos : ui.neg}`}>
+                        {formatCurrency(report.profit)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
       )}
 
-      {/* Sales by Product Report */}
       {activeTab === "salesByProduct" && (
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">Sales by Product</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Product
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    SKU
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Quantity Sold
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total Sales
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {salesByProduct.length === 0 ? (
+        <Card>
+          <CardHead icon={<Package aria-hidden="true" />} title="Ürün Bazlı Satış">
+            <span className={ui.muted}>En çok satan 10 ürün</span>
+          </CardHead>
+          {salesByProduct.length === 0 ? (
+            <EmptyState icon={<Package aria-hidden="true" />} title="Henüz ürün satış verisi yok" />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className={ui.table}>
+                <thead>
                   <tr>
-                    <td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-500">
-                      Henüz ürün satış verisi bulunmuyor.
-                    </td>
+                    <th scope="col" className={ui.th}>Ürün</th>
+                    <th scope="col" className={ui.th}>SKU</th>
+                    <th scope="col" className={`${ui.th} text-right`}>Satılan Miktar</th>
+                    <th scope="col" className={`${ui.th} text-right`}>Toplam Satış</th>
                   </tr>
-                ) : salesByProduct.slice(0, 10).map((report: any) => (
-                  <tr key={report.productId} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {report.productName || "Ürün"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {report.sku || "-"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {report.quantitySold ?? 0}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(Number(report.totalSales ?? 0))}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                </thead>
+                <tbody>
+                  {salesByProduct.slice(0, 10).map((report: any) => (
+                    <tr key={report.productId} className={ui.tr}>
+                      <td className={ui.td}>
+                        <span className="flex items-center gap-2.5">
+                          <Avatar name={report.productName || "Ürün"} square size={28} />
+                          <span className="font-medium">{report.productName || "Ürün"}</span>
+                        </span>
+                      </td>
+                      <td className={`${ui.td} ${ui.soft}`}>{report.sku || <span className={ui.muted}>—</span>}</td>
+                      <td className={`${ui.td} ${ui.num} text-right`}>
+                        {Number(report.quantitySold ?? 0).toLocaleString("tr-TR")}
+                      </td>
+                      <td className={`${ui.td} ${ui.num} text-right`}>{formatCurrency(Number(report.totalSales ?? 0))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
       )}
 
-      {/* Account Balances Report */}
       {activeTab === "accountBalances" && (
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">Account Balances</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Account
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Balance
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {accounts.length === 0 ? (
+        <Card>
+          <CardHead icon={<Users aria-hidden="true" />} title="Cari Bakiyeler" />
+          {accounts.length === 0 ? (
+            <EmptyState icon={<Users aria-hidden="true" />} title="Henüz cari bakiye verisi yok" />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className={ui.table}>
+                <thead>
                   <tr>
-                    <td colSpan={3} className="px-6 py-10 text-center text-sm text-gray-500">
-                      Henüz cari bakiye verisi bulunmuyor.
-                    </td>
+                    <th scope="col" className={ui.th}>Cari</th>
+                    <th scope="col" className={ui.th}>Tip</th>
+                    <th scope="col" className={`${ui.th} text-right`}>Bakiye</th>
                   </tr>
-                ) : accounts.map((account) => (
-                  <tr key={account.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {account.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        account.accountType === "CUSTOMER" 
-                          ? "bg-green-100 text-green-800" 
-                          : "bg-purple-100 text-purple-800"
-                      }`}>
-                        {account.accountType === "CUSTOMER" ? "Customer" : "Supplier"}
-                      </span>
-                    </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
-                      account.balance >= 0 ? "text-green-600" : "text-red-600"
-                    }`}>
-                      {formatCurrency(account.balance)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                </thead>
+                <tbody>
+                  {accounts.map((account) => (
+                    <tr key={account.id} className={ui.tr}>
+                      <td className={ui.td}>
+                        <span className="flex items-center gap-2.5">
+                          <Avatar name={account.name} size={28} />
+                          <span className="font-medium">{account.name}</span>
+                        </span>
+                      </td>
+                      <td className={ui.td}>
+                        <Status tone={account.accountType === "CUSTOMER" ? "green" : "violet"}>
+                          {account.accountType === "CUSTOMER" ? "Müşteri" : "Tedarikçi"}
+                        </Status>
+                      </td>
+                      <td
+                        className={`${ui.td} ${ui.num} text-right ${
+                          account.balance > 0 ? ui.pos : account.balance < 0 ? ui.neg : ui.muted
+                        }`}
+                      >
+                        {formatCurrency(account.balance)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
       )}
     </div>
   );
