@@ -78,7 +78,7 @@ export async function GET() {
 
     const [accountsResult, productsResult, invoicesResult, movementsResult] =
       await Promise.all([
-        readTenantRows(supabase, "current_accounts", "id", tenantCandidates),
+        readTenantRows(supabase, "current_accounts", "id, name", tenantCandidates),
         readTenantRows(
           supabase,
           "products",
@@ -94,7 +94,7 @@ export async function GET() {
         readTenantRows(
           supabase,
           "current_account_movements",
-          "id, current_account_id, signed_amount",
+          "id, current_account_id, signed_amount, document_date",
           tenantCandidates
         ),
       ]);
@@ -162,7 +162,90 @@ export async function GET() {
       return Number.isFinite(dueDate.getTime()) && dueDate < today;
     });
 
+    // --- Son 12 ay: aylık satış ve ay sonu alacak/borç serileri (kartlardaki çizgiler) ---
+    const boundaries = Array.from(
+      { length: 13 },
+      (_, i) => new Date(now.getFullYear(), now.getMonth() - 11 + i, 1)
+    );
+    const monthKey = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+
+    const salesByMonth = new Array(12).fill(0);
+    for (const invoice of invoices) {
+      const type = String(invoice.invoice_type || invoice.type || "").toUpperCase();
+      if (type !== "SALES") continue;
+      const date = new Date(String(invoice.date || invoice.invoice_date || ""));
+      if (!Number.isFinite(date.getTime())) continue;
+      for (let i = 0; i < 12; i++) {
+        if (date >= boundaries[i] && date < boundaries[i + 1]) {
+          salesByMonth[i] += toNumber(invoice.total_amount, invoice.total, invoice.amount);
+          break;
+        }
+      }
+    }
+
+    const movementRows = (movementsResult.rows as any[]).map((movement) => ({
+      accountId: String(movement.current_account_id || ""),
+      amount: toNumber(movement.signed_amount),
+      time: new Date(String(movement.document_date || "")).getTime(),
+    }));
+    const balanceTotalsUntil = (limit: number | null) => {
+      const balances = new Map<string, number>();
+      for (const row of movementRows) {
+        if (!row.accountId) continue;
+        if (limit !== null && !(Number.isFinite(row.time) && row.time < limit)) continue;
+        balances.set(row.accountId, (balances.get(row.accountId) || 0) + row.amount);
+      }
+      let receivable = 0;
+      let debt = 0;
+      for (const value of balances.values()) {
+        const rounded = Math.round(value * 100) / 100;
+        if (rounded > 0) receivable += rounded;
+        else debt += Math.abs(rounded);
+      }
+      return { receivable, debt };
+    };
+
+    const series = boundaries.slice(0, 12).map((start, i) => {
+      // Son nokta bugünkü toplamla birebir aynı olsun diye tüm hareketleri alır.
+      const totals = balanceTotalsUntil(i === 11 ? null : boundaries[i + 1].getTime());
+      return {
+        month: monthKey(start),
+        sales: Math.round(salesByMonth[i] * 100) / 100,
+        receivable: Math.round(totals.receivable * 100) / 100,
+        debt: Math.round(totals.debt * 100) / 100,
+      };
+    });
+
+    // --- Son faturalar ---
+    const accountNames = new Map<string, string>(
+      (accountsResult.rows as any[]).map((account) => [String(account.id), String(account.name || "")])
+    );
+    const overdueIds = new Set(overdueInvoices.map((invoice) => String(invoice.id)));
+    const invoiceTime = (invoice: any) => {
+      const time = new Date(String(invoice.date || invoice.invoice_date || invoice.created_at || "")).getTime();
+      return Number.isFinite(time) ? time : 0;
+    };
+    const recentInvoices = [...invoices]
+      .sort((a, b) => invoiceTime(b) - invoiceTime(a))
+      .slice(0, 5)
+      .map((invoice) => {
+        const accountId = String(invoice.account_id || invoice.current_account_id || "");
+        return {
+          id: String(invoice.id),
+          number: String(invoice.invoice_number ?? invoice.invoice_no ?? invoice.number ?? ""),
+          date: invoice.date || invoice.invoice_date || invoice.created_at || null,
+          type: String(invoice.invoice_type || invoice.type || "SALES").toUpperCase(),
+          total: toNumber(invoice.total_amount, invoice.total, invoice.amount),
+          accountName: accountNames.get(accountId) || "",
+          isDraft: Boolean(invoice.is_draft),
+          overdue: overdueIds.has(String(invoice.id)),
+        };
+      });
+
     return NextResponse.json({
+      series,
+      recentInvoices,
       totalAccounts: accountsResult.rows.length,
       stockValue,
       monthlySales,

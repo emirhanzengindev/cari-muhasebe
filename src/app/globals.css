@@ -12,6 +12,17 @@
   --brand-soft: #e0f2f6;
   --success: #16805b;
   --warning: #b26a13;
+
+  /* Uygulama paneli (kenar menu + sayfalar). Vurgu rengini tek yerden degistirmek icin. */
+  --app-bg: #f4f4f5;
+  --app-line: #ececee;
+  --app-ink: #18181b;
+  --app-ink-2: #52525b;
+  --app-ink-3: #a1a1aa;
+  --app-accent: #16a34a;
+  --app-accent-soft: #dcfce7;
+  --app-red: #dc2626;
+  --app-red-soft: #fee2e2;
 }
 
 @theme inline {

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
+  AlertTriangle,
   Package, 
   ShoppingCart, 
   FileText, 
@@ -16,30 +17,18 @@ import {
   CheckCircle,
   Plus
 } from "lucide-react";
-import StatCards from "@/components/dashboard/StatCards";
+import KpiCards from "@/components/dashboard/KpiCards";
+import MonthlySales from "@/components/dashboard/MonthlySales";
+import RecentInvoices from "@/components/dashboard/RecentInvoices";
+import AccountsTable, { type PanelAccount } from "@/components/dashboard/AccountsTable";
+import { tl, type PanelSummary } from "@/components/dashboard/format";
+import panel from "@/components/dashboard/panel.module.css";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSupabaseBrowser } from "@/lib/supabase";
 
-type DashboardSummary = {
-  totalAccounts: number;
-  stockValue: number;
-  monthlySales: number;
-  pendingInvoicesCount: number;
-  pendingInvoicesTotal: number;
-  overdueInvoicesCount: number;
-  overdueInvoicesTotal: number;
-  totalReceivable: number;
-  totalDebt: number;
-  netBalance: number;
-  warnings?: string[];
-};
+type DashboardSummary = PanelSummary;
 
-type CurrentAccountOption = {
-  id: string;
-  name?: string;
-  isActive?: boolean;
-  is_active?: boolean;
-};
+type CurrentAccountOption = PanelAccount;
 
 type FinanceAccountOption = {
   id: string;
@@ -683,118 +672,110 @@ export default function Dashboard() {
   }
   
   // Authenticated user dashboard
+  const series = summary ? summary.series ?? [] : null;
+  const recentInvoices = summary ? summary.recentInvoices ?? [] : null;
+  const overdue = summary?.overdueInvoicesCount ?? 0;
+  const minis = [
+    {
+      label: "Toplam Cari",
+      href: "/current-accounts",
+      icon: Users,
+      tint: { background: "#eff6ff", color: "#2563eb" },
+      value: summary ? String(summary.totalAccounts) : "—",
+      note: "kayıtlı hesap",
+    },
+    {
+      label: "Stok Değeri",
+      href: "/inventory",
+      icon: Package,
+      tint: { background: "#f5f3ff", color: "#7c3aed" },
+      value: summary ? tl(summary.stockValue) : "—",
+      note: summary && summary.stockValue === 0 ? "alış fiyatı girilmemiş" : "alış fiyatıyla",
+    },
+    {
+      label: "Bekleyen Faturalar",
+      href: "/invoices",
+      icon: FileText,
+      tint: { background: "#fffbeb", color: "#d97706" },
+      value: summary ? String(summary.pendingInvoicesCount) : "—",
+      note: summary ? `${tl(summary.pendingInvoicesTotal)} toplam` : "",
+    },
+    {
+      label: "Vadesi Geçenler",
+      href: "/invoices",
+      icon: AlertTriangle,
+      tint: { background: "var(--app-red-soft)", color: "var(--app-red)" },
+      value: summary ? String(overdue) : "—",
+      valueColor: overdue > 0 ? "var(--app-red)" : undefined,
+      note: summary ? (overdue > 0 ? `${tl(summary.overdueInvoicesTotal)} açık` : "gecikme yok") : "",
+    },
+  ];
+
   return (
-    <div className="min-h-full">
-      {/* Quick Stats */}
-      <section className="mx-auto max-w-[1500px]">
-        {summaryError && (
-          <div className="mb-6 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            {summaryError}
-          </div>
-        )}
-        {paymentSuccess && (
-          <div className="mb-6 rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-700">
-            {paymentSuccess}
-          </div>
-        )}
-
-        <StatCards summary={summary} loading={summaryLoading} />
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Card className="col-span-2">
-            <CardHeader>
-              <CardTitle>Hızlı Eylemler</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <Link href="/current-accounts/new">
-                  <Button className="w-full justify-start" variant="outline">
-                    <Users className="mr-2 h-4 w-4" />
-                    Yeni Cari Hesap
-                  </Button>
-                </Link>
-                <Button
-                  className="w-full justify-start"
-                  variant="outline"
-                  onClick={() => {
-                    setPaymentError("");
-                    setPaymentSuccess("");
-                    setShowPaymentModal(true);
-                  }}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Tahsilat / Ödeme
-                </Button>
-                <Link href="/quick-sales">
-                  <Button className="w-full justify-start" variant="outline">
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    Hızlı Satış
-                  </Button>
-                </Link>
-                <Link href="/invoices/new">
-                  <Button className="w-full justify-start" variant="outline">
-                    <FileText className="mr-2 h-4 w-4" />
-                    Yeni Fatura
-                  </Button>
-                </Link>
-                <Link href="/inventory">
-                  <Button className="w-full justify-start" variant="outline">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Ürün Ekle
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Sistem Durumu</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4 text-sm">
-                <div className="flex items-center">
-                  <div className="bg-green-100 p-2 rounded-full mr-3">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Dashboard gerçek veriden hesaplanıyor</p>
-                    <p className="text-xs text-muted-foreground">Cari, stok ve fatura tabloları</p>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <div className="bg-blue-100 p-2 rounded-full mr-3">
-                    <FileText className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Kasa hesapları</p>
-                    <p className="text-xs text-muted-foreground">
-                      {safes.length > 0 ? `${safes.length} kasa tanımlı` : "Henüz kasa hesabı tanımlanmadı"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <div className="bg-purple-100 p-2 rounded-full mr-3">
-                    <ShoppingCart className="h-4 w-4 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Banka hesapları</p>
-                    <p className="text-xs text-muted-foreground">
-                      {banks.length > 0 ? `${banks.length} banka hesabı tanımlı` : "Henüz banka hesabı bağlanmadı"}
-                    </p>
-                  </div>
-                </div>
-                {(summary?.warnings || []).map((warning) => (
-                  <p key={warning} className="rounded bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                    {warning}
-                  </p>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+    <div className={panel.page}>
+      <div className={panel.head}>
+        <div>
+          <h1>Panel</h1>
+          <p>İşletmenizi tek ekrandan yönetin</p>
         </div>
-      </section>
+        <div className={panel.actions}>
+          <button
+            type="button"
+            className={panel.btn}
+            onClick={() => {
+              setPaymentError("");
+              setPaymentSuccess("");
+              setShowPaymentModal(true);
+            }}
+          >
+            <Plus aria-hidden="true" />
+            Tahsilat / Ödeme
+          </button>
+          <Link href="/quick-sales" className={panel.btn}>
+            <ShoppingCart aria-hidden="true" />
+            Hızlı Satış
+          </Link>
+          <Link href="/invoices/new" className={`${panel.btn} ${panel.btnDark}`}>
+            <Plus aria-hidden="true" />
+            Yeni Fatura
+          </Link>
+        </div>
+      </div>
+
+      {summaryError && <div className={`${panel.alert} ${panel.alertRed}`}>{summaryError}</div>}
+      {paymentSuccess && <div className={`${panel.alert} ${panel.alertGreen}`}>{paymentSuccess}</div>}
+      {(summary?.warnings || []).map((warning) => (
+        <div key={warning} className={`${panel.alert} ${panel.alertAmber}`}>
+          {warning}
+        </div>
+      ))}
+
+      <KpiCards summary={summary} loading={summaryLoading} />
+
+      <div className={panel.minis}>
+        {minis.map((mini) => {
+          const Icon = mini.icon;
+          return (
+            <Link key={mini.label} href={mini.href} className={`${panel.card} ${panel.mini}`}>
+              <span className={panel.miniIco} style={mini.tint} aria-hidden="true">
+                <Icon />
+              </span>
+              <div>
+                <small>{mini.label}</small>
+                <b style={mini.valueColor ? { color: mini.valueColor } : undefined}>{mini.value}</b>
+              </div>
+              <span className={panel.miniNote}>{mini.note}</span>
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className={panel.row2}>
+        <MonthlySales series={series} />
+        <RecentInvoices invoices={recentInvoices} />
+      </div>
+
+      <AccountsTable accounts={accounts} loading={summaryLoading} />
 
       {showPaymentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
