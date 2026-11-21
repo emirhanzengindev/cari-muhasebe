@@ -181,7 +181,7 @@ export default function FaturaProgramiPage() {
           Fatura hareketleri,{" "}
           <a
             href="/tahsilat-takip-programi"
-            className="font-semibold text-[#176B87] underline decoration-[#b7dfe0] decoration-2 underline-offset-2"
+            className="font-medium text-co-ink underline decoration-co-lime-dark decoration-2 underline-offset-[3px] hover:decoration-co-ink"
           >
             tahsilat takibi
           </a>{" "}

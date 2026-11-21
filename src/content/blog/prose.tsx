@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { forestBackground } from "@/components/marketing/blocks";
+import { ArrowIcon } from "@/components/marketing/SiteHeader";
 
 /**
  * Small typography kit so blog articles keep a consistent, calm reading
@@ -7,11 +9,15 @@ import type { ReactNode } from "react";
  */
 
 export function Lead({ children }: { children: ReactNode }) {
-  return <p className="text-lg leading-8 text-[#3c5464]">{children}</p>;
+  return (
+    <p className="font-serif text-[21px] font-light leading-[1.55] text-co-ink">
+      {children}
+    </p>
+  );
 }
 
 export function P({ children }: { children: ReactNode }) {
-  return <p className="mt-4 text-base leading-7 text-[#4d6472]">{children}</p>;
+  return <p className="mt-5 text-[16px] leading-[1.8] text-[#3d4641]">{children}</p>;
 }
 
 export function H2({
@@ -24,7 +30,7 @@ export function H2({
   return (
     <h2
       id={id}
-      className="mt-10 text-2xl font-bold tracking-tight text-[#122B3A]"
+      className="mt-14 font-serif text-[28px] font-normal leading-tight tracking-[-0.015em] text-co-ink sm:text-[32px]"
     >
       {children}
     </h2>
@@ -39,26 +45,26 @@ export function H3({
   id?: string;
 }) {
   return (
-    <h3 id={id} className="mt-8 text-lg font-semibold text-[#122B3A]">
+    <h3 id={id} className="mt-9 font-serif text-[21px] font-normal leading-snug text-co-ink">
       {children}
     </h3>
   );
 }
 
 export function UL({ children }: { children: ReactNode }) {
-  return <ul className="mt-4 space-y-2">{children}</ul>;
+  return <ul className="mt-5 space-y-2.5">{children}</ul>;
 }
 
 export function OL({ children }: { children: ReactNode }) {
-  return <ol className="mt-4 list-decimal space-y-2 pl-5">{children}</ol>;
+  return <ol className="mt-5 list-decimal space-y-2.5 pl-6">{children}</ol>;
 }
 
 export function LI({ children }: { children: ReactNode }) {
   return (
-    <li className="flex gap-3 text-base leading-7 text-[#4d6472]">
+    <li className="flex gap-3 text-[16px] leading-[1.75] text-[#3d4641]">
       <span
         aria-hidden="true"
-        className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#176B87]"
+        className="mt-[11px] h-1.5 w-1.5 shrink-0 rounded-full bg-co-lime-dark"
       />
       <span>{children}</span>
     </li>
@@ -67,7 +73,7 @@ export function LI({ children }: { children: ReactNode }) {
 
 export function OLI({ children }: { children: ReactNode }) {
   return (
-    <li className="text-base leading-7 text-[#4d6472] marker:text-[#176B87]">
+    <li className="pl-1 text-[16px] leading-[1.75] text-[#3d4641] marker:font-serif marker:text-co-ink-soft">
       {children}
     </li>
   );
@@ -83,7 +89,7 @@ export function InternalLink({
   return (
     <Link
       href={href}
-      className="font-semibold text-[#176B87] underline decoration-[#b7dfe0] decoration-2 underline-offset-2 transition-colors hover:text-[#0f526b]"
+      className="font-medium text-co-ink underline decoration-co-lime-dark decoration-2 underline-offset-[3px] transition-colors hover:decoration-co-ink"
     >
       {children}
     </Link>
@@ -92,7 +98,7 @@ export function InternalLink({
 
 export function Note({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-6 rounded-2xl border border-[#b7dfe0] bg-[#f2fafb] p-5 text-sm leading-6 text-[#3c5464]">
+    <div className="mt-8 rounded-xl border border-[#ebe4cc] bg-co-cream p-5 text-[15px] leading-7 text-co-ink">
       {children}
     </div>
   );
@@ -100,21 +106,22 @@ export function Note({ children }: { children: ReactNode }) {
 
 export function ArticleCta({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-10 rounded-3xl bg-[#122B3A] px-6 py-8 text-white sm:px-8">
-      <h2 className="text-xl font-bold tracking-tight">
+    <div className={`mt-14 rounded-2xl px-6 py-9 text-white sm:px-9 ${forestBackground}`}>
+      <h2 className="font-serif text-[26px] font-normal leading-tight">
         CariOnline&apos;ı deneyin
       </h2>
-      <div className="mt-3 text-sm leading-6 text-slate-300">{children}</div>
-      <div className="mt-5 flex flex-wrap gap-3">
+      <div className="mt-3 text-[15px] leading-7 text-white/75">{children}</div>
+      <div className="mt-6 flex flex-wrap gap-3">
         <Link
           href="/auth/signup"
-          className="inline-flex items-center rounded-xl bg-[#176B87] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#0f526b]"
+          className="group inline-flex items-center gap-2 rounded-full bg-co-lime px-5 py-3 text-sm font-medium text-co-ink transition-colors hover:bg-co-lime-dark"
         >
           Hesap oluştur
+          <ArrowIcon />
         </Link>
         <Link
           href="/cari-hesap-programi"
-          className="inline-flex items-center rounded-xl border border-white/30 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+          className="inline-flex items-center rounded-full border border-white/55 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10"
         >
           Cari hesap programı
         </Link>

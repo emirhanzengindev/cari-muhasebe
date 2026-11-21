@@ -85,12 +85,12 @@ export default function Content() {
       <H2>Cari Hesap Türleri</H2>
       <UL>
         <LI>
-          <strong className="font-semibold text-[#122B3A]">Müşteri cari hesapları:</strong>{" "}
+          <strong className="font-semibold text-co-ink">Müşteri cari hesapları:</strong>{" "}
           sattığınız ürün veya hizmetin karşılığında işletmeye borçlanan
           hesaplardır.
         </LI>
         <LI>
-          <strong className="font-semibold text-[#122B3A]">Tedarikçi cari hesapları:</strong>{" "}
+          <strong className="font-semibold text-co-ink">Tedarikçi cari hesapları:</strong>{" "}
           mal veya hizmet aldığınız firmalara ait hesaplardır; burada borç
           işletmenin tarafındadır.
         </LI>

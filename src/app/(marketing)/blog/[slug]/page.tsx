@@ -123,15 +123,15 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       />
 
       <Section>
-        <div className="mx-auto max-w-3xl">
-          <nav aria-label="Site yolu" className="mb-6 text-sm text-[#5b7382]">
-            <Link href="/" className="hover:text-[#176B87]">
+        <div className="mx-auto max-w-[720px]">
+          <nav aria-label="Site yolu" className="mb-8 text-[13px] text-co-ink-soft">
+            <Link href="/" className="hover:text-co-ink hover:underline">
               Ana sayfa
             </Link>
             <span className="mx-2" aria-hidden="true">
               /
             </span>
-            <Link href="/blog" className="hover:text-[#176B87]">
+            <Link href="/blog" className="hover:text-co-ink hover:underline">
               Blog
             </Link>
           </nav>

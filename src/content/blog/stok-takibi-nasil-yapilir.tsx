@@ -53,17 +53,17 @@ export default function Content() {
       </P>
       <OL>
         <LI>
-          <strong className="font-semibold text-[#122B3A]">Ürün kartlarını oluşturun.</strong>{" "}
+          <strong className="font-semibold text-co-ink">Ürün kartlarını oluşturun.</strong>{" "}
           Ürün adı, SKU veya barkod, birim, kategori ve maliyet bilgisi eksiksiz
           olmalıdır.
         </LI>
         <LI>
-          <strong className="font-semibold text-[#122B3A]">Depo yapısını belirleyin.</strong>{" "}
+          <strong className="font-semibold text-co-ink">Depo yapısını belirleyin.</strong>{" "}
           Tek depo kullanıyorsanız bile depo tanımlamak, ileride şube veya
           ikinci depo açıldığında geçişi kolaylaştırır.
         </LI>
         <LI>
-          <strong className="font-semibold text-[#122B3A]">Açılış miktarlarını girin.</strong>{" "}
+          <strong className="font-semibold text-co-ink">Açılış miktarlarını girin.</strong>{" "}
           Sayım sonucunu tek seferde sisteme aktarın ve bundan sonraki tüm
           değişimleri hareket olarak kaydedin.
         </LI>

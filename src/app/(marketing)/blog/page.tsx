@@ -44,28 +44,42 @@ export default function BlogIndexPage() {
       />
 
       <Section>
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {blogPosts.map((post) => (
-            <li key={post.slug}>
-              <article className="flex h-full flex-col rounded-2xl border border-white bg-white p-6 shadow-[0_10px_30px_rgba(18,43,58,0.06)]">
-                <h2 className="text-lg font-semibold leading-snug text-[#122B3A]">
-                  <Link
-                    href={getBlogPostPath(post.slug)}
-                    className="transition-colors hover:text-[#176B87]"
-                  >
-                    {post.title}
-                  </Link>
-                </h2>
-                <p className="mt-3 flex-1 text-sm leading-6 text-[#4d6472]">
-                  {post.excerpt}
-                </p>
-                <p className="mt-4 text-xs text-[#5b7382]">
-                  <time dateTime={post.datePublished}>
-                    {formatPostDate(post.datePublished)}
-                  </time>
-                  {" · "}
-                  {post.readingMinutes} dk okuma
-                </p>
+        <ul className="border-t border-co-line">
+          {blogPosts.map((post, index) => (
+            <li key={post.slug} className="border-b border-co-line">
+              <article className="group relative grid gap-3 py-8 sm:grid-cols-[80px_1fr_auto] sm:gap-8">
+                <span
+                  aria-hidden="true"
+                  className="font-serif text-sm text-co-muted sm:pt-2"
+                >
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <div>
+                  <h2 className="font-serif text-[26px] font-normal leading-tight tracking-[-0.01em] text-co-ink">
+                    <Link
+                      href={getBlogPostPath(post.slug)}
+                      className="after:absolute after:inset-0 after:content-['']"
+                    >
+                      {post.title}
+                    </Link>
+                  </h2>
+                  <p className="mt-2.5 max-w-2xl text-[14.5px] leading-6 text-co-ink-soft">
+                    {post.excerpt}
+                  </p>
+                  <p className="mt-3 text-xs text-co-ink-soft">
+                    <time dateTime={post.datePublished}>
+                      {formatPostDate(post.datePublished)}
+                    </time>
+                    {" · "}
+                    {post.readingMinutes} dk okuma
+                  </p>
+                </div>
+                <span
+                  aria-hidden="true"
+                  className="hidden pt-2 text-lg text-co-muted transition-transform duration-200 group-hover:translate-x-1 group-hover:text-co-ink sm:block"
+                >
+                  →
+                </span>
               </article>
             </li>
           ))}

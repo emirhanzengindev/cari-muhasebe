@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ReactNode } from "react";
+import { newsreader } from "@/lib/fonts";
 
 export const metadata: Metadata = {
   title: "Giriş Yap",
@@ -14,5 +15,5 @@ export default function AuthLayout({
 }: {
   children: ReactNode;
 }) {
-  return <>{children}</>;
+  return <div className={newsreader.variable}>{children}</div>;
 }
