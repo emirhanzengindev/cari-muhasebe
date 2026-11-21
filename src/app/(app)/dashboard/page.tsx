@@ -685,24 +685,6 @@ export default function Dashboard() {
   // Authenticated user dashboard
   return (
     <div className="min-h-full">
-      {/* Dashboard Header */}
-      <header className="mb-8 overflow-hidden rounded-2xl border border-[var(--line)] bg-[#173b4a] shadow-[0_16px_35px_rgba(23,59,74,0.12)]">
-        <div className="px-6 py-7 sm:px-8 sm:py-9">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-3">
-              <Package className="h-8 w-8 text-[#d9f1f1]" />
-              <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-            </div>
-            <div className="hidden items-center space-x-4 sm:flex">
-              <span className="text-gray-600">Hoş geldiniz, {user?.email || user?.name || 'Kullanıcı'}!</span>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e7c88a] font-medium text-[#173b4a]">
-                {(user?.name?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()}
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-      
       {/* Quick Stats */}
       <section className="mx-auto max-w-[1500px]">
         {summaryError && (
