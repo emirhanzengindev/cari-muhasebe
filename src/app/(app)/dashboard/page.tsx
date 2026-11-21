@@ -14,9 +14,9 @@ import {
   Shield,
   ArrowRight,
   CheckCircle,
-  Plus,
-  TrendingUp
+  Plus
 } from "lucide-react";
+import StatCards from "@/components/dashboard/StatCards";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSupabaseBrowser } from "@/lib/supabase";
 
@@ -716,122 +716,8 @@ export default function Dashboard() {
           </div>
         )}
 
-        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Toplam Cari</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {summaryLoading ? "..." : summary?.totalAccounts ?? 0}
-              </div>
-              <p className="text-xs text-muted-foreground">Aktif tenant cari kayıtları</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Stok Değeri</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {summaryLoading ? "..." : formatCurrency(summary?.stockValue ?? 0)}
-              </div>
-              <p className="text-xs text-muted-foreground">Stok miktarı ve alış maliyeti</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Bu Ay Satış</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {summaryLoading ? "..." : formatCurrency(summary?.monthlySales ?? 0)}
-              </div>
-              <p className="text-xs text-muted-foreground">Bu ayki satış faturaları</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Bekleyen Faturalar</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {summaryLoading ? "..." : summary?.pendingInvoicesCount ?? 0}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {formatCurrency(summary?.pendingInvoicesTotal ?? 0)} toplam
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        <StatCards summary={summary} loading={summaryLoading} />
 
-        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Toplam Alacak</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-700">
-                {summaryLoading ? "..." : formatCurrency(summary?.totalReceivable ?? 0)}
-              </div>
-              <p className="text-xs text-muted-foreground">Cari hareket bakiyelerinden</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-[#fff3f1]">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Vadesi Geçenler</CardTitle>
-              <FileText className="h-4 w-4 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-700">
-                {summaryLoading ? "..." : summary?.overdueInvoicesCount ?? 0}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {formatCurrency(summary?.overdueInvoicesTotal ?? 0)} açık bakiye
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Toplam Borç</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-700">
-                {summaryLoading ? "..." : formatCurrency(summary?.totalDebt ?? 0)}
-              </div>
-              <p className="text-xs text-muted-foreground">Cari hareket bakiyelerinden</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Net Bakiye</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div
-                className={`text-2xl font-bold ${
-                  (summary?.netBalance ?? 0) >= 0 ? "text-green-700" : "text-red-700"
-                }`}
-              >
-                {summaryLoading ? "..." : formatCurrency(summary?.netBalance ?? 0)}
-              </div>
-              <p className="text-xs text-muted-foreground">Alacak eksi borç</p>
-            </CardContent>
-          </Card>
-        </div>
-        
         {/* Quick Actions */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <Card className="col-span-2">
